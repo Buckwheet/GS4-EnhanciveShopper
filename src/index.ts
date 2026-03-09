@@ -554,6 +554,22 @@ app.get('/api/debug/alerts', async (c) => {
   return c.json({ goals, alerts, matchingItems: matches.slice(0, 5) })
 })
 
+app.post('/api/test-match', async (c) => {
+  try {
+    const { results: items } = await c.env.DB.prepare('SELECT * FROM shop_items WHERE available = 1 LIMIT 100').all()
+    console.log(`Testing matcher with ${items.length} items`)
+    
+    await checkMatches(c.env, items)
+    
+    const { results: alerts } = await c.env.DB.prepare('SELECT * FROM alerts ORDER BY sent_at DESC LIMIT 5').all()
+    
+    return c.json({ success: true, itemsChecked: items.length, recentAlerts: alerts })
+  } catch (error) {
+    console.error('Test match error:', error)
+    return c.json({ error: String(error) }, 500)
+  }
+})
+
 app.post('/api/scrape', async (c) => {
   try {
     const lastUpdated = await getLastUpdated()
