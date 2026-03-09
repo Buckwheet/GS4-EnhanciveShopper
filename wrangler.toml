@@ -8,4 +8,4 @@ crons = ["0 * * * *"]
 [[d1_databases]]
 binding = "DB"
 database_name = "enhancive-db"
-database_id = "REPLACE_WITH_YOUR_DATABASE_ID"
+database_id = "7f60fe28-3ccd-4d23-9e70-6d6749c6c4ed"
