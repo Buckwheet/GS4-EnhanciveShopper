@@ -87,6 +87,7 @@ app.get('/', (c) => {
         </div>
         <div class="text-right">
           <p class="text-gray-600 text-sm">Last Updated: <span id="lastUpdated" class="font-semibold">Loading...</span></p>
+          <p class="text-gray-500 text-xs">Local: <span id="lastUpdatedLocal"></span></p>
         </div>
       </div>
     </div>
@@ -248,6 +249,11 @@ app.get('/', (c) => {
         
         document.getElementById('dbTotal').textContent = data.total || allItems.length
         document.getElementById('lastUpdated').textContent = data.lastUpdated || 'Never'
+        
+        if (data.lastUpdated && data.lastUpdated !== 'Never') {
+          const localTime = new Date(data.lastUpdated).toLocaleString()
+          document.getElementById('lastUpdatedLocal').textContent = localTime
+        }
         
         populateFilters()
         filterItems()
