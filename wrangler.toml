@@ -1,6 +1,7 @@
 name = "gs4-enhancive-shopper"
 main = "src/index.ts"
 compatibility_date = "2024-03-01"
+account_id = "0a33eb8c3f8d91e6eb1e78918b74bf12"
 
 [triggers]
 crons = ["0 * * * *"]
