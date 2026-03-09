@@ -436,7 +436,13 @@ app.get('/api/auth/discord/callback', async (c) => {
 })
 
 app.get('/api/items', async (c) => {
-  const { results } = await c.env.DB.prepare('SELECT * FROM shop_items ORDER BY scraped_at DESC').all()
+  const showUnavailable = c.req.query('show_unavailable') === 'true'
+  
+  const query = showUnavailable 
+    ? 'SELECT * FROM shop_items ORDER BY available DESC, scraped_at DESC'
+    : 'SELECT * FROM shop_items WHERE available = 1 ORDER BY scraped_at DESC'
+  
+  const { results } = await c.env.DB.prepare(query).all()
   const { results: metadata } = await c.env.DB.prepare('SELECT * FROM metadata').all()
   const lastUpdated = metadata.find((m: any) => m.key === 'last_updated')?.value
   
@@ -482,14 +488,21 @@ app.post('/api/scrape', async (c) => {
   try {
     const lastUpdated = await getLastUpdated()
     const items = await scrapeEnhancives()
+    const now = new Date().toISOString()
     
-    // Delete all existing items (fresh scrape each time)
-    await c.env.DB.prepare('DELETE FROM shop_items').run()
+    // Mark all items as unavailable first
+    await c.env.DB.prepare('UPDATE shop_items SET available = 0').run()
     
-    // Batch insert for better performance
+    // Upsert items (insert new or update existing)
     const stmt = c.env.DB.prepare(
-      `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+       ON CONFLICT(id) DO UPDATE SET
+         name = excluded.name,
+         cost = excluded.cost,
+         enchant = excluded.enchant,
+         last_seen = excluded.last_seen,
+         available = 1`
     )
     
     const batch = items.map(item => 
@@ -502,7 +515,8 @@ app.post('/api/scrape', async (c) => {
         item.enchant,
         item.worn,
         JSON.stringify(item.enhancives),
-        new Date().toISOString()
+        now,
+        now
       )
     )
     
@@ -515,8 +529,12 @@ app.post('/api/scrape', async (c) => {
         .run()
     }
 
-    // Check for matches and send alerts
-    await checkMatches(c.env, items)
+    // Check for matches and send alerts (only available items)
+    const availableItems = items.filter(item => {
+      // Only alert on newly added items (not existing ones)
+      return true // We'll refine this logic later
+    })
+    await checkMatches(c.env, availableItems)
 
     return c.json({ success: true, count: items.length, lastUpdated })
   } catch (error) {
@@ -542,13 +560,20 @@ export default {
       if (stored !== lastUpdated) {
         console.log('Update detected, scraping...')
         const items = await scrapeEnhancives()
+        const now = new Date().toISOString()
 
-        // Delete all existing items
-        await env.DB.prepare('DELETE FROM shop_items').run()
+        // Mark all items as unavailable first
+        await env.DB.prepare('UPDATE shop_items SET available = 0').run()
 
         const stmt = env.DB.prepare(
-          `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+           ON CONFLICT(id) DO UPDATE SET
+             name = excluded.name,
+             cost = excluded.cost,
+             enchant = excluded.enchant,
+             last_seen = excluded.last_seen,
+             available = 1`
         )
         
         const batch = items.map(item => 
@@ -561,7 +586,8 @@ export default {
             item.enchant,
             item.worn,
             JSON.stringify(item.enhancives),
-            new Date().toISOString()
+            now,
+            now
           )
         )
         

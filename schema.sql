@@ -28,7 +28,9 @@ CREATE TABLE IF NOT EXISTS shop_items (
   enchant INTEGER,
   worn TEXT,
   enhancives_json TEXT NOT NULL,
-  scraped_at TEXT NOT NULL
+  scraped_at TEXT NOT NULL,
+  last_seen TEXT NOT NULL,
+  available INTEGER NOT NULL DEFAULT 1
 );
 
 -- Alerts table
