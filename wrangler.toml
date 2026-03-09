@@ -1,4 +1,4 @@
-name = "gs4-enhancive-shopper"
+name = "gs4enhanciveshopper"
 main = "src/index.ts"
 compatibility_date = "2024-03-01"
 
