@@ -402,13 +402,18 @@ app.get('/api/auth/discord/callback', async (c) => {
     })
 
     const tokens = await tokenResponse.json()
-    if (!tokens.access_token) return c.json({ error: 'Failed to get access token' }, 400)
+    console.log('Token response:', tokens)
+    
+    if (!tokens.access_token) {
+      return c.json({ error: 'Failed to get access token', details: tokens }, 400)
+    }
 
     const userResponse = await fetch('https://discord.com/api/users/@me', {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
     })
 
     const discordUser = await userResponse.json()
+    console.log('Discord user:', discordUser)
 
     await c.env.DB.prepare(
       'INSERT INTO users (discord_id, discord_username, created_at) VALUES (?, ?, ?) ON CONFLICT(discord_id) DO UPDATE SET discord_username = ?, last_login = ?'
@@ -425,7 +430,8 @@ app.get('/api/auth/discord/callback', async (c) => {
       </html>
     `)
   } catch (error) {
-    return c.json({ error: 'Authentication failed' }, 500)
+    console.error('Auth error:', error)
+    return c.json({ error: 'Authentication failed', details: String(error) }, 500)
   }
 })
 
