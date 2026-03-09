@@ -484,6 +484,47 @@ app.delete('/api/goals/:id', async (c) => {
   return c.json({ success: true })
 })
 
+app.post('/api/test-dm', async (c) => {
+  const { discord_id } = await c.req.json()
+  if (!discord_id) return c.json({ error: 'discord_id required' }, 400)
+
+  try {
+    const message = '🔔 Test alert from GS4 Enhancive Shopper! If you see this, notifications are working.'
+    const sent = await fetch('https://discord.com/api/v10/users/@me/channels', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bot ${c.env.DISCORD_BOT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ recipient_id: discord_id }),
+    })
+
+    const channel = await sent.json()
+    console.log('Channel response:', channel)
+
+    if (!channel.id) {
+      return c.json({ error: 'Failed to create DM channel', details: channel }, 400)
+    }
+
+    const msgResponse = await fetch(`https://discord.com/api/v10/channels/${channel.id}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bot ${c.env.DISCORD_BOT_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ content: message }),
+    })
+
+    const result = await msgResponse.json()
+    console.log('Message response:', result)
+
+    return c.json({ success: msgResponse.ok, details: result })
+  } catch (error) {
+    console.error('Test DM error:', error)
+    return c.json({ error: String(error) }, 500)
+  }
+})
+
 app.post('/api/scrape', async (c) => {
   try {
     const lastUpdated = await getLastUpdated()
