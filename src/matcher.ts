@@ -3,6 +3,7 @@ import { sendDiscordDM, formatItemAlert } from './discord'
 
 export async function checkMatches(env: Env, newItems: any[]) {
   const { results: goals } = await env.DB.prepare('SELECT * FROM user_goals').all()
+  console.log(`Checking ${newItems.length} items against ${goals.length} goals`)
 
   for (const goal of goals) {
     const matchingItems = newItems.filter(item => {
@@ -32,6 +33,8 @@ export async function checkMatches(env: Env, newItems: any[]) {
       }
     })
 
+    console.log(`Goal "${goal.stat}" +${goal.min_boost}: Found ${matchingItems.length} matches`)
+
     // Send alerts for matches
     for (const item of matchingItems) {
       // Check if already alerted
@@ -40,12 +43,16 @@ export async function checkMatches(env: Env, newItems: any[]) {
       ).bind(goal.discord_id, item.id).all()
 
       if (existing.length === 0) {
+        console.log(`Sending alert for item ${item.id} to ${goal.discord_id}`)
         const message = formatItemAlert(item)
         const sent = await sendDiscordDM(env.DISCORD_BOT_TOKEN, goal.discord_id, message)
+        console.log(`Alert sent: ${sent}`)
 
         await env.DB.prepare(
           'INSERT INTO alerts (discord_id, item_id, goal_id, sent_at, delivered) VALUES (?, ?, ?, ?, ?)'
         ).bind(goal.discord_id, item.id, goal.id, new Date().toISOString(), sent ? 1 : 0).run()
+      } else {
+        console.log(`Already alerted for item ${item.id}`)
       }
     }
   }
