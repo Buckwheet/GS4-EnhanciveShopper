@@ -61,13 +61,36 @@ app.get('/', (c) => {
 
         <div id="addGoalForm" class="hidden mb-4 p-4 border rounded bg-gray-50">
           <h3 class="font-semibold mb-3">Create Alert Goal</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <input type="text" id="goalStat" placeholder="Stat (e.g., Strength)" class="border p-2 rounded">
             <input type="number" id="goalBoost" placeholder="Min Boost (e.g., 5)" class="border p-2 rounded">
-            <input type="number" id="goalMaxCost" placeholder="Max Cost (optional)" class="border p-2 rounded">
-            <input type="text" id="goalSlots" placeholder="Preferred Slots (comma-separated, optional)" class="border p-2 rounded">
+            <input type="number" id="goalMaxCost" placeholder="Max Cost (optional)" class="border p-2 rounded col-span-2">
           </div>
-          <div class="mt-3 flex gap-2">
+          <div class="mb-3">
+            <label class="font-semibold mb-2 block">Preferred Slots (optional):</label>
+            <div class="grid grid-cols-3 md:grid-cols-5 gap-2">
+              <label class="flex items-center"><input type="checkbox" value="ankle" class="mr-1"> ankle</label>
+              <label class="flex items-center"><input type="checkbox" value="arms" class="mr-1"> arms</label>
+              <label class="flex items-center"><input type="checkbox" value="belt" class="mr-1"> belt</label>
+              <label class="flex items-center"><input type="checkbox" value="chest" class="mr-1"> chest</label>
+              <label class="flex items-center"><input type="checkbox" value="cloak" class="mr-1"> cloak</label>
+              <label class="flex items-center"><input type="checkbox" value="ear" class="mr-1"> ear</label>
+              <label class="flex items-center"><input type="checkbox" value="ears" class="mr-1"> ears</label>
+              <label class="flex items-center"><input type="checkbox" value="feet" class="mr-1"> feet</label>
+              <label class="flex items-center"><input type="checkbox" value="finger" class="mr-1"> finger</label>
+              <label class="flex items-center"><input type="checkbox" value="front" class="mr-1"> front</label>
+              <label class="flex items-center"><input type="checkbox" value="hands" class="mr-1"> hands</label>
+              <label class="flex items-center"><input type="checkbox" value="head" class="mr-1"> head</label>
+              <label class="flex items-center"><input type="checkbox" value="legs" class="mr-1"> legs</label>
+              <label class="flex items-center"><input type="checkbox" value="neck" class="mr-1"> neck</label>
+              <label class="flex items-center"><input type="checkbox" value="pants" class="mr-1"> pants</label>
+              <label class="flex items-center"><input type="checkbox" value="pin" class="mr-1"> pin</label>
+              <label class="flex items-center"><input type="checkbox" value="shoulders" class="mr-1"> shoulders</label>
+              <label class="flex items-center"><input type="checkbox" value="socks" class="mr-1"> socks</label>
+              <label class="flex items-center"><input type="checkbox" value="wrist" class="mr-1"> wrist</label>
+            </div>
+          </div>
+          <div class="flex gap-2">
             <button id="saveGoalBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
             <button id="cancelGoalBtn" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
           </div>
@@ -213,7 +236,9 @@ app.get('/', (c) => {
       const stat = document.getElementById('goalStat').value
       const boost = document.getElementById('goalBoost').value
       const maxCost = document.getElementById('goalMaxCost').value
-      const slots = document.getElementById('goalSlots').value
+      const selectedSlots = Array.from(document.querySelectorAll('#addGoalForm input[type="checkbox"]:checked'))
+        .map(cb => cb.value)
+        .join(',')
 
       if (!stat || !boost) {
         alert('Stat and Min Boost are required')
@@ -228,14 +253,14 @@ app.get('/', (c) => {
           stat,
           min_boost: parseInt(boost),
           max_cost: maxCost ? parseInt(maxCost) : null,
-          preferred_slots: slots || null,
+          preferred_slots: selectedSlots || null,
         }),
       })
 
       document.getElementById('goalStat').value = ''
       document.getElementById('goalBoost').value = ''
       document.getElementById('goalMaxCost').value = ''
-      document.getElementById('goalSlots').value = ''
+      document.querySelectorAll('#addGoalForm input[type="checkbox"]').forEach(cb => cb.checked = false)
       document.getElementById('addGoalForm').classList.add('hidden')
       
       loadGoals()
@@ -616,11 +641,16 @@ app.post('/api/scrape', async (c) => {
     }
 
     // Check for matches and send alerts (only available items)
-    const availableItems = items.filter(item => {
-      // Only alert on newly added items (not existing ones)
-      return true // We'll refine this logic later
+    // Only check items that were just added (scraped_at matches current scrape time)
+    const newItems = items.filter(item => {
+      const scrapedTime = new Date(item.scraped_at).getTime()
+      const currentTime = new Date(now).getTime()
+      // Consider "new" if scraped within last 5 minutes
+      return (currentTime - scrapedTime) < 5 * 60 * 1000
     })
-    await checkMatches(c.env, availableItems)
+    
+    console.log(`Checking ${newItems.length} new items out of ${items.length} total`)
+    await checkMatches(c.env, newItems)
 
     return c.json({ success: true, count: items.length, lastUpdated })
   } catch (error) {
