@@ -48,6 +48,37 @@ app.get('/', (c) => {
       </div>
     </div>
 
+    <!-- Goals Section (only visible when logged in) -->
+    <div id="goalsSection" class="hidden mb-6">
+      <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-2xl font-semibold mb-4">My Alert Goals</h2>
+        
+        <div class="mb-4">
+          <button id="addGoalBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+            + Add New Goal
+          </button>
+        </div>
+
+        <div id="addGoalForm" class="hidden mb-4 p-4 border rounded bg-gray-50">
+          <h3 class="font-semibold mb-3">Create Alert Goal</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input type="text" id="goalStat" placeholder="Stat (e.g., Strength)" class="border p-2 rounded">
+            <input type="number" id="goalBoost" placeholder="Min Boost (e.g., 5)" class="border p-2 rounded">
+            <input type="number" id="goalMaxCost" placeholder="Max Cost (optional)" class="border p-2 rounded">
+            <input type="text" id="goalSlots" placeholder="Preferred Slots (comma-separated, optional)" class="border p-2 rounded">
+          </div>
+          <div class="mt-3 flex gap-2">
+            <button id="saveGoalBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
+            <button id="cancelGoalBtn" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+          </div>
+        </div>
+
+        <div id="goalsList" class="space-y-2">
+          <p class="text-gray-500">No goals yet. Add one to get started!</p>
+        </div>
+      </div>
+    </div>
+
     <div class="bg-white p-4 rounded-lg shadow-md mb-6">
       <div class="flex justify-between items-center">
         <div>
@@ -101,11 +132,14 @@ app.get('/', (c) => {
       document.getElementById('loginBtn').classList.add('hidden')
       document.getElementById('userInfo').classList.remove('hidden')
       document.getElementById('username').textContent = currentUser.username
+      document.getElementById('goalsSection').classList.remove('hidden')
+      loadGoals()
     }
 
     function hideUserInfo() {
       document.getElementById('loginBtn').classList.remove('hidden')
       document.getElementById('userInfo').classList.add('hidden')
+      document.getElementById('goalsSection').classList.add('hidden')
     }
 
     document.getElementById('loginBtn').addEventListener('click', () => {
@@ -132,6 +166,78 @@ app.get('/', (c) => {
         localStorage.setItem('discord_user', JSON.stringify(currentUser))
         showUserInfo()
       }
+    })
+
+    // Goals management
+    async function loadGoals() {
+      if (!currentUser) return
+      
+      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      const data = await response.json()
+      
+      const goalsList = document.getElementById('goalsList')
+      if (data.goals.length === 0) {
+        goalsList.innerHTML = '<p class="text-gray-500">No goals yet. Add one to get started!</p>'
+        return
+      }
+
+      goalsList.innerHTML = data.goals.map(goal => \`
+        <div class="flex justify-between items-center p-3 border rounded hover:bg-gray-50">
+          <div>
+            <span class="font-semibold">\${goal.stat}</span> 
+            <span class="text-gray-600">+\${goal.min_boost} or higher</span>
+            \${goal.max_cost ? \`<span class="text-sm text-gray-500">• Max: \${goal.max_cost.toLocaleString()}</span>\` : ''}
+            \${goal.preferred_slots ? \`<span class="text-sm text-gray-500">• Slots: \${goal.preferred_slots}</span>\` : ''}
+          </div>
+          <button class="text-red-600 hover:text-red-800" onclick="deleteGoal(\${goal.id})">Delete</button>
+        </div>
+      \`).join('')
+    }
+
+    window.deleteGoal = async function(id) {
+      if (!confirm('Delete this goal?')) return
+      await fetch(API_BASE + '/api/goals/' + id, { method: 'DELETE' })
+      loadGoals()
+    }
+
+    document.getElementById('addGoalBtn').addEventListener('click', () => {
+      document.getElementById('addGoalForm').classList.remove('hidden')
+    })
+
+    document.getElementById('cancelGoalBtn').addEventListener('click', () => {
+      document.getElementById('addGoalForm').classList.add('hidden')
+    })
+
+    document.getElementById('saveGoalBtn').addEventListener('click', async () => {
+      const stat = document.getElementById('goalStat').value
+      const boost = document.getElementById('goalBoost').value
+      const maxCost = document.getElementById('goalMaxCost').value
+      const slots = document.getElementById('goalSlots').value
+
+      if (!stat || !boost) {
+        alert('Stat and Min Boost are required')
+        return
+      }
+
+      await fetch(API_BASE + '/api/goals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discord_id: currentUser.id,
+          stat,
+          min_boost: parseInt(boost),
+          max_cost: maxCost ? parseInt(maxCost) : null,
+          preferred_slots: slots || null,
+        }),
+      })
+
+      document.getElementById('goalStat').value = ''
+      document.getElementById('goalBoost').value = ''
+      document.getElementById('goalMaxCost').value = ''
+      document.getElementById('goalSlots').value = ''
+      document.getElementById('addGoalForm').classList.add('hidden')
+      
+      loadGoals()
     })
 
     async function loadItems() {
