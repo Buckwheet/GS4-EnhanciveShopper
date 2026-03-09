@@ -37,7 +37,15 @@ app.get('/', (c) => {
     </div>
 
     <div class="bg-white p-4 rounded-lg shadow-md mb-6">
-      <p class="text-gray-600">Total Items: <span id="totalItems" class="font-bold">0</span></p>
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="text-gray-600">Total Items in Database: <span id="dbTotal" class="font-bold">0</span></p>
+          <p class="text-gray-600">Filtered Results: <span id="totalItems" class="font-bold">0</span></p>
+        </div>
+        <div class="text-right">
+          <p class="text-gray-600 text-sm">Last Updated: <span id="lastUpdated" class="font-semibold">Loading...</span></p>
+        </div>
+      </div>
     </div>
 
     <div id="loading" class="text-center py-8">
@@ -72,6 +80,9 @@ app.get('/', (c) => {
         const response = await fetch(API_BASE + '/api/items')
         const data = await response.json()
         allItems = data.items || []
+        
+        document.getElementById('dbTotal').textContent = data.total || allItems.length
+        document.getElementById('lastUpdated').textContent = data.lastUpdated || 'Never'
         
         populateFilters()
         filterItems()
@@ -150,7 +161,7 @@ app.get('/', (c) => {
 
       document.getElementById('totalItems').textContent = filteredItems.length
 
-      filteredItems.slice(0, 100).forEach(item => {
+      filteredItems.slice(0, 500).forEach(item => {
         const tr = document.createElement('tr')
         tr.className = 'hover:bg-gray-50'
 
@@ -173,9 +184,9 @@ app.get('/', (c) => {
         tbody.appendChild(tr)
       })
 
-      if (filteredItems.length > 100) {
+      if (filteredItems.length > 500) {
         const tr = document.createElement('tr')
-        tr.innerHTML = \`<td colspan="6" class="px-4 py-3 text-center text-gray-500">Showing first 100 of \${filteredItems.length} items</td>\`
+        tr.innerHTML = \`<td colspan="6" class="px-4 py-3 text-center text-gray-500">Showing first 500 of \${filteredItems.length} items</td>\`
         tbody.appendChild(tr)
       }
     }
@@ -194,8 +205,15 @@ app.get('/', (c) => {
 app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }))
 
 app.get('/api/items', async (c) => {
-  const { results } = await c.env.DB.prepare('SELECT * FROM shop_items ORDER BY scraped_at DESC LIMIT 100').all()
-  return c.json({ items: results })
+  const { results } = await c.env.DB.prepare('SELECT * FROM shop_items ORDER BY scraped_at DESC').all()
+  const { results: metadata } = await c.env.DB.prepare('SELECT * FROM metadata').all()
+  const lastUpdated = metadata.find((m: any) => m.key === 'last_updated')?.value
+  
+  return c.json({ 
+    items: results,
+    total: results.length,
+    lastUpdated: lastUpdated || null
+  })
 })
 
 app.post('/api/scrape', async (c) => {
