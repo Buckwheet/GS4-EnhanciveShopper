@@ -556,14 +556,14 @@ app.get('/api/debug/alerts', async (c) => {
 
 app.post('/api/test-match', async (c) => {
   try {
-    const { results: items } = await c.env.DB.prepare('SELECT * FROM shop_items WHERE available = 1 LIMIT 100').all()
+    const { results: items } = await c.env.DB.prepare('SELECT * FROM shop_items WHERE available = 1').all()
     console.log(`Testing matcher with ${items.length} items`)
     
     await checkMatches(c.env, items)
     
-    const { results: alerts } = await c.env.DB.prepare('SELECT * FROM alerts ORDER BY sent_at DESC LIMIT 5').all()
+    const { results: alerts } = await c.env.DB.prepare('SELECT * FROM alerts ORDER BY sent_at DESC LIMIT 10').all()
     
-    return c.json({ success: true, itemsChecked: items.length, recentAlerts: alerts })
+    return c.json({ success: true, itemsChecked: items.length, totalAlerts: alerts.length, recentAlerts: alerts })
   } catch (error) {
     console.error('Test match error:', error)
     return c.json({ error: String(error) }, 500)
