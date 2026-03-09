@@ -483,9 +483,12 @@ app.post('/api/scrape', async (c) => {
     const lastUpdated = await getLastUpdated()
     const items = await scrapeEnhancives()
     
+    // Delete all existing items (fresh scrape each time)
+    await c.env.DB.prepare('DELETE FROM shop_items').run()
+    
     // Batch insert for better performance
     const stmt = c.env.DB.prepare(
-      `INSERT OR REPLACE INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at)
+      `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     
@@ -540,8 +543,11 @@ export default {
         console.log('Update detected, scraping...')
         const items = await scrapeEnhancives()
 
+        // Delete all existing items
+        await env.DB.prepare('DELETE FROM shop_items').run()
+
         const stmt = env.DB.prepare(
-          `INSERT OR REPLACE INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at)
+          `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         
