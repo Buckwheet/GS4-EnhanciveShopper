@@ -23,6 +23,9 @@ export async function sendDiscordDM(botToken: string, userId: string, message: s
       body: JSON.stringify({ content: message }),
     })
 
+    // Add delay to avoid rate limits (1 message per second)
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
     return messageResponse.ok
   } catch (error) {
     console.error('Discord DM error:', error)
