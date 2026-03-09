@@ -468,6 +468,7 @@ app.delete('/api/goals/:id', async (c) => {
 
 app.post('/api/scrape', async (c) => {
   try {
+    const lastUpdated = await getLastUpdated()
     const items = await scrapeEnhancives()
     
     // Batch insert for better performance
@@ -492,10 +493,17 @@ app.post('/api/scrape', async (c) => {
     
     await c.env.DB.batch(batch)
 
+    // Update metadata
+    if (lastUpdated) {
+      await c.env.DB.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)')
+        .bind('last_updated', lastUpdated)
+        .run()
+    }
+
     // Check for matches and send alerts
     await checkMatches(c.env, items)
 
-    return c.json({ success: true, count: items.length })
+    return c.json({ success: true, count: items.length, lastUpdated })
   } catch (error) {
     console.error('Scrape error:', error)
     return c.json({ error: String(error) }, 500)
