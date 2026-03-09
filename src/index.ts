@@ -14,14 +14,17 @@ app.get('/api/items', async (c) => {
 })
 
 app.post('/api/scrape', async (c) => {
-  const items = await scrapeEnhancives()
-  
-  for (const item of items) {
-    await c.env.DB.prepare(
+  try {
+    const items = await scrapeEnhancives()
+    
+    // Batch insert for better performance
+    const stmt = c.env.DB.prepare(
       `INSERT OR REPLACE INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
-      .bind(
+    
+    const batch = items.map(item => 
+      stmt.bind(
         item.id,
         item.name,
         item.town,
@@ -32,35 +35,42 @@ app.post('/api/scrape', async (c) => {
         JSON.stringify(item.enhancives),
         new Date().toISOString()
       )
-      .run()
-  }
+    )
+    
+    await c.env.DB.batch(batch)
 
-  return c.json({ success: true, count: items.length })
+    return c.json({ success: true, count: items.length })
+  } catch (error) {
+    console.error('Scrape error:', error)
+    return c.json({ error: String(error) }, 500)
+  }
 })
 
 export default {
   fetch: app.fetch,
   
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
-    const lastUpdated = await getLastUpdated()
-    if (!lastUpdated) return
+    try {
+      const lastUpdated = await getLastUpdated()
+      if (!lastUpdated) return
 
-    const { results } = await env.DB.prepare('SELECT value FROM metadata WHERE key = ?')
-      .bind('last_updated')
-      .all()
+      const { results } = await env.DB.prepare('SELECT value FROM metadata WHERE key = ?')
+        .bind('last_updated')
+        .all()
 
-    const stored = results[0]?.value as string | undefined
+      const stored = results[0]?.value as string | undefined
 
-    if (stored !== lastUpdated) {
-      console.log('Update detected, scraping...')
-      const items = await scrapeEnhancives()
+      if (stored !== lastUpdated) {
+        console.log('Update detected, scraping...')
+        const items = await scrapeEnhancives()
 
-      for (const item of items) {
-        await env.DB.prepare(
+        const stmt = env.DB.prepare(
           `INSERT OR REPLACE INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
-          .bind(
+        
+        const batch = items.map(item => 
+          stmt.bind(
             item.id,
             item.name,
             item.town,
@@ -71,14 +81,18 @@ export default {
             JSON.stringify(item.enhancives),
             new Date().toISOString()
           )
+        )
+        
+        await env.DB.batch(batch)
+
+        await env.DB.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)')
+          .bind('last_updated', lastUpdated)
           .run()
+
+        console.log(`Scraped ${items.length} items`)
       }
-
-      await env.DB.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)')
-        .bind('last_updated', lastUpdated)
-        .run()
-
-      console.log(`Scraped ${items.length} items`)
+    } catch (error) {
+      console.error('Scheduled scrape error:', error)
     }
   },
 }
