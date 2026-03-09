@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { scrapeEnhancives, getLastUpdated } from './scraper'
+import { checkMatches } from './matcher'
 import type { Env } from './types'
 
 const app = new Hono<{ Bindings: Env }>()
@@ -18,7 +19,18 @@ app.get('/', (c) => {
 </head>
 <body class="bg-gray-100">
   <div class="container mx-auto px-4 py-8">
-    <h1 class="text-4xl font-bold mb-8 text-gray-800">GS4 Enhancive Shopper</h1>
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-4xl font-bold text-gray-800">GS4 Enhancive Shopper</h1>
+      <div id="authSection">
+        <button id="loginBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold">
+          Login with Discord
+        </button>
+        <div id="userInfo" class="hidden">
+          <span class="text-gray-700">Welcome, <span id="username" class="font-bold"></span>!</span>
+          <button id="logoutBtn" class="ml-4 text-sm text-gray-600 hover:text-gray-800">Logout</button>
+        </div>
+      </div>
+    </div>
     
     <div class="bg-white p-6 rounded-lg shadow-md mb-6">
       <h2 class="text-2xl font-semibold mb-4">Search & Filter</h2>
@@ -74,6 +86,53 @@ app.get('/', (c) => {
     const API_BASE = window.location.origin
     let allItems = []
     let filteredItems = []
+    let currentUser = null
+
+    // Auth handling
+    function initAuth() {
+      const stored = localStorage.getItem('discord_user')
+      if (stored) {
+        currentUser = JSON.parse(stored)
+        showUserInfo()
+      }
+    }
+
+    function showUserInfo() {
+      document.getElementById('loginBtn').classList.add('hidden')
+      document.getElementById('userInfo').classList.remove('hidden')
+      document.getElementById('username').textContent = currentUser.username
+    }
+
+    function hideUserInfo() {
+      document.getElementById('loginBtn').classList.remove('hidden')
+      document.getElementById('userInfo').classList.add('hidden')
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', () => {
+      const width = 500
+      const height = 700
+      const left = (screen.width - width) / 2
+      const top = (screen.height - height) / 2
+      window.open(
+        API_BASE + '/api/auth/discord',
+        'Discord Login',
+        \`width=\${width},height=\${height},left=\${left},top=\${top}\`
+      )
+    })
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.removeItem('discord_user')
+      currentUser = null
+      hideUserInfo()
+    })
+
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'discord_auth') {
+        currentUser = event.data.user
+        localStorage.setItem('discord_user', JSON.stringify(currentUser))
+        showUserInfo()
+      }
+    })
 
     async function loadItems() {
       try {
@@ -196,6 +255,7 @@ app.get('/', (c) => {
     document.getElementById('filterWorn').addEventListener('change', filterItems)
     document.getElementById('filterStat').addEventListener('change', filterItems)
 
+    initAuth()
     loadItems()
   </script>
 </body>
@@ -203,6 +263,59 @@ app.get('/', (c) => {
 })
 
 app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }))
+
+app.get('/api/auth/discord', (c) => {
+  const clientId = c.env.DISCORD_CLIENT_ID
+  const redirectUri = c.env.DISCORD_REDIRECT_URI
+  const scope = 'identify'
+  const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}`
+  return c.redirect(authUrl)
+})
+
+app.get('/api/auth/discord/callback', async (c) => {
+  const code = c.req.query('code')
+  if (!code) return c.json({ error: 'No code provided' }, 400)
+
+  try {
+    const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: c.env.DISCORD_CLIENT_ID,
+        client_secret: c.env.DISCORD_CLIENT_SECRET,
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: c.env.DISCORD_REDIRECT_URI,
+      }),
+    })
+
+    const tokens = await tokenResponse.json()
+    if (!tokens.access_token) return c.json({ error: 'Failed to get access token' }, 400)
+
+    const userResponse = await fetch('https://discord.com/api/users/@me', {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    })
+
+    const discordUser = await userResponse.json()
+
+    await c.env.DB.prepare(
+      'INSERT INTO users (discord_id, discord_username, created_at) VALUES (?, ?, ?) ON CONFLICT(discord_id) DO UPDATE SET discord_username = ?, last_login = ?'
+    ).bind(discordUser.id, discordUser.username, new Date().toISOString(), discordUser.username, new Date().toISOString()).run()
+
+    return c.html(`
+      <html>
+        <body>
+          <script>
+            window.opener.postMessage({ type: 'discord_auth', user: ${JSON.stringify(discordUser)} }, '*')
+            window.close()
+          </script>
+        </body>
+      </html>
+    `)
+  } catch (error) {
+    return c.json({ error: 'Authentication failed' }, 500)
+  }
+})
 
 app.get('/api/items', async (c) => {
   const { results } = await c.env.DB.prepare('SELECT * FROM shop_items ORDER BY scraped_at DESC').all()
@@ -214,6 +327,37 @@ app.get('/api/items', async (c) => {
     total: results.length,
     lastUpdated: lastUpdated || null
   })
+})
+
+app.get('/api/goals', async (c) => {
+  const discordId = c.req.query('discord_id')
+  if (!discordId) return c.json({ error: 'discord_id required' }, 400)
+
+  const { results } = await c.env.DB.prepare('SELECT * FROM user_goals WHERE discord_id = ?')
+    .bind(discordId)
+    .all()
+
+  return c.json({ goals: results })
+})
+
+app.post('/api/goals', async (c) => {
+  const { discord_id, stat, min_boost, max_cost, preferred_slots } = await c.req.json()
+  
+  if (!discord_id || !stat || !min_boost) {
+    return c.json({ error: 'discord_id, stat, and min_boost required' }, 400)
+  }
+
+  const result = await c.env.DB.prepare(
+    'INSERT INTO user_goals (discord_id, stat, min_boost, max_cost, preferred_slots, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(discord_id, stat, min_boost, max_cost || null, preferred_slots || null, new Date().toISOString()).run()
+
+  return c.json({ success: true, id: result.meta.last_row_id })
+})
+
+app.delete('/api/goals/:id', async (c) => {
+  const id = c.req.param('id')
+  await c.env.DB.prepare('DELETE FROM user_goals WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
 })
 
 app.post('/api/scrape', async (c) => {
@@ -241,6 +385,9 @@ app.post('/api/scrape', async (c) => {
     )
     
     await c.env.DB.batch(batch)
+
+    // Check for matches and send alerts
+    await checkMatches(c.env, items)
 
     return c.json({ success: true, count: items.length })
   } catch (error) {
@@ -287,6 +434,9 @@ export default {
         )
         
         await env.DB.batch(batch)
+
+        // Check for matches and send alerts
+        await checkMatches(env, items)
 
         await env.DB.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)')
           .bind('last_updated', lastUpdated)

@@ -1,0 +1,51 @@
+import type { Env } from './types'
+import { sendDiscordDM, formatItemAlert } from './discord'
+
+export async function checkMatches(env: Env, newItems: any[]) {
+  const { results: goals } = await env.DB.prepare('SELECT * FROM user_goals').all()
+
+  for (const goal of goals) {
+    const matchingItems = newItems.filter(item => {
+      try {
+        const enhancives = JSON.parse(item.enhancives_json)
+        
+        // Check if any enhancive matches the stat and boost requirement
+        const hasMatch = enhancives.some((enh: any) => 
+          enh.ability === goal.stat && enh.boost >= goal.min_boost
+        )
+        
+        if (!hasMatch) return false
+
+        // Check cost constraint
+        if (goal.max_cost && item.cost > goal.max_cost) return false
+
+        // Check slot preference
+        if (goal.preferred_slots) {
+          const slots = goal.preferred_slots.split(',').map((s: string) => s.trim())
+          if (!slots.includes(item.worn)) return false
+        }
+
+        return true
+      } catch {
+        return false
+      }
+    })
+
+    // Send alerts for matches
+    for (const item of matchingItems) {
+      // Check if already alerted
+      const { results: existing } = await env.DB.prepare(
+        'SELECT id FROM alerts WHERE discord_id = ? AND item_id = ?'
+      ).bind(goal.discord_id, item.id).all()
+
+      if (existing.length === 0) {
+        const message = formatItemAlert(item)
+        const sent = await sendDiscordDM(env.DISCORD_BOT_TOKEN, goal.discord_id, message)
+
+        await env.DB.prepare(
+          'INSERT INTO alerts (discord_id, item_id, goal_id, sent_at, delivered) VALUES (?, ?, ?, ?, ?)'
+        ).bind(goal.discord_id, item.id, goal.id, new Date().toISOString(), sent ? 1 : 0).run()
+      }
+    }
+  }
+}

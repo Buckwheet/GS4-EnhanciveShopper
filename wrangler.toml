@@ -10,3 +10,10 @@ crons = ["0 * * * *"]
 binding = "DB"
 database_name = "enhancive-db"
 database_id = "7f60fe28-3ccd-4d23-9e70-6d6749c6c4ed"
+
+# Discord OAuth - Set these as secrets via: wrangler secret put DISCORD_CLIENT_SECRET
+# DISCORD_CLIENT_ID = "your_client_id"
+# DISCORD_CLIENT_SECRET = "secret"
+# DISCORD_BOT_TOKEN = "secret"
+# DISCORD_REDIRECT_URI = "https://gs4-enhancive-shopper.rpgfilms.workers.dev/api/auth/discord/callback"
+
