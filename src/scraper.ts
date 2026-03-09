@@ -51,10 +51,10 @@ export async function scrapeEnhancives(): Promise<EnhanciveItem[]> {
 
 export async function getLastUpdated(): Promise<string | null> {
   try {
-    const response = await fetch('https://shops.elanthia.online/')
-    const html = await response.text()
-    const match = html.match(/Last updated:\s*([^<]+)/)
-    return match ? match[1].trim() : null
+    // Get timestamp from first town's JSON
+    const response = await fetch(`${BASE_URL}icemule_trace.json`)
+    const data = await response.json()
+    return data.created_at || null
   } catch (error) {
     console.error('Failed to get last updated:', error)
     return null
