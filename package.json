@@ -1,24 +1,18 @@
 {
-  "name": "enhancive-alert",
+  "name": "gs4-enhancive-shopper",
   "version": "1.0.0",
-  "description": "A web application that monitors GemStone IV player shop listings and alerts users when items matching their enhancive build requirements become available.",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "lint": "echo 'Linting skipped'"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Buckwheet/GS4-EnhanciveShopper.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/Buckwheet/GS4-EnhanciveShopper/issues"
-  },
-  "homepage": "https://github.com/Buckwheet/GS4-EnhanciveShopper#readme",
   "dependencies": {
     "hono": "^4.12.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240208.0",
+    "typescript": "^5.3.3",
+    "wrangler": "^3.28.0"
   }
 }
