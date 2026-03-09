@@ -114,17 +114,28 @@ Create a web application that monitors GemStone IV player shop listings and aler
 - [ ] Monitoring/logging
 - [ ] Documentation
 
+## Tech Stack Decision ✅
+
+**Hosting**: Cloudflare (Free tier sufficient for 1500+ users)
+**Language**: TypeScript
+**Backend**: Hono
+**Frontend**: React + Vite (TBD: could use HTMX for simplicity)
+**Database**: D1 (SQLite)
+**Cron**: Cloudflare Cron Triggers
+**Auth**: TBD (Cloudflare Access or JWT)
+
 ## Open Questions
-1. What tech stack? (Python/Flask, Node/Express, Go, Rust?)
-2. Database? (PostgreSQL, SQLite, MongoDB?)
-3. Frontend framework? (React, Vue, Svelte, HTMX?)
-4. Notification method?
-5. Hosting platform?
-6. How to handle "replacement" logic complexity?
-7. Should we support importing from Nisugi's enhancive tracker?
+1. ~~What tech stack?~~ ✅ Decided: TypeScript + Hono + D1
+2. ~~Hosting platform?~~ ✅ Decided: Cloudflare
+3. Notification method? (Email, Discord, Telegram, SMS, in-app)
+4. Frontend: React or HTMX? (React = richer UX, HTMX = simpler)
+5. How to handle "replacement" logic complexity? (DEFERRED)
+6. Should we support importing from Nisugi's enhancive tracker? (Nice to have)
 
 ## Next Steps
-1. Decide on tech stack based on hosting cost analysis
-2. Set up basic project structure
-3. Build scraper with update detection
-4. Design database schema
+1. ✅ Decide on tech stack and hosting
+2. Initialize Cloudflare Workers project with Hono
+3. Set up D1 database schema
+4. Build scraper with smart update detection (only scrape when source changes)
+5. Create basic API endpoints
+6. Build simple frontend for user registration and goal setting

@@ -120,7 +120,7 @@
 
 ## Tech Stack Recommendation
 
-### Option A: Cloudflare (Cheapest)
+### Option A: Cloudflare (Cheapest) - RECOMMENDED
 - **Frontend**: Cloudflare Pages (free)
 - **Backend**: Cloudflare Workers (free tier)
 - **Database**: D1 SQLite (free tier)
@@ -133,9 +133,51 @@
 - **Cron**: Render Cron Jobs
 - **Framework**: Express/Flask + React/HTMX
 
-## Next Decision: Choose Tech Stack
-Based on hosting choice, we need to decide:
-1. Language: Node.js, Python, Go, Rust?
-2. Framework: Express, Flask, Hono, etc.?
-3. Frontend: React, HTMX, Vue, Svelte?
-4. Database: PostgreSQL or SQLite (D1)?
+## Cloudflare Free Tier Analysis for 1500 Daily Users
+
+### Workers Free Tier Limits:
+- **100,000 requests/day** across all Workers
+- **10ms CPU time per invocation**
+
+### D1 Free Tier Limits:
+- **5 million rows read/day**
+- **100,000 rows written/day**
+- **5 GB total storage**
+
+### Usage Estimation for 1500 Users/Day:
+
+**Scenario: Active users checking their alerts**
+- 1500 users × 5 page views/day = 7,500 requests/day
+- Hourly scraper: 24 requests/day
+- **Total: ~7,524 requests/day** ✅ Well under 100k limit
+
+**Database Operations:**
+- Scraping 5,699 enhancive items hourly: 24 × 5,699 = 136,776 rows written/day ❌ **EXCEEDS 100k limit**
+- User queries: ~10,000 rows read/day ✅ Well under 5M limit
+
+### Solution: Optimize Scraping Strategy
+Instead of writing all items every hour:
+1. **Check "Last updated" timestamp first** (1 request)
+2. **Only scrape if timestamp changed** (saves 95%+ of writes)
+3. **Use upsert logic** - only update changed items
+4. **Estimated writes with optimization**: ~5,000-10,000/day ✅ Under limit
+
+### Verdict: Cloudflare Free Tier is SUFFICIENT
+With smart scraping (only when source updates), 1500 daily users will stay well within free tier limits.
+
+## Tech Stack Decision: Cloudflare
+
+**Selected Stack:**
+- **Language**: TypeScript
+- **Backend**: Hono (lightweight, fast)
+- **Frontend**: React + Vite (or HTMX for simplicity)
+- **Database**: D1 (SQLite)
+- **Cron**: Cloudflare Cron Triggers
+- **Auth**: Cloudflare Access or simple JWT
+
+**Why this stack:**
+- $0/month for 1500+ users
+- TypeScript for type safety
+- Hono is extremely fast and lightweight
+- D1 is perfect for relational data (users, items, alerts)
+- Built-in cron support
