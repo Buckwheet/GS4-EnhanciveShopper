@@ -10,8 +10,9 @@ export async function checkMatches(env: Env, newItems: any[]) {
         const enhancives = JSON.parse(item.enhancives_json)
         
         // Check if any enhancive matches the stat and boost requirement
+        // Use case-insensitive partial matching (e.g., "strength" matches "Strength Base")
         const hasMatch = enhancives.some((enh: any) => 
-          enh.ability === goal.stat && enh.boost >= goal.min_boost
+          enh.ability.toLowerCase().includes(goal.stat.toLowerCase()) && enh.boost >= goal.min_boost
         )
         
         if (!hasMatch) return false
