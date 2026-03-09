@@ -1,8 +1,11 @@
 import { Hono } from 'hono'
+import { cors } from 'hono/cors'
 import { scrapeEnhancives, getLastUpdated } from './scraper'
 import type { Env } from './types'
 
 const app = new Hono<{ Bindings: Env }>()
+
+app.use('/*', cors())
 
 app.get('/', (c) => c.json({ message: 'GS4 Enhancive Shopper API' }))
 
