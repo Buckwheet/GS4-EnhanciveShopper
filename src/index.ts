@@ -525,6 +525,35 @@ app.post('/api/test-dm', async (c) => {
   }
 })
 
+app.get('/api/debug/alerts', async (c) => {
+  const discordId = c.req.query('discord_id')
+  if (!discordId) return c.json({ error: 'discord_id required' }, 400)
+
+  const { results: goals } = await c.env.DB.prepare('SELECT * FROM user_goals WHERE discord_id = ?').bind(discordId).all()
+  const { results: alerts } = await c.env.DB.prepare('SELECT * FROM alerts WHERE discord_id = ? ORDER BY sent_at DESC LIMIT 10').bind(discordId).all()
+  
+  // Find matching items
+  const { results: allItems } = await c.env.DB.prepare('SELECT * FROM shop_items WHERE available = 1').all()
+  
+  const matches = []
+  if (goals.length > 0) {
+    const goal = goals[0]
+    for (const item of allItems.slice(0, 100)) {
+      try {
+        const enhancives = JSON.parse(item.enhancives_json)
+        const hasMatch = enhancives.some((enh: any) => 
+          enh.ability.toLowerCase().includes(goal.stat.toLowerCase()) && enh.boost >= goal.min_boost
+        )
+        if (hasMatch) {
+          matches.push({ id: item.id, name: item.name, enhancives })
+        }
+      } catch {}
+    }
+  }
+
+  return c.json({ goals, alerts, matchingItems: matches.slice(0, 5) })
+})
+
 app.post('/api/scrape', async (c) => {
   try {
     const lastUpdated = await getLastUpdated()
