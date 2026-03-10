@@ -290,6 +290,7 @@ app.get('/', (c) => {
     let filteredItems = []
     let currentUser = null
     let currentGoalSet = 'Default'
+    let allKnownSets = new Set(['Default'])
 
     // Auth handling
     function initAuth() {
@@ -347,10 +348,12 @@ app.get('/', (c) => {
       const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
       const data = await response.json()
       
-      // Populate goal set selector
-      const sets = [...new Set(data.goals.map(g => g.goal_set_name || 'Default'))]
+      // Populate goal set selector - include all known sets even if they have no goals
+      const setsFromGoals = [...new Set(data.goals.map(g => g.goal_set_name || 'Default'))]
+      setsFromGoals.forEach(s => allKnownSets.add(s))
+      
       const setSelector = document.getElementById('goalSetSelector')
-      setSelector.innerHTML = sets.map(s => \`<option value="\${s}" \${s === currentGoalSet ? 'selected' : ''}>\${s}</option>\`).join('')
+      setSelector.innerHTML = [...allKnownSets].map(s => \`<option value="\${s}" \${s === currentGoalSet ? 'selected' : ''}>\${s}</option>\`).join('')
       
       // Filter goals by current set
       const currentSetGoals = data.goals.filter(g => (g.goal_set_name || 'Default') === currentGoalSet)
@@ -397,6 +400,7 @@ app.get('/', (c) => {
       }
       
       currentGoalSet = setName
+      allKnownSets.add(setName)
       
       // Update dropdown immediately
       const setSelector = document.getElementById('goalSetSelector')
@@ -436,7 +440,8 @@ app.get('/', (c) => {
         await fetch(API_BASE + '/api/inventory/' + item.id, { method: 'DELETE' })
       }
       
-      // Remove from dropdown
+      // Remove from dropdown and known sets
+      allKnownSets.delete(currentGoalSet)
       const setSelector = document.getElementById('goalSetSelector')
       const optionToRemove = Array.from(setSelector.options).find(opt => opt.value === currentGoalSet)
       if (optionToRemove) optionToRemove.remove()
