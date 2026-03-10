@@ -829,14 +829,6 @@ app.post('/api/scrape', async (c) => {
     }
 
     // Check for matches and send alerts (only new items)
-    // Only check items that were just added (scraped_at matches current scrape time)
-    const newItems = items.filter(item => {
-      const scrapedTime = new Date(item.scraped_at).getTime()
-      const currentTime = new Date(now).getTime()
-      // Consider "new" if scraped within last 5 minutes
-      return (currentTime - scrapedTime) < 5 * 60 * 1000
-    })
-    
     console.log(`Checking ${newItems.length} new items for alerts`)
     await checkMatches(c.env, newItems)
 
