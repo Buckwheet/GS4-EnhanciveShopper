@@ -1079,7 +1079,7 @@ app.get('/api/goals', async (c) => {
 app.post('/api/goals', async (c) => {
   const { discord_id, stat, min_boost, max_cost, preferred_slots, goal_set_name, account_type, base_stats, skill_ranks } = await c.req.json()
   
-  if (!discord_id || !stat || !min_boost) {
+  if (!discord_id || !stat || min_boost === undefined || min_boost === null) {
     return c.json({ error: 'discord_id, stat, and min_boost required' }, 400)
   }
 
