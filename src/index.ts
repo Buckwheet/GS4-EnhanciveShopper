@@ -59,6 +59,7 @@ app.get('/', (c) => {
               <option value="Default">Default</option>
             </select>
             <button id="newSetBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm">+ New Set</button>
+            <button id="deleteSetBtn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">Delete Set</button>
           </div>
         </div>
         
@@ -257,6 +258,35 @@ app.get('/', (c) => {
         // Clear goals list for new empty set
         document.getElementById('goalsList').innerHTML = '<p class="text-gray-500">No goals in this set. Add one to get started!</p>'
       }
+    })
+
+    document.getElementById('deleteSetBtn').addEventListener('click', async () => {
+      if (currentGoalSet === 'Default') {
+        alert('Cannot delete the Default set')
+        return
+      }
+      
+      const confirmed = confirm(`Delete "${currentGoalSet}" and all its goals? This cannot be undone.`)
+      if (!confirmed) return
+      
+      // Delete all goals in this set
+      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      const data = await response.json()
+      const goalsToDelete = data.goals.filter(g => (g.goal_set_name || 'Default') === currentGoalSet)
+      
+      for (const goal of goalsToDelete) {
+        await fetch(API_BASE + '/api/goals/' + goal.id, { method: 'DELETE' })
+      }
+      
+      // Remove from dropdown
+      const setSelector = document.getElementById('goalSetSelector')
+      const optionToRemove = Array.from(setSelector.options).find(opt => opt.value === currentGoalSet)
+      if (optionToRemove) optionToRemove.remove()
+      
+      // Switch to Default
+      currentGoalSet = 'Default'
+      setSelector.value = 'Default'
+      loadGoals()
     })
 
     window.deleteGoal = async function(id) {
