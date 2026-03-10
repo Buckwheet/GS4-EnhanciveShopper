@@ -366,15 +366,17 @@ app.get('/', (c) => {
     async function loadGoals() {
       if (!currentUser) return
       
-      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
-      const data = await response.json()
-      
-      // Populate goal set selector - include all known sets even if they have no goals
-      const setsFromGoals = [...new Set(data.goals.map(g => g.goal_set_name || 'Default'))]
-      setsFromGoals.forEach(s => allKnownSets.add(s))
+      // Get all set names first
+      const setsResponse = await fetch(API_BASE + '/api/goal-sets?discord_id=' + currentUser.id)
+      const setsData = await setsResponse.json()
+      allKnownSets = new Set(setsData.sets || ['Default'])
       
       const setSelector = document.getElementById('goalSetSelector')
       setSelector.innerHTML = [...allKnownSets].map(s => \`<option value="\${s}" \${s === currentGoalSet ? 'selected' : ''}>\${s}</option>\`).join('')
+      
+      // Load goals for current set
+      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      const data = await response.json()
       
       // Filter goals by current set
       const currentSetGoals = data.goals.filter(g => (g.goal_set_name || 'Default') === currentGoalSet)
@@ -1029,6 +1031,20 @@ app.get('/api/items', async (c) => {
     total: results.length,
     lastUpdated: lastUpdated || null
   })
+})
+
+app.get('/api/goal-sets', async (c) => {
+  const discordId = c.req.query('discord_id')
+  if (!discordId) return c.json({ error: 'discord_id required' }, 400)
+
+  const goalsQuery = await c.env.DB.prepare('SELECT DISTINCT goal_set_name FROM user_goals WHERE discord_id = ?').bind(discordId).all()
+  const invQuery = await c.env.DB.prepare('SELECT DISTINCT goal_set_name FROM user_inventory WHERE discord_id = ?').bind(discordId).all()
+  
+  const sets = new Set()
+  goalsQuery.results.forEach(r => sets.add(r.goal_set_name || 'Default'))
+  invQuery.results.forEach(r => sets.add(r.goal_set_name || 'Default'))
+  
+  return c.json({ sets: [...sets] })
 })
 
 app.get('/api/goals', async (c) => {
