@@ -48,11 +48,13 @@ app.get('/', (c) => {
           <option value="">All Stats</option>
         </select>
       </div>
-      <div class="flex items-center">
+      <div class="flex items-center justify-between">
         <label class="flex items-center cursor-pointer">
           <input type="checkbox" id="filterByGoals" class="mr-2">
           <span class="text-sm text-gray-700">Filter search automatically based on my goals</span>
         </label>
+        <span id="goalFilterStatus" class="text-sm text-gray-500 hidden"></span>
+      </div>
       </div>
     </div>
 
@@ -1028,6 +1030,15 @@ app.get('/', (c) => {
       tbody.innerHTML = ''
 
       document.getElementById('totalItems').textContent = filteredItems.length
+      
+      // Update goal filter status
+      const statusEl = document.getElementById('goalFilterStatus')
+      if (filterByGoalsEnabled && userGoals.length > 0) {
+        statusEl.textContent = 'Filtering by ' + userGoals.length + ' goal' + (userGoals.length > 1 ? 's' : '')
+        statusEl.classList.remove('hidden')
+      } else {
+        statusEl.classList.add('hidden')
+      }
 
       filteredItems.slice(0, 500).forEach(item => {
         const tr = document.createElement('tr')
