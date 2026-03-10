@@ -419,6 +419,31 @@ app.get('/', (c) => {
       hideUserInfo()
     })
 
+    document.getElementById('settingsBtn').addEventListener('click', async () => {
+      const response = await fetch(API_BASE + '/api/user/settings?discord_id=' + currentUser.id)
+      const data = await response.json()
+      document.getElementById('enableDiscordNotifications').checked = data.notifications_enabled
+      document.getElementById('settingsModal').classList.remove('hidden')
+    })
+
+    document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+      document.getElementById('settingsModal').classList.add('hidden')
+    })
+
+    document.getElementById('saveSettingsBtn').addEventListener('click', async () => {
+      const enabled = document.getElementById('enableDiscordNotifications').checked
+      await fetch(API_BASE + '/api/user/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discord_id: currentUser.id,
+          notifications_enabled: enabled
+        })
+      })
+      document.getElementById('settingsModal').classList.add('hidden')
+      alert('Settings saved!')
+    })
+
     window.addEventListener('message', (event) => {
       if (event.data.type === 'discord_auth') {
         currentUser = event.data.user
