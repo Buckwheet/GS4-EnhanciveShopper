@@ -2,6 +2,8 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { scrapeEnhancives, getLastUpdated } from './scraper'
 import { checkMatches } from './matcher'
+import { STAT_CAP, SKILL_CAP } from './constants'
+import { ranksToBonus } from './parser'
 import type { Env } from './types'
 
 const app = new Hono<{ Bindings: Env }>()
@@ -52,66 +54,118 @@ app.get('/', (c) => {
     <div id="goalsSection" class="hidden mb-6">
       <div class="bg-white p-6 rounded-lg shadow-md">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-2xl font-semibold">My Characters</h2>
-          <button id="myMatchesBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-            My Matches
-          </button>
+          <h2 class="text-2xl font-semibold">My Alert Goals</h2>
+          <div class="flex gap-2">
+            <button id="manageCharBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm">
+              Manage Character
+            </button>
+            <button id="manageInvBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm">
+              Manage Inventory
+            </button>
+            <button id="myMatchesBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+              My Matches
+            </button>
+          </div>
         </div>
         
         <div class="flex gap-2 items-center mb-4">
-          <label class="text-sm text-gray-600">Character:</label>
-          <select id="characterSelector" class="border p-2 rounded flex-1">
-            <option value="">No characters yet</option>
-          </select>
-          <button id="newCharBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm">+ New</button>
-          <button id="deleteCharBtn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm" disabled>Delete</button>
+            <label class="text-sm text-gray-600">Active Set:</label>
+            <select id="goalSetSelector" class="border p-2 rounded">
+              <option value="">No sets yet</option>
+            </select>
+            <button id="newSetBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm">+ New Set</button>
+            <button id="deleteSetBtn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">Delete Set</button>
+          </div>
         </div>
         
-        <div id="noCharWarning" class="mb-4 p-3 bg-red-50 border border-red-200 rounded hidden">
-          <p class="text-red-700 text-sm font-semibold">⚠ Create a character first</p>
+        <div id="noSetWarning" class="mb-4 p-3 bg-red-50 border border-red-200 rounded">
+          <p class="text-red-700 text-sm font-semibold">⚠ Create an enhancive set first to manage character data and inventory</p>
         </div>
         
-        <div id="characterDetails" class="hidden space-y-4">
-          <div class="border-t pt-4 flex gap-2 items-center">
-            <span class="font-semibold">Account:</span>
-            <span id="accountTypeBadge" class="px-2 py-1 bg-gray-100 rounded text-sm"></span>
-            <button id="editStatsBtn" class="ml-auto bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded text-sm">Edit Stats/Skills</button>
+        <div class="mb-4">
+          <button id="addGoalBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" disabled>
+            + Add Goal to Current Set
+          </button>
+        </div>
+
+        <div id="addGoalForm" class="hidden mb-4 p-4 border rounded bg-gray-50">
+          <h3 class="font-semibold mb-3">Create Alert Goal</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <input type="text" id="goalStat" placeholder="Stat (e.g., Strength)" class="border p-2 rounded">
+            <input type="number" id="goalBoost" placeholder="Min Boost (e.g., 5)" class="border p-2 rounded">
+            <input type="number" id="goalMaxCost" placeholder="Max Cost (optional)" class="border p-2 rounded col-span-2">
           </div>
-          
-          <div class="border-t pt-4">
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="font-semibold">Equipment</h3>
-              <div class="flex gap-2">
-                <select id="equipSetSelector" class="border p-2 rounded text-sm"><option value="Default">Default</option></select>
-                <button id="newEquipSetBtn" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-sm">+ Set</button>
-                <button id="manageEquipBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded text-sm">Manage</button>
-              </div>
+          <div class="mb-3">
+            <label class="font-semibold mb-2 block">Preferred Slots (optional):</label>
+            <div class="grid grid-cols-3 md:grid-cols-5 gap-2">
+              <label class="flex items-center"><input type="checkbox" value="ankle" class="mr-1"> ankle</label>
+              <label class="flex items-center"><input type="checkbox" value="arms" class="mr-1"> arms</label>
+              <label class="flex items-center"><input type="checkbox" value="belt" class="mr-1"> belt</label>
+              <label class="flex items-center"><input type="checkbox" value="chest" class="mr-1"> chest</label>
+              <label class="flex items-center"><input type="checkbox" value="cloak" class="mr-1"> cloak</label>
+              <label class="flex items-center"><input type="checkbox" value="ear" class="mr-1"> ear</label>
+              <label class="flex items-center"><input type="checkbox" value="ears" class="mr-1"> ears</label>
+              <label class="flex items-center"><input type="checkbox" value="feet" class="mr-1"> feet</label>
+              <label class="flex items-center"><input type="checkbox" value="finger" class="mr-1"> finger</label>
+              <label class="flex items-center"><input type="checkbox" value="front" class="mr-1"> front</label>
+              <label class="flex items-center"><input type="checkbox" value="hands" class="mr-1"> hands</label>
+              <label class="flex items-center"><input type="checkbox" value="head" class="mr-1"> head</label>
+              <label class="flex items-center"><input type="checkbox" value="legs" class="mr-1"> legs</label>
+              <label class="flex items-center"><input type="checkbox" value="neck" class="mr-1"> neck</label>
+              <label class="flex items-center"><input type="checkbox" value="pants" class="mr-1"> pants</label>
+              <label class="flex items-center"><input type="checkbox" value="pin" class="mr-1"> pin</label>
+              <label class="flex items-center"><input type="checkbox" value="shoulders" class="mr-1"> shoulders</label>
+              <label class="flex items-center"><input type="checkbox" value="socks" class="mr-1"> socks</label>
+              <label class="flex items-center"><input type="checkbox" value="wrist" class="mr-1"> wrist</label>
             </div>
           </div>
-          
-          <div class="border-t pt-4">
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="font-semibold">Alert Goals</h3>
-              <button id="addGoalBtn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm">+ Add</button>
-            </div>
-            <div id="goalsList" class="space-y-2"><p class="text-gray-500 text-sm">No goals yet</p></div>
+          <div class="flex gap-2">
+            <button id="saveGoalBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
+            <button id="cancelGoalBtn" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+          </div>
+        </div>
+
+        <div id="goalsList" class="space-y-2">
+          <p class="text-gray-500">No goals yet. Add one to get started!</p>
+        </div>
+      </div>
+      
+      <!-- Summary Section -->
+      <div id="summarySection" class="hidden bg-white p-6 rounded-lg shadow-md mb-6">
+        <h2 class="text-2xl font-semibold mb-4">Enhancive Summary</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700 mb-3">Stats</h3>
+            <div id="statsSummary" class="space-y-2 text-sm"></div>
+          </div>
+          <div>
+            <h3 class="text-lg font-semibold text-gray-700 mb-3">Skills</h3>
+            <div id="skillsSummary" class="space-y-2 text-sm"></div>
           </div>
         </div>
       </div>
       
-      <!-- Create Character Modal -->
-      <div id="createCharModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <!-- Create Set Modal -->
+      <div id="createSetModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 max-w-md w-full">
-          <h2 class="text-2xl font-semibold mb-4">Create Character</h2>
-          <input type="text" id="newCharName" placeholder="Character Name" class="border p-2 rounded w-full mb-3">
-          <select id="newCharAccountType" class="border p-2 rounded w-full mb-4">
-            <option value="F2P">F2P / Standard</option>
-            <option value="Premium">Premium</option>
-            <option value="Platinum">Platinum</option>
-          </select>
-          <div class="flex gap-2">
-            <button id="createCharConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1">Create</button>
-            <button id="createCharCancel" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
+          <h2 class="text-2xl font-semibold mb-4">Create New Goal Set</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Set Name</label>
+              <input type="text" id="newSetName" placeholder="e.g., Cleric - Hunting" class="border p-2 rounded w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Account Type</label>
+              <select id="newSetAccountType" class="border p-2 rounded w-full">
+                <option value="F2P">F2P / Standard</option>
+                <option value="Premium">Premium</option>
+                <option value="Platinum">Platinum</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <button id="createSetConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1">Create</button>
+              <button id="createSetCancel" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
+            </div>
           </div>
         </div>
       </div>
@@ -250,67 +304,14 @@ app.get('/', (c) => {
       </table>
     </div>
   </div>
-  
-  <!-- Edit Stats/Skills Modal -->
-  <div id="editStatsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-      <h2 class="text-2xl font-semibold mb-4">Edit Stats/Skills</h2>
-      <textarea id="statsInput" rows="10" class="border p-2 rounded w-full mb-2 font-mono text-sm" placeholder="Paste >stats output"></textarea>
-      <button id="parseStatsBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-2">Parse Stats</button>
-      <div id="parsedStatsResult" class="mb-4 text-sm"></div>
-      <textarea id="skillsInput" rows="10" class="border p-2 rounded w-full mb-2 font-mono text-sm" placeholder="Paste >skill base output"></textarea>
-      <button id="parseSkillsBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-2">Parse Skills</button>
-      <div id="parsedSkillsResult" class="mb-4 text-sm"></div>
-      <div class="flex gap-2">
-        <button id="saveStatsBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex-1">Save</button>
-        <button id="closeStatsBtn" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Manage Equipment Modal -->
-  <div id="manageEquipModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
-      <h2 class="text-2xl font-semibold mb-4">Manage Equipment</h2>
-      <button id="addEquipItemBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mb-4">+ Add Item</button>
-      <div id="addEquipForm" class="hidden mb-4 p-4 border rounded">
-        <textarea id="equipItemText" rows="15" class="border p-2 rounded w-full mb-2 font-mono text-sm" placeholder="Paste item description"></textarea>
-        <button id="parseEquipBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-2">Parse</button>
-        <div id="equipParseResult" class="mb-2 text-sm"></div>
-        <input type="text" id="equipItemName" placeholder="Item Name" class="border p-2 rounded w-full mb-2">
-        <div id="equipSlotRadios" class="hidden mb-2 grid grid-cols-4 gap-2 text-sm"></div>
-        <button id="saveEquipBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Save Item</button>
-      </div>
-      <div id="equipmentList" class="space-y-2"></div>
-      <button id="closeEquipBtn" class="mt-4 bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Close</button>
-    </div>
-  </div>
-  
-  <!-- Add Goal Modal -->
-  <div id="addGoalModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 max-w-md w-full">
-      <h2 class="text-2xl font-semibold mb-4">Add Alert Goal</h2>
-      <input type="text" id="goalStat" placeholder="Stat (e.g., Strength)" class="border p-2 rounded w-full mb-2">
-      <input type="number" id="goalMinBoost" placeholder="Min Boost" class="border p-2 rounded w-full mb-2">
-      <input type="number" id="goalMaxCost" placeholder="Max Cost (optional)" class="border p-2 rounded w-full mb-4">
-      <div class="flex gap-2">
-        <button id="saveGoalBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex-1">Save</button>
-        <button id="closeGoalBtn" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
-      </div>
-    </div>
-  </div>
 
   <script>
     const API_BASE = window.location.origin
     let allItems = []
     let filteredItems = []
     let currentUser = null
-    let currentCharacter = null
-    let currentEquipSet = 'Default'
-    let parsedStatsData = null
-    let parsedSkillsData = null
-    let parsedItemData = null
-    let allCharacters = []
+    let currentGoalSet = 'Default'
+    let allKnownSets = new Set(['Default'])
 
     // Auth handling
     function initAuth() {
@@ -326,7 +327,25 @@ app.get('/', (c) => {
       document.getElementById('userInfo').classList.remove('hidden')
       document.getElementById('username').textContent = currentUser.username
       document.getElementById('goalsSection').classList.remove('hidden')
-      loadCharacters()
+      updateSetButtons()
+      loadGoals()
+      loadSummary()
+    }
+
+    function updateSetButtons() {
+      const hasSet = allKnownSets.size > 0 && currentGoalSet && currentGoalSet !== ''
+      
+      document.getElementById('manageCharBtn').disabled = !hasSet
+      document.getElementById('manageInvBtn').disabled = !hasSet
+      document.getElementById('addGoalBtn').disabled = !hasSet
+      document.getElementById('deleteSetBtn').disabled = !hasSet
+      
+      const warning = document.getElementById('noSetWarning')
+      if (hasSet) {
+        warning.classList.add('hidden')
+      } else {
+        warning.classList.remove('hidden')
+      }
     }
 
     function hideUserInfo() {
@@ -361,306 +380,580 @@ app.get('/', (c) => {
       }
     })
 
-    async function loadCharacters() {
-      const response = await fetch(API_BASE + '/api/characters?discord_id=' + currentUser.id)
-      const data = await response.json()
-      allCharacters = data.characters
+    // Goals management
+    async function loadGoals() {
+      if (!currentUser) return
       
-      const selector = document.getElementById('characterSelector')
-      if (allCharacters.length === 0) {
-        selector.innerHTML = '<option value="">No characters yet</option>'
-        document.getElementById('noCharWarning').classList.remove('hidden')
-        document.getElementById('characterDetails').classList.add('hidden')
-        document.getElementById('deleteCharBtn').disabled = true
-        return
+      // Get all set names first
+      const setsResponse = await fetch(API_BASE + '/api/goal-sets?discord_id=' + currentUser.id)
+      const setsData = await setsResponse.json()
+      allKnownSets = new Set(setsData.sets || ['Default'])
+      
+      // If current set doesn't exist, reset to Default
+      if (!allKnownSets.has(currentGoalSet)) {
+        currentGoalSet = 'Default'
       }
       
-      selector.innerHTML = allCharacters.map(c => 
-        \`<option value="\${c.id}">\${c.character_name} (\${c.account_type})</option>\`
-      ).join('')
+      const setSelector = document.getElementById('goalSetSelector')
+      setSelector.innerHTML = [...allKnownSets].map(s => \`<option value="\${s}" \${s === currentGoalSet ? 'selected' : ''}>\${s}</option>\`).join('')
       
-      document.getElementById('noCharWarning').classList.add('hidden')
-      document.getElementById('deleteCharBtn').disabled = false
-      currentCharacter = allCharacters[0]
-      selector.value = currentCharacter.id
-      loadCharacterDetails()
-    }
-
-    async function loadCharacterDetails() {
-      if (!currentCharacter) return
-      document.getElementById('characterDetails').classList.remove('hidden')
-      document.getElementById('accountTypeBadge').textContent = currentCharacter.account_type
-      await loadGoals()
-    }
-
-    async function loadGoals() {
-      if (!currentCharacter) return
-      const response = await fetch(API_BASE + '/api/alert-goals?character_id=' + currentCharacter.id)
+      // Load goals for current set
+      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
       const data = await response.json()
+      
+      // Filter goals by current set
+      const currentSetGoals = data.goals.filter(g => (g.goal_set_name || 'Default') === currentGoalSet)
       
       const goalsList = document.getElementById('goalsList')
-      if (data.goals.length === 0) {
-        goalsList.innerHTML = '<p class="text-gray-500 text-sm">No goals yet</p>'
+      if (currentSetGoals.length === 0) {
+        goalsList.innerHTML = '<p class="text-gray-500">No goals in this set. Add one to get started!</p>'
         return
       }
-      
-      goalsList.innerHTML = data.goals.map(goal => \`
-        <div class="flex justify-between items-center p-2 border rounded text-sm">
-          <div><span class="font-semibold">\${goal.stat}</span> +\${goal.min_boost}\${goal.max_cost ? \` • Max: \${goal.max_cost.toLocaleString()}\` : ''}</div>
-          <button onclick="deleteGoal(\${goal.id})" class="text-red-600 hover:text-red-800 text-xs">Delete</button>
+
+      goalsList.innerHTML = currentSetGoals.map(goal => \`
+        <div class="flex justify-between items-center p-3 border rounded hover:bg-gray-50">
+          <div>
+            <span class="font-semibold">\${goal.stat}</span> 
+            <span class="text-gray-600">+\${goal.min_boost} or higher</span>
+            \${goal.max_cost ? \`<span class="text-sm text-gray-500">• Max: \${goal.max_cost.toLocaleString()}</span>\` : ''}
+            \${goal.preferred_slots ? \`<span class="text-sm text-gray-500">• Slots: \${goal.preferred_slots}</span>\` : ''}
+          </div>
+          <button class="text-red-600 hover:text-red-800" onclick="deleteGoal(\${goal.id})">Delete</button>
         </div>
       \`).join('')
     }
 
-    window.deleteGoal = async function(id) {
-      if (!confirm('Delete this goal?')) return
-      await fetch(API_BASE + '/api/alert-goals/' + id, { method: 'DELETE' })
+    document.getElementById('goalSetSelector').addEventListener('change', (e) => {
+      currentGoalSet = e.target.value
       loadGoals()
-    }
+      loadSummary()
+    })
 
-    async function loadEquipment() {
-      if (!currentCharacter) return
-      const response = await fetch(API_BASE + '/api/equipment?character_id=' + currentCharacter.id + '&set_name=' + currentEquipSet)
-      const data = await response.json()
+    document.getElementById('newSetBtn').addEventListener('click', () => {
+      document.getElementById('createSetModal').classList.remove('hidden')
+    })
+
+    document.getElementById('createSetCancel').addEventListener('click', () => {
+      document.getElementById('createSetModal').classList.add('hidden')
+    })
+
+    document.getElementById('createSetConfirm').addEventListener('click', async () => {
+      const setName = document.getElementById('newSetName').value.trim()
+      const accountType = document.getElementById('newSetAccountType').value
       
-      const list = document.getElementById('equipmentList')
-      if (data.items.length === 0) {
-        list.innerHTML = '<p class="text-gray-500 text-sm">No items yet</p>'
+      if (!setName) {
+        alert('Please enter a set name')
         return
       }
       
-      list.innerHTML = data.items.map(item => {
-        const enhs = JSON.parse(item.enhancives_json)
-        return \`
-          <div class="p-2 border rounded text-sm">
-            <div class="flex justify-between">
-              <div><strong>\${item.item_name}</strong> (\${item.slot})</div>
-              <button onclick="deleteEquipItem(\${item.id})" class="text-red-600 hover:text-red-800 text-xs">Delete</button>
-            </div>
-            <div class="text-xs text-gray-600">\${enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')}</div>
-          </div>
-        \`
-      }).join('')
-    }
-
-    window.deleteEquipItem = async function(id) {
-      if (!confirm('Delete this item?')) return
-      await fetch(API_BASE + '/api/equipment/' + id, { method: 'DELETE' })
-      loadEquipment()
-    }
+      if (!currentUser) {
+        alert('Not logged in')
+        return
       }
-    })
-
-    // Character Management Handlers
-    document.getElementById('characterSelector').addEventListener('change', (e) => {
-      const id = parseInt(e.target.value)
-      currentCharacter = allCharacters.find(c => c.id === id)
-      loadCharacterDetails()
-    })
-
-    document.getElementById('newCharBtn').addEventListener('click', () => {
-      document.getElementById('createCharModal').classList.remove('hidden')
-    })
-
-    document.getElementById('createCharConfirm').addEventListener('click', async () => {
-      const name = document.getElementById('newCharName').value.trim()
-      const accountType = document.getElementById('newCharAccountType').value
-      if (!name) return alert('Enter a name')
       
-      await fetch(API_BASE + '/api/characters', {
+      // Create placeholder goal to persist the set in database
+      const response = await fetch(API_BASE + '/api/goals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ discord_id: currentUser.id, character_name: name, account_type: accountType })
+        body: JSON.stringify({
+          discord_id: currentUser.id,
+          stat: '_placeholder',
+          min_boost: 0,
+          goal_set_name: setName,
+          account_type: accountType
+        })
       })
       
-      document.getElementById('createCharModal').classList.add('hidden')
-      document.getElementById('newCharName').value = ''
-      loadCharacters()
+      if (!response.ok) {
+        alert('Failed to create set: ' + await response.text())
+        return
+      }
+      
+      currentGoalSet = setName
+      allKnownSets.add(setName)
+      
+      await loadGoals()
+      
+      // Close modal and reset
+      document.getElementById('createSetModal').classList.add('hidden')
+      document.getElementById('newSetName').value = ''
+      document.getElementById('newSetAccountType').value = 'F2P'
+      
+      updateSetButtons()
     })
 
-    document.getElementById('createCharCancel').addEventListener('click', () => {
-      document.getElementById('createCharModal').classList.add('hidden')
+    document.getElementById('deleteSetBtn').addEventListener('click', async () => {
+      const confirmed = confirm('Delete "' + currentGoalSet + '" and all its goals? This cannot be undone.')
+      if (!confirmed) return
+      
+      // Delete all goals in this set
+      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      const data = await response.json()
+      const goalsToDelete = data.goals.filter(g => (g.goal_set_name || 'Default') === currentGoalSet)
+      
+      for (const goal of goalsToDelete) {
+        await fetch(API_BASE + '/api/goals/' + goal.id, { method: 'DELETE' })
+      }
+      
+      // Delete inventory items for this set
+      const invResponse = await fetch(API_BASE + '/api/inventory?discord_id=' + currentUser.id + '&goal_set_name=' + currentGoalSet)
+      const invData = await invResponse.json()
+      for (const item of invData.items || []) {
+        await fetch(API_BASE + '/api/inventory/' + item.id, { method: 'DELETE' })
+      }
+      
+      // Remove from dropdown and known sets
+      allKnownSets.delete(currentGoalSet)
+      const setSelector = document.getElementById('goalSetSelector')
+      const optionToRemove = Array.from(setSelector.options).find(opt => opt.value === currentGoalSet)
+      if (optionToRemove) optionToRemove.remove()
+      
+      // Switch to first remaining set or create Default if none left
+      if (setSelector.options.length === 0) {
+        const option = document.createElement('option')
+        option.value = 'Default'
+        option.textContent = 'Default (F2P)'
+        option.selected = true
+        option.dataset.accountType = 'F2P'
+        setSelector.appendChild(option)
+        currentGoalSet = 'Default'
+      } else {
+        currentGoalSet = setSelector.options[0].value
+        setSelector.value = currentGoalSet
+      }
+      
+      loadGoals()
+      updateSetButtons()
     })
 
-    document.getElementById('deleteCharBtn').addEventListener('click', async () => {
-      if (!confirm('Delete ' + currentCharacter.character_name + '?')) return
-      await fetch(API_BASE + '/api/characters/' + currentCharacter.id, { method: 'DELETE' })
-      loadCharacters()
+    window.deleteGoal = async function(id) {
+      if (!confirm('Delete this goal?')) return
+      await fetch(API_BASE + '/api/goals/' + id, { method: 'DELETE' })
+      loadGoals()
+    }
+
+    let parsedStatsData = null
+    let parsedSkillsData = null
+    let parsedItemData = null
+
+    document.getElementById('manageCharBtn').addEventListener('click', () => {
+      document.getElementById('manageCharModal').classList.remove('hidden')
     })
 
-    // Stats/Skills Handlers
-    document.getElementById('editStatsBtn').addEventListener('click', () => {
-      document.getElementById('editStatsModal').classList.remove('hidden')
+    document.getElementById('closeCharBtn').addEventListener('click', () => {
+      document.getElementById('manageCharModal').classList.add('hidden')
     })
 
     document.getElementById('parseStatsBtn').addEventListener('click', () => {
       const text = document.getElementById('statsInput').value
-      parsedStatsData = parseStats(text)
-      document.getElementById('parsedStatsResult').innerHTML = '<div class="bg-green-50 p-2 border rounded">' + 
-        Object.entries(parsedStatsData).map(([k, v]) => \`\${k}: \${v}\`).join(', ') + '</div>'
+      // Simple parser for stats
+      const stats = {}
+      const lines = text.split('\\n')
+      const statNames = ['STR', 'CON', 'DEX', 'AGI', 'DIS', 'AUR', 'LOG', 'INT', 'WIS', 'INF']
+      
+      for (const line of lines) {
+        for (const stat of statNames) {
+          if (line.includes(\`(\${stat})\`)) {
+            const match = line.match(/\\((\\d+)\\)/)
+            if (match) {
+              stats[stat] = parseInt(match[1])
+            }
+          }
+        }
+      }
+      
+      parsedStatsData = stats
+      document.getElementById('parsedStats').innerHTML = '<div class="bg-green-50 p-2 border border-green-200 rounded">' + 
+        Object.entries(stats).map(([k, v]) => \`\${k}: \${v}\`).join(', ') + '</div>'
     })
 
     document.getElementById('parseSkillsBtn').addEventListener('click', () => {
       const text = document.getElementById('skillsInput').value
-      parsedSkillsData = parseSkills(text)
-      document.getElementById('parsedSkillsResult').innerHTML = '<div class="bg-green-50 p-2 border rounded max-h-40 overflow-y-auto">' + 
-        Object.entries(parsedSkillsData).map(([k, v]) => \`\${k}: \${v}\`).join('<br>') + '</div>'
+      const skills = {}
+      const lines = text.split('\\n')
+      
+      for (const line of lines) {
+        const match = line.match(/^  (.+?)\\.+\\|\\s+\\d+\\s+(\\d+)/)
+        if (match) {
+          const skillName = match[1].trim()
+          const ranks = parseInt(match[2])
+          skills[skillName] = ranks
+        }
+      }
+      
+      parsedSkillsData = skills
+      document.getElementById('parsedSkills').innerHTML = '<div class="bg-green-50 p-2 border border-green-200 rounded max-h-40 overflow-y-auto">' + 
+        Object.entries(skills).map(([k, v]) => \`\${k}: \${v}\`).join('<br>') + '</div>'
     })
 
-    document.getElementById('saveStatsBtn').addEventListener('click', async () => {
-      await fetch(API_BASE + '/api/characters/' + currentCharacter.id, {
+    document.getElementById('saveCharDataBtn').addEventListener('click', async () => {
+      if (!parsedStatsData && !parsedSkillsData) {
+        alert('Please parse stats and/or skills first')
+        return
+      }
+      
+      await fetch(API_BASE + '/api/goal-set/' + currentUser.id + '/' + currentGoalSet, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ base_stats: JSON.stringify(parsedStatsData), skill_ranks: JSON.stringify(parsedSkillsData) })
+        body: JSON.stringify({
+          account_type: null,
+          base_stats: parsedStatsData ? JSON.stringify(parsedStatsData) : null,
+          skill_ranks: parsedSkillsData ? JSON.stringify(parsedSkillsData) : null
+        })
       })
-      alert('Saved!')
-      document.getElementById('editStatsModal').classList.add('hidden')
+      
+      alert('Character data saved!')
+      document.getElementById('manageCharModal').classList.add('hidden')
     })
 
-    document.getElementById('closeStatsBtn').addEventListener('click', () => {
-      document.getElementById('editStatsModal').classList.add('hidden')
+    document.getElementById('manageInvBtn').addEventListener('click', async () => {
+      document.getElementById('manageInvModal').classList.remove('hidden')
+      await loadInventory()
     })
 
-    // Equipment Handlers
-    document.getElementById('equipSetSelector').addEventListener('change', (e) => {
-      currentEquipSet = e.target.value
-      loadEquipment()
+    document.getElementById('closeInvBtn').addEventListener('click', () => {
+      document.getElementById('manageInvModal').classList.add('hidden')
     })
 
-    document.getElementById('newEquipSetBtn').addEventListener('click', () => {
-      const name = prompt('Enter set name:')
-      if (name) {
-        const option = document.createElement('option')
-        option.value = name
-        option.textContent = name
-        document.getElementById('equipSetSelector').appendChild(option)
-        document.getElementById('equipSetSelector').value = name
-        currentEquipSet = name
+    document.getElementById('addItemBtn').addEventListener('click', () => {
+      document.getElementById('addItemForm').classList.remove('hidden')
+    })
+
+    document.getElementById('cancelAddItem').addEventListener('click', () => {
+      document.getElementById('addItemForm').classList.add('hidden')
+      document.getElementById('parsedItemInfo').classList.add('hidden')
+    })
+
+    document.getElementById('parseItemBtn').addEventListener('click', () => {
+      const text = document.getElementById('itemTextInput').value
+      
+      // Parse enhancives
+      const enhancives = []
+      const lines = text.split('\\n')
+      let isPermanent = true
+      let detectedSlot = null
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+        
+        if (line.includes('crumble into dust')) {
+          isPermanent = false
+        }
+        
+        const boostMatch = line.match(/It provides a boost of (\\d+) to (.+)\\./);
+        if (boostMatch) {
+          const boost = parseInt(boostMatch[1])
+          const ability = boostMatch[2].trim()
+          enhancives.push({ boost, ability })
+        }
+        
+        const slotMatch = line.match(/You could (wear|put|attach|slip|hang|drape|sling).+?(around your neck|on your head|on your fingers?|on your wrists?|around your waist|on your back|over your shoulders?|on your feet|on your hands|on your arms|on your legs|on your ankle|in your hair|from.+?ears?|over your chest|over your front|on your belt|as a pin)/i)
+        if (slotMatch) {
+          const location = slotMatch[2].toLowerCase()
+          if (location.includes('neck')) detectedSlot = 'neck'
+          else if (location.includes('head')) detectedSlot = 'head'
+          else if (location.includes('hair')) detectedSlot = 'hair'
+          else if (location.includes('single ear')) detectedSlot = 'single_ear'
+          else if (location.includes('both ears')) detectedSlot = 'both_ears'
+          else if (location.includes('shoulder') && location.includes('over')) detectedSlot = 'shoulders_draped'
+          else if (location.includes('shoulder')) detectedSlot = 'shoulder_slung'
+          else if (location.includes('back')) detectedSlot = 'back'
+          else if (location.includes('chest')) detectedSlot = 'chest'
+          else if (location.includes('front')) detectedSlot = 'front'
+          else if (location.includes('arms')) detectedSlot = 'arms'
+          else if (location.includes('wrist')) detectedSlot = 'wrist'
+          else if (location.includes('hands')) detectedSlot = 'hands'
+          else if (location.includes('finger')) detectedSlot = 'fingers'
+          else if (location.includes('waist')) detectedSlot = 'waist'
+          else if (location.includes('belt')) detectedSlot = 'belt'
+          else if (location.includes('legs')) detectedSlot = 'legs_attached'
+          else if (location.includes('ankle')) detectedSlot = 'ankle'
+          else if (location.includes('feet')) detectedSlot = 'feet_on'
+          else if (location.includes('pin')) detectedSlot = 'pin'
+        }
       }
-    })
-
-    document.getElementById('manageEquipBtn').addEventListener('click', () => {
-      document.getElementById('manageEquipModal').classList.remove('hidden')
-      loadEquipment()
-    })
-
-    document.getElementById('addEquipItemBtn').addEventListener('click', () => {
-      document.getElementById('addEquipForm').classList.remove('hidden')
-    })
-
-    document.getElementById('parseEquipBtn').addEventListener('click', () => {
-      const text = document.getElementById('equipItemText').value
-      parsedItemData = parseItemText(text)
       
+      parsedItemData = { enhancives, isPermanent, detectedSlot }
+      
+      // Extract item name from first line or prompt
       const nameMatch = text.match(/^(.+?)\\n/)
-      document.getElementById('equipItemName').value = nameMatch ? nameMatch[1].trim() : ''
+      const itemName = nameMatch ? nameMatch[1].trim() : 'Unknown Item'
+      document.getElementById('parsedItemName').value = itemName
       
-      document.getElementById('equipParseResult').innerHTML = '<div class="bg-green-50 p-2 border rounded">' +
-        parsedItemData.enhancives.map(e => \`+\${e.boost} \${e.ability}\`).join(', ') +
-        (parsedItemData.isPermanent ? ' <span class="text-green-600">✓ Permanent</span>' : ' <span class="text-red-600">⚠ Temporary</span>') +
-        '</div>'
+      document.getElementById('parsedEnhancives').innerHTML = enhancives.map(e => 
+        \`+\${e.boost} \${e.ability}\`
+      ).join('<br>')
       
+      document.getElementById('parsedPermanence').innerHTML = isPermanent ? 
+        '<span class="text-green-600">✓ Permanent</span>' : 
+        '<span class="text-red-600">⚠ Temporary (will crumble)</span>'
+      
+      // Show slot checkboxes
       const slots = ['pin', 'head', 'hair', 'single_ear', 'both_ears', 'neck', 'shoulder_slung', 'shoulders_draped', 
-                     'chest', 'front', 'back', 'arms', 'wrist', 'hands', 'fingers', 'waist', 'belt', 'legs', 'ankle', 'feet']
-      document.getElementById('equipSlotRadios').innerHTML = slots.map(slot => 
-        \`<label class="flex items-center"><input type="radio" name="equipSlot" value="\${slot}" \${slot === parsedItemData.slot ? 'checked' : ''}> \${slot}</label>\`
+                     'chest', 'front', 'back', 'arms', 'wrist', 'hands', 'fingers', 'waist', 'belt', 
+                     'legs_attached', 'ankle', 'feet_on']
+      
+      document.getElementById('slotCheckboxes').innerHTML = slots.map(slot => 
+        \`<label class="flex items-center">
+          <input type="radio" name="itemSlot" value="\${slot}" \${slot === detectedSlot ? 'checked' : ''} class="mr-1">
+          \${slot.replace(/_/g, ' ')}
+        </label>\`
       ).join('')
-      document.getElementById('equipSlotRadios').classList.remove('hidden')
+      
+      document.getElementById('parsedItemInfo').classList.remove('hidden')
     })
 
-    document.getElementById('saveEquipBtn').addEventListener('click', async () => {
-      const itemName = document.getElementById('equipItemName').value
-      const slot = document.querySelector('input[name="equipSlot"]:checked')?.value
-      if (!itemName || !slot) return alert('Complete all fields')
+    document.getElementById('confirmAddItem').addEventListener('click', async () => {
+      const itemName = document.getElementById('parsedItemName').value
+      const selectedSlot = document.querySelector('input[name="itemSlot"]:checked')?.value
       
-      await fetch(API_BASE + '/api/equipment', {
+      if (!itemName || !selectedSlot || !parsedItemData) {
+        alert('Please complete all fields')
+        return
+      }
+      
+      await fetch(API_BASE + '/api/inventory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          character_id: currentCharacter.id,
-          set_name: currentEquipSet,
+          discord_id: currentUser.id,
+          goal_set_name: currentGoalSet,
           item_name: itemName,
-          slot: slot,
+          slot: selectedSlot,
           enhancives_json: JSON.stringify(parsedItemData.enhancives),
           is_permanent: parsedItemData.isPermanent
         })
       })
       
-      document.getElementById('addEquipForm').classList.add('hidden')
-      document.getElementById('equipItemText').value = ''
-      loadEquipment()
+      alert('Item added to inventory!')
+      document.getElementById('addItemForm').classList.add('hidden')
+      document.getElementById('parsedItemInfo').classList.add('hidden')
+      document.getElementById('itemTextInput').value = ''
+      await loadInventory()
+      await loadSummary()
     })
 
-    document.getElementById('closeEquipBtn').addEventListener('click', () => {
-      document.getElementById('manageEquipModal').classList.add('hidden')
-    })
-
-    // Goal Handlers
-    document.getElementById('addGoalBtn').addEventListener('click', () => {
-      document.getElementById('addGoalModal').classList.remove('hidden')
-    })
-
-    document.getElementById('saveGoalBtn').addEventListener('click', async () => {
-      const stat = document.getElementById('goalStat').value.trim()
-      const minBoost = parseInt(document.getElementById('goalMinBoost').value)
-      const maxCost = document.getElementById('goalMaxCost').value ? parseInt(document.getElementById('goalMaxCost').value) : null
-      if (!stat || !minBoost) return alert('Enter stat and min boost')
+    async function loadInventory() {
+      const response = await fetch(API_BASE + '/api/inventory?discord_id=' + currentUser.id + '&goal_set_name=' + currentGoalSet)
+      const data = await response.json()
       
-      await fetch(API_BASE + '/api/alert-goals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ character_id: currentCharacter.id, stat, min_boost: minBoost, max_cost: maxCost })
-      })
+      const invList = document.getElementById('inventoryList')
+      if (data.items.length === 0) {
+        invList.innerHTML = '<p class="text-gray-500">No items in inventory. Add one to get started!</p>'
+        return
+      }
       
-      document.getElementById('addGoalModal').classList.add('hidden')
-      document.getElementById('goalStat').value = ''
-      document.getElementById('goalMinBoost').value = ''
-      document.getElementById('goalMaxCost').value = ''
-      loadGoals()
-    })
+      invList.innerHTML = data.items.map(item => {
+        const enhs = JSON.parse(item.enhancives_json)
+        const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
+        return \`
+          <div class="p-3 border rounded \${item.is_permanent ? 'bg-white' : 'bg-yellow-50'}">
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <div class="font-semibold">\${item.item_name}</div>
+                <div class="text-sm text-gray-600">Slot: \${item.slot.replace(/_/g, ' ')}</div>
+                <div class="text-sm text-gray-700">\${enhText}</div>
+                \${!item.is_permanent ? '<div class="text-xs text-orange-600 mt-1">⚠ Temporary (will crumble)</div>' : ''}
+              </div>
+              <button onclick="deleteInventoryItem(\${item.id})" class="text-red-600 hover:text-red-800 text-sm">Delete</button>
+            </div>
+          </div>
+        \`
+      }).join('')
+    }
 
-    document.getElementById('closeGoalBtn').addEventListener('click', () => {
-      document.getElementById('addGoalModal').classList.add('hidden')
-    })
+    window.deleteInventoryItem = async function(id) {
+      if (!confirm('Delete this item from inventory?')) return
+      await fetch(API_BASE + '/api/inventory/' + id, { method: 'DELETE' })
+      await loadInventory()
+      await loadSummary()
+    }
 
-    // My Matches Handler
+    async function loadSummary() {
+      if (!currentUser || !currentGoalSet) return
+      
+      const response = await fetch(API_BASE + '/api/summary?discord_id=' + currentUser.id + '&goal_set_name=' + currentGoalSet)
+      const data = await response.json()
+      
+      const summarySection = document.getElementById('summarySection')
+      const statsSummary = document.getElementById('statsSummary')
+      const skillsSummary = document.getElementById('skillsSummary')
+      
+      if (Object.keys(data.stats).length === 0 && Object.keys(data.skills).length === 0) {
+        summarySection.classList.add('hidden')
+        return
+      }
+      
+      summarySection.classList.remove('hidden')
+      
+      statsSummary.innerHTML = Object.entries(data.stats).map(([name, vals]) => {
+        let color = 'text-red-600'
+        if (vals.enhancive >= vals.cap) color = 'text-green-600'
+        else if (vals.enhancive >= vals.cap * 0.8) color = 'text-yellow-600'
+        
+        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + '">' + vals.base + ' + ' + vals.enhancive + ' = ' + vals.total + ' [' + vals.enhancive + '/' + vals.cap + ']</span></div>'
+      }).join('')
+      
+      skillsSummary.innerHTML = Object.entries(data.skills).map(([name, vals]) => {
+        let color = 'text-red-600'
+        if (vals.enhancive >= vals.cap) color = 'text-green-600'
+        else if (vals.enhancive >= vals.cap * 0.8) color = 'text-yellow-600'
+        
+        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + '">' + vals.base + ' + ' + vals.enhancive + ' = ' + vals.total + ' [' + vals.enhancive + '/' + vals.cap + ']</span></div>'
+      }).join('')
+    }
+
     document.getElementById('myMatchesBtn').addEventListener('click', async () => {
-      document.getElementById('myMatchesModal').classList.remove('hidden')
       const response = await fetch(API_BASE + '/api/my-matches?discord_id=' + currentUser.id)
       const data = await response.json()
       
-      const available = document.getElementById('availableMatches')
-      const sold = document.getElementById('soldMatches')
+      const availableDiv = document.getElementById('availableMatches')
+      const soldDiv = document.getElementById('soldMatches')
       
       if (data.available.length === 0) {
-        available.innerHTML = '<p class="text-gray-500 text-sm">No matches available</p>'
+        availableDiv.innerHTML = '<p class="text-gray-500">No available matches yet</p>'
       } else {
-        available.innerHTML = data.available.map(item => \`
-          <div class="p-3 border rounded">
-            <div class="font-semibold">\${item.name}</div>
-            <div class="text-sm text-gray-600">\${item.town} - \${item.shop} - \${item.cost.toLocaleString()} silvers</div>
-            <div class="text-sm">\${JSON.parse(item.enhancives_json).map(e => \`+\${e.boost} \${e.ability}\`).join(', ')}</div>
-          </div>
-        \`).join('')
+        availableDiv.innerHTML = data.available.map(item => {
+          const enhs = JSON.parse(item.enhancives_json)
+          const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
+          return \`
+            <div class="p-3 border rounded bg-green-50">
+              <div class="font-semibold">\${item.name}</div>
+              <div class="text-sm text-gray-600">\${item.town} - \${item.shop} - \${item.cost?.toLocaleString()} silvers</div>
+              <div class="text-sm text-gray-700">\${enhText}</div>
+            </div>
+          \`
+        }).join('')
       }
       
       if (data.recentlySold.length === 0) {
-        sold.innerHTML = '<p class="text-gray-500 text-sm">No recently sold items</p>'
+        soldDiv.innerHTML = '<p class="text-gray-500">No recently sold items</p>'
       } else {
-        sold.innerHTML = data.recentlySold.map(item => \`
-          <div class="p-3 border rounded bg-gray-50">
-            <div class="font-semibold">\${item.name}</div>
-            <div class="text-sm text-gray-600">\${item.town} - \${item.shop} - \${item.cost.toLocaleString()} silvers</div>
-            <div class="text-sm">\${JSON.parse(item.enhancives_json).map(e => \`+\${e.boost} \${e.ability}\`).join(', ')}</div>
-            <div class="text-xs text-gray-500 mt-1">Sold: \${new Date(item.unavailable_since).toLocaleString()}</div>
-          </div>
-        \`).join('')
+        soldDiv.innerHTML = data.recentlySold.map(item => {
+          const enhs = JSON.parse(item.enhancives_json)
+          const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
+          const soldDate = new Date(item.unavailable_since).toLocaleString()
+          return \`
+            <div class="p-3 border rounded bg-gray-100">
+              <div class="font-semibold text-gray-600">\${item.name}</div>
+              <div class="text-sm text-gray-500">\${item.town} - \${item.shop} - \${item.cost?.toLocaleString()} silvers</div>
+              <div class="text-sm text-gray-600">\${enhText}</div>
+              <div class="text-xs text-gray-500 mt-1">Sold: \${soldDate}</div>
+            </div>
+          \`
+        }).join('')
       }
+      
+      document.getElementById('myMatchesModal').classList.remove('hidden')
     })
 
     document.getElementById('closeMatchesBtn').addEventListener('click', () => {
       document.getElementById('myMatchesModal').classList.add('hidden')
     })
+
+    document.getElementById('addGoalBtn').addEventListener('click', () => {
+      document.getElementById('addGoalForm').classList.remove('hidden')
+    })
+
+    document.getElementById('cancelGoalBtn').addEventListener('click', () => {
+      document.getElementById('addGoalForm').classList.add('hidden')
+    })
+
+    document.getElementById('saveGoalBtn').addEventListener('click', async () => {
+      const stat = document.getElementById('goalStat').value
+      const boost = document.getElementById('goalBoost').value
+      const maxCost = document.getElementById('goalMaxCost').value
+      const selectedSlots = Array.from(document.querySelectorAll('#addGoalForm input[type="checkbox"]:checked'))
+        .map(cb => cb.value)
+        .join(',')
+
+      if (!stat || !boost) {
+        alert('Stat and Min Boost are required')
+        return
+      }
+
+      await fetch(API_BASE + '/api/goals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discord_id: currentUser.id,
+          stat,
+          min_boost: parseInt(boost),
+          max_cost: maxCost ? parseInt(maxCost) : null,
+          preferred_slots: selectedSlots || null,
+          goal_set_name: currentGoalSet,
+        }),
+      })
+
+      document.getElementById('goalStat').value = ''
+      document.getElementById('goalBoost').value = ''
+      document.getElementById('goalMaxCost').value = ''
+      document.querySelectorAll('#addGoalForm input[type="checkbox"]').forEach(cb => cb.checked = false)
+      document.getElementById('addGoalForm').classList.add('hidden')
+      
+      loadGoals()
+    })
+
+    async function loadItems() {
+      try {
+        const response = await fetch(API_BASE + '/api/items')
+        const data = await response.json()
+        allItems = data.items || []
+        
+        document.getElementById('dbTotal').textContent = data.total || allItems.length
+        document.getElementById('lastUpdated').textContent = data.lastUpdated || 'Never'
+        
+        if (data.lastUpdated && data.lastUpdated !== 'Never') {
+          const localTime = new Date(data.lastUpdated).toLocaleString()
+          document.getElementById('lastUpdatedLocal').textContent = localTime
+        }
+        
+        populateFilters()
+        filterItems()
+        
+        document.getElementById('loading').classList.add('hidden')
+        document.getElementById('itemsContainer').classList.remove('hidden')
+      } catch (error) {
+        console.error('Error loading items:', error)
+        document.getElementById('loading').innerHTML = '<p class="text-red-600">Error loading items</p>'
+      }
+    }
+
+    function populateFilters() {
+      const towns = [...new Set(allItems.map(item => item.town))].sort()
+      const worn = [...new Set(allItems.map(item => item.worn).filter(Boolean))].sort()
+      const stats = [...new Set(allItems.flatMap(item => {
+        try {
+          return JSON.parse(item.enhancives_json).map(e => e.ability)
+        } catch {
+          return []
+        }
+      }))].sort()
+
+      const townSelect = document.getElementById('filterTown')
+      towns.forEach(town => {
+        const option = document.createElement('option')
+        option.value = town
+        option.textContent = town
+        townSelect.appendChild(option)
+      })
+
+      const wornSelect = document.getElementById('filterWorn')
+      worn.forEach(slot => {
+        const option = document.createElement('option')
+        option.value = slot
+        option.textContent = slot
+        wornSelect.appendChild(option)
+      })
+
+      const statSelect = document.getElementById('filterStat')
+      stats.forEach(stat => {
+        const option = document.createElement('option')
+        option.value = stat
+        option.textContent = stat
+        statSelect.appendChild(option)
+      })
+    }
 
     function filterItems() {
       const searchName = document.getElementById('searchName').value.toLowerCase()
@@ -989,6 +1282,63 @@ app.delete('/api/inventory/:id', async (c) => {
   const id = c.req.param('id')
   await c.env.DB.prepare('DELETE FROM user_inventory WHERE id = ?').bind(id).run()
   return c.json({ success: true })
+})
+
+app.get('/api/summary', async (c) => {
+  const discordId = c.req.query('discord_id')
+  const goalSetName = c.req.query('goal_set_name')
+  
+  if (!discordId || !goalSetName) {
+    return c.json({ error: 'discord_id and goal_set_name required' }, 400)
+  }
+
+  const goalSet = await c.env.DB.prepare(
+    'SELECT base_stats, skill_ranks FROM user_goals WHERE discord_id = ? AND goal_set_name = ? LIMIT 1'
+  ).bind(discordId, goalSetName).first()
+
+  const baseStats = goalSet?.base_stats ? JSON.parse(goalSet.base_stats as string) : {}
+  const skillRanks = goalSet?.skill_ranks ? JSON.parse(goalSet.skill_ranks as string) : {}
+
+  const { results: items } = await c.env.DB.prepare(
+    'SELECT enhancives_json FROM user_inventory WHERE discord_id = ? AND goal_set_name = ?'
+  ).bind(discordId, goalSetName).all()
+
+  const stats: Record<string, { base: number; enhancive: number; total: number; cap: number }> = {}
+  const skills: Record<string, { base: number; enhancive: number; total: number; cap: number }> = {}
+
+  for (const item of items) {
+    const enhancives = JSON.parse(item.enhancives_json as string)
+    for (const enh of enhancives) {
+      const { ability, boost } = enh
+      const isBase = ability.includes('Base')
+      const isBonus = ability.includes('Bonus')
+      const isRanks = ability.includes('Ranks')
+      
+      const cleanName = ability.replace(/ (Base|Bonus|Ranks)/g, '').trim()
+      const isStat = ['Strength', 'Constitution', 'Dexterity', 'Agility', 'Discipline', 'Aura', 'Logic', 'Intuition', 'Wisdom', 'Influence'].includes(cleanName)
+      
+      if (isStat) {
+        if (!stats[cleanName]) stats[cleanName] = { base: baseStats[cleanName] || 0, enhancive: 0, total: 0, cap: STAT_CAP }
+        stats[cleanName].enhancive += isBonus ? boost * 2 : boost
+      } else {
+        if (!skills[cleanName]) skills[cleanName] = { base: skillRanks[cleanName] || 0, enhancive: 0, total: 0, cap: SKILL_CAP }
+        if (isRanks) {
+          skills[cleanName].enhancive += ranksToBonus(boost, skills[cleanName].base)
+        } else {
+          skills[cleanName].enhancive += boost
+        }
+      }
+    }
+  }
+
+  for (const stat in stats) {
+    stats[stat].total = stats[stat].base + stats[stat].enhancive
+  }
+  for (const skill in skills) {
+    skills[skill].total = skills[skill].base + skills[skill].enhancive
+  }
+
+  return c.json({ stats, skills })
 })
 
 app.post('/api/my-matches', async (c) => {
