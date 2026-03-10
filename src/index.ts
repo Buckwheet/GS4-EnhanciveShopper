@@ -545,6 +545,33 @@ app.get('/', (c) => {
       loadGoals()
     }
 
+    let editingGoalId = null
+
+    window.editGoal = async function(id) {
+      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      const data = await response.json()
+      const goal = data.goals.find(g => g.id === id)
+      
+      if (!goal) return
+      
+      editingGoalId = id
+      document.getElementById('goalStat').value = goal.stat
+      document.getElementById('goalBoost').value = goal.min_boost
+      document.getElementById('goalMaxCost').value = goal.max_cost || ''
+      
+      if (goal.preferred_slots) {
+        const slots = goal.preferred_slots.split(',').map(s => s.trim())
+        document.querySelectorAll('input[name="goalSlot"]').forEach(cb => {
+          cb.checked = slots.includes(cb.value)
+        })
+      } else {
+        document.querySelectorAll('input[name="goalSlot"]').forEach(cb => cb.checked = false)
+      }
+      
+      document.getElementById('addGoalForm').classList.remove('hidden')
+      document.getElementById('saveGoalBtn').textContent = 'Update Goal'
+    }
+
     let parsedStatsData = null
     let parsedSkillsData = null
     let parsedItemData = null
