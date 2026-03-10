@@ -457,7 +457,6 @@ app.get('/', (c) => {
       
       loadGoals()
     })
-    })
 
     window.deleteGoal = async function(id) {
       if (!confirm('Delete this goal?')) return
