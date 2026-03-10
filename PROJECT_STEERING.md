@@ -194,6 +194,40 @@ GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV p
 - Separate filters in UI
 - Issue: "shoulder" slot used for both slung weapons and worn items
 
+### 4. AI-Powered Natural Language Search
+**Goal**: Let users search items using plain text queries
+
+**Approach**: Cloudflare Workers AI (free tier: 10,000 neurons/day)
+- Already on Cloudflare platform
+- Cost: Free tier, then $0.011 per 1,000 neurons
+- Models: Llama 2, Mistral
+
+**Step 1**: Add AI binding to wrangler.toml
+- Configure Workers AI binding
+- Test basic AI query
+- Commit
+
+**Step 2**: Create /api/ai-search endpoint
+- Accept natural language query
+- Use AI to parse intent
+- Return structured filter params
+- Test with sample queries
+- Commit
+
+**Step 3**: Add search box to UI
+- Simple text input above filters
+- "Try: 'strength items under 100k in Wehnimer's'"
+- Show loading state
+- Commit
+
+**Step 4**: Wire up results display
+- Execute search with AI-parsed filters
+- Display results
+- Show what filters were applied
+- Commit
+
+**Alternative**: OpenAI API (more capable, ~$5-10/month for moderate usage)
+
 ### 5. Code Quality (from TODO)
 - Add Husky pre-commit hooks
 - Add Biome linter
