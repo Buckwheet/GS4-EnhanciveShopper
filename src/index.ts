@@ -318,6 +318,8 @@ app.get('/', (c) => {
     let currentUser = null
     let currentGoalSet = 'Default'
     let allKnownSets = new Set(['Default'])
+    let userGoals = []
+    let filterByGoalsEnabled = false
 
     // Auth handling
     function initAuth() {
@@ -1025,6 +1027,26 @@ app.get('/', (c) => {
     document.getElementById('filterTown').addEventListener('change', filterItems)
     document.getElementById('filterWorn').addEventListener('change', filterItems)
     document.getElementById('filterStat').addEventListener('change', filterItems)
+    
+    document.getElementById('filterByGoals').addEventListener('change', async (e) => {
+      filterByGoalsEnabled = e.target.checked
+      localStorage.setItem('filterByGoals', filterByGoalsEnabled)
+      
+      if (filterByGoalsEnabled && currentUser) {
+        const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+        const data = await response.json()
+        userGoals = data.goals.filter(g => g.goal_set_name === currentGoalSet)
+      }
+      
+      filterItems()
+    })
+    
+    // Restore checkbox state
+    const savedFilter = localStorage.getItem('filterByGoals')
+    if (savedFilter === 'true') {
+      document.getElementById('filterByGoals').checked = true
+      filterByGoalsEnabled = true
+    }
 
     initAuth()
     loadItems()
