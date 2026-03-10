@@ -418,7 +418,7 @@ app.get('/', (c) => {
       document.getElementById('createSetModal').classList.add('hidden')
     })
 
-    document.getElementById('createSetConfirm').addEventListener('click', () => {
+    document.getElementById('createSetConfirm').addEventListener('click', async () => {
       const setName = document.getElementById('newSetName').value.trim()
       const accountType = document.getElementById('newSetAccountType').value
       
@@ -427,20 +427,23 @@ app.get('/', (c) => {
         return
       }
       
+      // Create placeholder goal to persist the set in database
+      await fetch(API_BASE + '/api/goals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discord_id: currentUser.id,
+          stat: '_placeholder',
+          min_boost: 0,
+          goal_set_name: setName,
+          account_type: accountType
+        })
+      })
+      
       currentGoalSet = setName
       allKnownSets.add(setName)
       
-      // Update dropdown immediately
-      const setSelector = document.getElementById('goalSetSelector')
-      const option = document.createElement('option')
-      option.value = currentGoalSet
-      option.textContent = \`\${currentGoalSet} (\${accountType})\`
-      option.selected = true
-      option.dataset.accountType = accountType
-      setSelector.appendChild(option)
-      
-      // Clear goals list for new empty set
-      document.getElementById('goalsList').innerHTML = '<p class="text-gray-500">No goals in this set. Add one to get started!</p>'
+      loadGoals()
       
       // Close modal and reset
       document.getElementById('createSetModal').classList.add('hidden')
