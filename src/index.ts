@@ -36,7 +36,7 @@ app.get('/', (c) => {
     
     <div class="bg-white p-6 rounded-lg shadow-md mb-6">
       <h2 class="text-2xl font-semibold mb-4">Search & Filter</h2>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
         <input type="text" id="searchName" placeholder="Search by name..." class="border p-2 rounded">
         <select id="filterTown" class="border p-2 rounded">
           <option value="">All Towns</option>
@@ -47,6 +47,12 @@ app.get('/', (c) => {
         <select id="filterStat" class="border p-2 rounded">
           <option value="">All Stats</option>
         </select>
+      </div>
+      <div class="flex items-center">
+        <label class="flex items-center cursor-pointer">
+          <input type="checkbox" id="filterByGoals" class="mr-2">
+          <span class="text-sm text-gray-700">Filter search automatically based on my goals</span>
+        </label>
       </div>
     </div>
 
