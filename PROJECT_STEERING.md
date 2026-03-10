@@ -1,5 +1,25 @@
 # Project Steering Document
 
+## Development Principles
+
+### Small, Incremental Changes
+**ALWAYS break features into small, testable steps. Each step should:**
+- Be independently deployable
+- Have a clear, single purpose
+- Be easy to test and verify
+- Be easy to rollback if needed
+- Take < 30 minutes to implement
+
+**Example: Adding a new feature**
+1. Backend endpoint only → test with curl
+2. Minimal UI (empty container) → verify visibility
+3. Wire up one piece of data → test with real data
+4. Add styling/formatting → verify appearance
+5. Add interactions/triggers → test each trigger
+6. Commit and deploy after EACH step
+
+**Anti-pattern**: Making large changes that touch backend + frontend + multiple features at once
+
 ## Project Overview
 GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV player shop listings and alerts users via Discord when enhancive items matching their build requirements become available.
 
@@ -60,6 +80,13 @@ GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV p
    - Separates: Available Now vs Recently Sold (72 hours)
    - Displays sold timestamp
 
+8. **Summary Dashboard** ✅ COMPLETED 2026-03-10
+   - Shows total enhancive bonuses vs caps per stat/skill
+   - Color coded: Red (under cap), Yellow (80%+), Green (at cap)
+   - Displays: Base + Enhancive = Total [Enhancive/Cap]
+   - Auto-updates when inventory changes
+   - Endpoint: GET /api/summary?discord_id=X&goal_set_name=Y
+
 ## Database Schema
 
 ### Tables
@@ -116,38 +143,51 @@ GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV p
 
 ## Next Steps (Priority Order)
 
-### 1. Summary Dashboard (HIGH PRIORITY)
-**Goal**: Show user's total enhancive bonuses vs caps
-- Display all stats/skills from inventory
-- Calculate total bonus per stat/skill
-- Color code: 🔴 Under cap, 🟢 At cap, 🔵 Over cap (wasted)
-- Checkbox per stat/skill: tracked (user cares) vs untracked
-- Show: "STR: 10 base + 35 enhancives = 45 total [35/40 cap] 🔴"
-- Always visible (not in modal)
-
-**Implementation**:
-- Add `/api/summary?discord_id=X&goal_set_name=Y` endpoint
-- Calculate totals from user_inventory items
-- Use base_stats and skill_ranks from user_goals
-- Apply normalization (Base vs Bonus, Ranks vs Bonus)
-- Return: { stats: {STR: {base: 10, enhancive: 35, total: 45, cap: 40}}, skills: {...} }
-- UI: New section below goals, always visible
-
-### 2. Slot Usage Validation
+### 1. Slot Usage Validation (NEXT)
 **Goal**: Prevent adding items that exceed slot limits
-- When adding item to inventory, check current slot usage
-- Compare against account type limits (from constants.ts)
-- Show error: "You have 3/3 neck slots filled (Premium). Remove an item first."
-- Display slot usage in inventory modal: "Neck: 2/3 used"
 
-### 3. Replacement Suggestions
+**Step 1**: Add slot counting helper function
+- Create `countSlotUsage(items, slot)` function
+- Test with sample data
+- Commit
+
+**Step 2**: Add validation to POST /api/inventory endpoint
+- Check slot count before insert
+- Return 400 error if over limit
+- Test with curl
+- Commit
+
+**Step 3**: Display error in UI
+- Show error message when save fails
+- Test by trying to exceed limit
+- Commit
+
+**Step 4**: Add slot usage display to inventory modal
+- Show "Neck: 2/3 used" for each slot type
+- Update when items added/removed
+- Commit
+
+### 2. Replacement Suggestions
 **Goal**: Alert when new item is better than equipped item
-- When matching finds item, check if user has that slot filled
-- Calculate if new item is better (higher normalized value)
-- Alert: "New +5 Dex Bonus ring could replace your +2 Dex Base ring (net gain: +6 Dex)"
-- Show in My Matches with comparison
 
-### 4. Item Type Filtering (from TODO)
+**Step 1**: Add comparison logic to matcher
+- Calculate normalized value for items
+- Compare new item vs existing in same slot
+- Test with sample data
+- Commit
+
+**Step 2**: Enhance alert message
+- Include replacement suggestion in Discord DM
+- Show net gain calculation
+- Test with real alerts
+- Commit
+
+**Step 3**: Add to My Matches UI
+- Show comparison in matches list
+- Highlight better items
+- Commit
+
+### 3. Item Type Filtering (from TODO)
 **Goal**: Distinguish weapons vs worn equipment vs containers
 - Parse additional fields from item text
 - Add `item_type` column to shop_items
