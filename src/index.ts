@@ -642,17 +642,29 @@ app.get('/api/goals', async (c) => {
 })
 
 app.post('/api/goals', async (c) => {
-  const { discord_id, stat, min_boost, max_cost, preferred_slots, goal_set_name } = await c.req.json()
+  const { discord_id, stat, min_boost, max_cost, preferred_slots, goal_set_name, account_type, base_stats, skill_ranks } = await c.req.json()
   
   if (!discord_id || !stat || !min_boost) {
     return c.json({ error: 'discord_id, stat, and min_boost required' }, 400)
   }
 
   const result = await c.env.DB.prepare(
-    'INSERT INTO user_goals (discord_id, stat, min_boost, max_cost, preferred_slots, goal_set_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).bind(discord_id, stat, min_boost, max_cost || null, preferred_slots || null, goal_set_name || 'Default', new Date().toISOString()).run()
+    'INSERT INTO user_goals (discord_id, stat, min_boost, max_cost, preferred_slots, goal_set_name, account_type, base_stats, skill_ranks, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).bind(discord_id, stat, min_boost, max_cost || null, preferred_slots || null, goal_set_name || 'Default', account_type || 'F2P', base_stats || null, skill_ranks || null, new Date().toISOString()).run()
 
   return c.json({ success: true, id: result.meta.last_row_id })
+})
+
+app.put('/api/goal-set/:discord_id/:set_name', async (c) => {
+  const discordId = c.req.param('discord_id')
+  const setName = c.req.param('set_name')
+  const { account_type, base_stats, skill_ranks } = await c.req.json()
+
+  await c.env.DB.prepare(
+    'UPDATE user_goals SET account_type = ?, base_stats = ?, skill_ranks = ? WHERE discord_id = ? AND goal_set_name = ?'
+  ).bind(account_type, base_stats, skill_ranks, discordId, setName).run()
+
+  return c.json({ success: true })
 })
 
 app.delete('/api/goals/:id', async (c) => {
@@ -747,7 +759,42 @@ app.post('/api/test-match', async (c) => {
   }
 })
 
-app.get('/api/my-matches', async (c) => {
+app.post('/api/inventory', async (c) => {
+  const { discord_id, goal_set_name, item_name, slot, enhancives_json, is_permanent } = await c.req.json()
+  
+  if (!discord_id || !goal_set_name || !item_name || !slot) {
+    return c.json({ error: 'Missing required fields' }, 400)
+  }
+
+  const result = await c.env.DB.prepare(
+    'INSERT INTO user_inventory (discord_id, goal_set_name, item_name, slot, enhancives_json, is_permanent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(discord_id, goal_set_name, item_name, slot, enhancives_json, is_permanent ? 1 : 0, new Date().toISOString()).run()
+
+  return c.json({ success: true, id: result.meta.last_row_id })
+})
+
+app.get('/api/inventory', async (c) => {
+  const discordId = c.req.query('discord_id')
+  const goalSetName = c.req.query('goal_set_name')
+  
+  if (!discordId || !goalSetName) {
+    return c.json({ error: 'discord_id and goal_set_name required' }, 400)
+  }
+
+  const { results } = await c.env.DB.prepare(
+    'SELECT * FROM user_inventory WHERE discord_id = ? AND goal_set_name = ?'
+  ).bind(discordId, goalSetName).all()
+
+  return c.json({ items: results })
+})
+
+app.delete('/api/inventory/:id', async (c) => {
+  const id = c.req.param('id')
+  await c.env.DB.prepare('DELETE FROM user_inventory WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+app.post('/api/my-matches', async (c) => {
   const discordId = c.req.query('discord_id')
   if (!discordId) return c.json({ error: 'discord_id required' }, 400)
 
