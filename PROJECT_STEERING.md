@@ -74,6 +74,7 @@ GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV p
    - Prevents duplicate alerts (tracks in `alerts` table)
    - Discord DM with item details
    - Rate limiting: 1 message/second
+   - Fixed: Type conversion for min_boost and max_cost comparisons
 
 7. **My Matches Page**
    - Shows items user was alerted about
@@ -86,6 +87,21 @@ GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV p
    - Displays: Base + Enhancive = Total [Enhancive/Cap]
    - Auto-updates when inventory changes
    - Endpoint: GET /api/summary?discord_id=X&goal_set_name=Y
+
+9. **Filter by Goals** ✅ COMPLETED 2026-03-10
+   - Checkbox in Search & Filter section
+   - Filters main item list to only show items matching user's goals
+   - Applies all goal criteria: stat match, min boost, max cost, preferred slots
+   - Shows status: "Filtering by X goals"
+   - State saved to localStorage
+   - Defaults to OFF
+
+10. **Edit Goals** ✅ COMPLETED 2026-03-10
+   - Edit button on each goal
+   - Pre-fills form with existing values
+   - Button changes to "Update Goal"
+   - Endpoint: PUT /api/goals/:id
+   - Can edit: stat, min_boost, max_cost, preferred_slots
 
 ## Database Schema
 
