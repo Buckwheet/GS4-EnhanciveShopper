@@ -912,18 +912,35 @@ app.get('/', (c) => {
         return
       }
 
-      await fetch(API_BASE + '/api/goals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          discord_id: currentUser.id,
-          stat,
-          min_boost: parseInt(boost),
-          max_cost: maxCost ? parseInt(maxCost) : null,
-          preferred_slots: selectedSlots || null,
-          goal_set_name: currentGoalSet,
-        }),
-      })
+      if (editingGoalId) {
+        // Update existing goal
+        await fetch(API_BASE + '/api/goals/' + editingGoalId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            stat,
+            min_boost: parseInt(boost),
+            max_cost: maxCost ? parseInt(maxCost) : null,
+            preferred_slots: selectedSlots || null,
+          }),
+        })
+        editingGoalId = null
+        document.getElementById('saveGoalBtn').textContent = 'Save Goal'
+      } else {
+        // Create new goal
+        await fetch(API_BASE + '/api/goals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            discord_id: currentUser.id,
+            stat,
+            min_boost: parseInt(boost),
+            max_cost: maxCost ? parseInt(maxCost) : null,
+            preferred_slots: selectedSlots || null,
+            goal_set_name: currentGoalSet,
+          }),
+        })
+      }
 
       document.getElementById('goalStat').value = ''
       document.getElementById('goalBoost').value = ''
