@@ -11,6 +11,9 @@ binding = "DB"
 database_name = "enhancive-db"
 database_id = "7f60fe28-3ccd-4d23-9e70-6d6749c6c4ed"
 
+[ai]
+binding = "AI"
+
 [vars]
 DISCORD_CLIENT_ID = "1480630117570056232"
 DISCORD_REDIRECT_URI = "https://gs4-enhancive-shopper.rpgfilms.workers.dev/api/auth/discord/callback"
