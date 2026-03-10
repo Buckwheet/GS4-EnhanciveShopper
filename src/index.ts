@@ -261,11 +261,6 @@ app.get('/', (c) => {
     })
 
     document.getElementById('deleteSetBtn').addEventListener('click', async () => {
-      if (currentGoalSet === 'Default') {
-        alert('Cannot delete the Default set')
-        return
-      }
-      
       const confirmed = confirm('Delete "' + currentGoalSet + '" and all its goals? This cannot be undone.')
       if (!confirmed) return
       
@@ -283,9 +278,19 @@ app.get('/', (c) => {
       const optionToRemove = Array.from(setSelector.options).find(opt => opt.value === currentGoalSet)
       if (optionToRemove) optionToRemove.remove()
       
-      // Switch to Default
-      currentGoalSet = 'Default'
-      setSelector.value = 'Default'
+      // Switch to first remaining set or create Default if none left
+      if (setSelector.options.length === 0) {
+        const option = document.createElement('option')
+        option.value = 'Default'
+        option.textContent = 'Default'
+        option.selected = true
+        setSelector.appendChild(option)
+        currentGoalSet = 'Default'
+      } else {
+        currentGoalSet = setSelector.options[0].value
+        setSelector.value = currentGoalSet
+      }
+      
       loadGoals()
     })
 
