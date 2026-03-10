@@ -13,13 +13,13 @@ export async function checkMatches(env: Env, newItems: any[]) {
         // Check if any enhancive matches the stat and boost requirement
         // Use case-insensitive partial matching (e.g., "strength" matches "Strength Base")
         const hasMatch = enhancives.some((enh: any) => 
-          enh.ability.toLowerCase().includes(goal.stat.toLowerCase()) && enh.boost >= goal.min_boost
+          enh.ability.toLowerCase().includes(goal.stat.toLowerCase()) && enh.boost >= Number(goal.min_boost)
         )
         
         if (!hasMatch) return false
 
         // Check cost constraint
-        if (goal.max_cost && item.cost > goal.max_cost) return false
+        if (goal.max_cost && item.cost > Number(goal.max_cost)) return false
 
         // Check slot preference
         if (goal.preferred_slots) {
