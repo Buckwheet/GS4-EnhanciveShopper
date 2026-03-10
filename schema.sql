@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS shop_items (
   enhancives_json TEXT NOT NULL,
   scraped_at TEXT NOT NULL,
   last_seen TEXT NOT NULL,
-  available INTEGER NOT NULL DEFAULT 1
+  available INTEGER NOT NULL DEFAULT 1,
+  unavailable_since TEXT  -- When item was marked unavailable
 );
 
 -- Alerts table

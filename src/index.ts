@@ -53,7 +53,14 @@ app.get('/', (c) => {
       <div class="bg-white p-6 rounded-lg shadow-md">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-2xl font-semibold">My Alert Goals</h2>
-          <div class="flex gap-2 items-center">
+          <div class="flex gap-2">
+            <button id="myMatchesBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+              My Matches
+            </button>
+          </div>
+        </div>
+        
+        <div class="flex gap-2 items-center mb-4">
             <label class="text-sm text-gray-600">Active Set:</label>
             <select id="goalSetSelector" class="border p-2 rounded">
               <option value="Default">Default</option>
@@ -108,6 +115,26 @@ app.get('/', (c) => {
 
         <div id="goalsList" class="space-y-2">
           <p class="text-gray-500">No goals yet. Add one to get started!</p>
+        </div>
+      </div>
+      
+      <!-- My Matches Modal -->
+      <div id="myMatchesModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-semibold">My Matches</h2>
+            <button id="closeMatchesBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
+          </div>
+          
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-2 text-green-700">Available Now</h3>
+            <div id="availableMatches" class="space-y-2"></div>
+          </div>
+          
+          <div>
+            <h3 class="text-lg font-semibold mb-2 text-gray-600">Recently Sold (Last 72 Hours)</h3>
+            <div id="soldMatches" class="space-y-2"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -299,6 +326,54 @@ app.get('/', (c) => {
       await fetch(API_BASE + '/api/goals/' + id, { method: 'DELETE' })
       loadGoals()
     }
+
+    document.getElementById('myMatchesBtn').addEventListener('click', async () => {
+      const response = await fetch(API_BASE + '/api/my-matches?discord_id=' + currentUser.id)
+      const data = await response.json()
+      
+      const availableDiv = document.getElementById('availableMatches')
+      const soldDiv = document.getElementById('soldMatches')
+      
+      if (data.available.length === 0) {
+        availableDiv.innerHTML = '<p class="text-gray-500">No available matches yet</p>'
+      } else {
+        availableDiv.innerHTML = data.available.map(item => {
+          const enhs = JSON.parse(item.enhancives_json)
+          const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
+          return \`
+            <div class="p-3 border rounded bg-green-50">
+              <div class="font-semibold">\${item.name}</div>
+              <div class="text-sm text-gray-600">\${item.town} - \${item.shop} - \${item.cost?.toLocaleString()} silvers</div>
+              <div class="text-sm text-gray-700">\${enhText}</div>
+            </div>
+          \`
+        }).join('')
+      }
+      
+      if (data.recentlySold.length === 0) {
+        soldDiv.innerHTML = '<p class="text-gray-500">No recently sold items</p>'
+      } else {
+        soldDiv.innerHTML = data.recentlySold.map(item => {
+          const enhs = JSON.parse(item.enhancives_json)
+          const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
+          const soldDate = new Date(item.unavailable_since).toLocaleString()
+          return \`
+            <div class="p-3 border rounded bg-gray-100">
+              <div class="font-semibold text-gray-600">\${item.name}</div>
+              <div class="text-sm text-gray-500">\${item.town} - \${item.shop} - \${item.cost?.toLocaleString()} silvers</div>
+              <div class="text-sm text-gray-600">\${enhText}</div>
+              <div class="text-xs text-gray-500 mt-1">Sold: \${soldDate}</div>
+            </div>
+          \`
+        }).join('')
+      }
+      
+      document.getElementById('myMatchesModal').classList.remove('hidden')
+    })
+
+    document.getElementById('closeMatchesBtn').addEventListener('click', () => {
+      document.getElementById('myMatchesModal').classList.add('hidden')
+    })
 
     document.getElementById('addGoalBtn').addEventListener('click', () => {
       document.getElementById('addGoalForm').classList.remove('hidden')
@@ -672,6 +747,30 @@ app.post('/api/test-match', async (c) => {
   }
 })
 
+app.get('/api/my-matches', async (c) => {
+  const discordId = c.req.query('discord_id')
+  if (!discordId) return c.json({ error: 'discord_id required' }, 400)
+
+  // Get all alerts for this user with item details
+  const { results } = await c.env.DB.prepare(`
+    SELECT 
+      a.id as alert_id,
+      a.sent_at,
+      a.delivered,
+      i.*
+    FROM alerts a
+    JOIN shop_items i ON a.item_id = i.id
+    WHERE a.discord_id = ?
+    ORDER BY a.sent_at DESC
+  `).bind(discordId).all()
+
+  // Separate into available and recently sold
+  const available = results.filter((r: any) => r.available === 1)
+  const recentlySold = results.filter((r: any) => r.available === 0)
+
+  return c.json({ available, recentlySold })
+})
+
 app.post('/api/scrape', async (c) => {
   try {
     const lastUpdated = await getLastUpdated()
@@ -689,8 +788,8 @@ app.post('/api/scrape', async (c) => {
     // Only mark removed items as unavailable (not all items)
     if (removedIds.length > 0) {
       const placeholders = removedIds.map(() => '?').join(',')
-      await c.env.DB.prepare(`UPDATE shop_items SET available = 0 WHERE id IN (${placeholders})`)
-        .bind(...removedIds).run()
+      await c.env.DB.prepare(`UPDATE shop_items SET available = 0, unavailable_since = ? WHERE id IN (${placeholders})`)
+        .bind(now, ...removedIds).run()
       console.log(`Marked ${removedIds.length} items as unavailable`)
     }
     
@@ -778,8 +877,8 @@ export default {
         // Only mark removed items as unavailable
         if (removedIds.length > 0) {
           const placeholders = removedIds.map(() => '?').join(',')
-          await env.DB.prepare(`UPDATE shop_items SET available = 0 WHERE id IN (${placeholders})`)
-            .bind(...removedIds).run()
+          await env.DB.prepare(`UPDATE shop_items SET available = 0, unavailable_since = ? WHERE id IN (${placeholders})`)
+            .bind(now, ...removedIds).run()
           console.log(`Marked ${removedIds.length} items as unavailable`)
         }
         
@@ -819,6 +918,16 @@ export default {
           .run()
 
         console.log(`Scrape complete: ${items.length} total, ${newItems.length} new, ${removedIds.length} removed`)
+      }
+      
+      // Cleanup: Delete items unavailable for more than 72 hours
+      const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()
+      const { meta } = await env.DB.prepare(
+        'DELETE FROM shop_items WHERE available = 0 AND unavailable_since < ?'
+      ).bind(cutoff).run()
+      
+      if (meta.changes > 0) {
+        console.log(`Cleaned up ${meta.changes} items older than 72 hours`)
       }
     } catch (error) {
       console.error('Scheduled scrape error:', error)
