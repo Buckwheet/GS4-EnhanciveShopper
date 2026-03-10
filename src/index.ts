@@ -981,6 +981,42 @@ app.get('/', (c) => {
             return false
           }
         }
+        
+        // Filter by goals if enabled
+        if (filterByGoalsEnabled && userGoals.length > 0) {
+          let matchesAnyGoal = false
+          
+          for (const goal of userGoals) {
+            try {
+              const enhancives = JSON.parse(item.enhancives_json)
+              
+              // Check if item matches this goal
+              const hasStatMatch = enhancives.some(enh => 
+                enh.ability.toLowerCase().includes(goal.stat.toLowerCase()) && 
+                enh.boost >= Number(goal.min_boost)
+              )
+              
+              if (!hasStatMatch) continue
+              
+              // Check cost constraint
+              if (goal.max_cost && item.cost > Number(goal.max_cost)) continue
+              
+              // Check slot preference
+              if (goal.preferred_slots) {
+                const slots = goal.preferred_slots.split(',').map(s => s.trim())
+                if (!slots.includes(item.worn)) continue
+              }
+              
+              matchesAnyGoal = true
+              break
+            } catch {
+              continue
+            }
+          }
+          
+          if (!matchesAnyGoal) return false
+        }
+        
         return true
       })
 
