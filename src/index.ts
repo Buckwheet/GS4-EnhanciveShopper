@@ -51,11 +51,20 @@ app.get('/', (c) => {
     <!-- Goals Section (only visible when logged in) -->
     <div id="goalsSection" class="hidden mb-6">
       <div class="bg-white p-6 rounded-lg shadow-md">
-        <h2 class="text-2xl font-semibold mb-4">My Alert Goals</h2>
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-semibold">My Alert Goals</h2>
+          <div class="flex gap-2 items-center">
+            <label class="text-sm text-gray-600">Active Set:</label>
+            <select id="goalSetSelector" class="border p-2 rounded">
+              <option value="Default">Default</option>
+            </select>
+            <button id="newSetBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm">+ New Set</button>
+          </div>
+        </div>
         
         <div class="mb-4">
           <button id="addGoalBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-            + Add New Goal
+            + Add Goal to Current Set
           </button>
         </div>
 
@@ -142,6 +151,7 @@ app.get('/', (c) => {
     let allItems = []
     let filteredItems = []
     let currentUser = null
+    let currentGoalSet = 'Default'
 
     // Auth handling
     function initAuth() {
@@ -199,13 +209,21 @@ app.get('/', (c) => {
       const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
       const data = await response.json()
       
+      // Populate goal set selector
+      const sets = [...new Set(data.goals.map(g => g.goal_set_name || 'Default'))]
+      const setSelector = document.getElementById('goalSetSelector')
+      setSelector.innerHTML = sets.map(s => \`<option value="\${s}" \${s === currentGoalSet ? 'selected' : ''}>\${s}</option>\`).join('')
+      
+      // Filter goals by current set
+      const currentSetGoals = data.goals.filter(g => (g.goal_set_name || 'Default') === currentGoalSet)
+      
       const goalsList = document.getElementById('goalsList')
-      if (data.goals.length === 0) {
-        goalsList.innerHTML = '<p class="text-gray-500">No goals yet. Add one to get started!</p>'
+      if (currentSetGoals.length === 0) {
+        goalsList.innerHTML = '<p class="text-gray-500">No goals in this set. Add one to get started!</p>'
         return
       }
 
-      goalsList.innerHTML = data.goals.map(goal => \`
+      goalsList.innerHTML = currentSetGoals.map(goal => \`
         <div class="flex justify-between items-center p-3 border rounded hover:bg-gray-50">
           <div>
             <span class="font-semibold">\${goal.stat}</span> 
@@ -217,6 +235,19 @@ app.get('/', (c) => {
         </div>
       \`).join('')
     }
+
+    document.getElementById('goalSetSelector').addEventListener('change', (e) => {
+      currentGoalSet = e.target.value
+      loadGoals()
+    })
+
+    document.getElementById('newSetBtn').addEventListener('click', () => {
+      const setName = prompt('Enter name for new goal set (e.g., "Cleric - Hunting", "Rogue - PvP"):')
+      if (setName && setName.trim()) {
+        currentGoalSet = setName.trim()
+        loadGoals()
+      }
+    })
 
     window.deleteGoal = async function(id) {
       if (!confirm('Delete this goal?')) return
@@ -254,6 +285,7 @@ app.get('/', (c) => {
           min_boost: parseInt(boost),
           max_cost: maxCost ? parseInt(maxCost) : null,
           preferred_slots: selectedSlots || null,
+          goal_set_name: currentGoalSet,
         }),
       })
 
@@ -490,15 +522,15 @@ app.get('/api/goals', async (c) => {
 })
 
 app.post('/api/goals', async (c) => {
-  const { discord_id, stat, min_boost, max_cost, preferred_slots } = await c.req.json()
+  const { discord_id, stat, min_boost, max_cost, preferred_slots, goal_set_name } = await c.req.json()
   
   if (!discord_id || !stat || !min_boost) {
     return c.json({ error: 'discord_id, stat, and min_boost required' }, 400)
   }
 
   const result = await c.env.DB.prepare(
-    'INSERT INTO user_goals (discord_id, stat, min_boost, max_cost, preferred_slots, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(discord_id, stat, min_boost, max_cost || null, preferred_slots || null, new Date().toISOString()).run()
+    'INSERT INTO user_goals (discord_id, stat, min_boost, max_cost, preferred_slots, goal_set_name, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+  ).bind(discord_id, stat, min_boost, max_cost || null, preferred_slots || null, goal_set_name || 'Default', new Date().toISOString()).run()
 
   return c.json({ success: true, id: result.meta.last_row_id })
 })
