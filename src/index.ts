@@ -897,6 +897,8 @@ app.get('/', (c) => {
 
     document.getElementById('cancelGoalBtn').addEventListener('click', () => {
       document.getElementById('addGoalForm').classList.add('hidden')
+      editingGoalId = null
+      document.getElementById('saveGoalBtn').textContent = 'Save Goal'
     })
 
     document.getElementById('saveGoalBtn').addEventListener('click', async () => {
