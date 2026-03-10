@@ -245,7 +245,17 @@ app.get('/', (c) => {
       const setName = prompt('Enter name for new goal set (e.g., "Cleric - Hunting", "Rogue - PvP"):')
       if (setName && setName.trim()) {
         currentGoalSet = setName.trim()
-        loadGoals()
+        
+        // Update dropdown immediately
+        const setSelector = document.getElementById('goalSetSelector')
+        const option = document.createElement('option')
+        option.value = currentGoalSet
+        option.textContent = currentGoalSet
+        option.selected = true
+        setSelector.appendChild(option)
+        
+        // Clear goals list for new empty set
+        document.getElementById('goalsList').innerHTML = '<p class="text-gray-500">No goals in this set. Add one to get started!</p>'
       }
     })
 
