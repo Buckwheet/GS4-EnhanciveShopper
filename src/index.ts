@@ -427,8 +427,13 @@ app.get('/', (c) => {
         return
       }
       
+      if (!currentUser) {
+        alert('Not logged in')
+        return
+      }
+      
       // Create placeholder goal to persist the set in database
-      await fetch(API_BASE + '/api/goals', {
+      const response = await fetch(API_BASE + '/api/goals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -440,10 +445,15 @@ app.get('/', (c) => {
         })
       })
       
+      if (!response.ok) {
+        alert('Failed to create set: ' + await response.text())
+        return
+      }
+      
       currentGoalSet = setName
       allKnownSets.add(setName)
       
-      loadGoals()
+      await loadGoals()
       
       // Close modal and reset
       document.getElementById('createSetModal').classList.add('hidden')
