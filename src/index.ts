@@ -371,6 +371,11 @@ app.get('/', (c) => {
       const setsData = await setsResponse.json()
       allKnownSets = new Set(setsData.sets || ['Default'])
       
+      // If current set doesn't exist, reset to Default
+      if (!allKnownSets.has(currentGoalSet)) {
+        currentGoalSet = 'Default'
+      }
+      
       const setSelector = document.getElementById('goalSetSelector')
       setSelector.innerHTML = [...allKnownSets].map(s => \`<option value="\${s}" \${s === currentGoalSet ? 'selected' : ''}>\${s}</option>\`).join('')
       
