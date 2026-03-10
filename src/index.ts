@@ -428,7 +428,10 @@ app.get('/', (c) => {
             \${goal.max_cost ? \`<span class="text-sm text-gray-500">• Max: \${goal.max_cost.toLocaleString()}</span>\` : ''}
             \${goal.preferred_slots ? \`<span class="text-sm text-gray-500">• Slots: \${goal.preferred_slots}</span>\` : ''}
           </div>
-          <button class="text-red-600 hover:text-red-800" onclick="deleteGoal(\${goal.id})">Delete</button>
+          <div class="flex gap-2">
+            <button class="text-blue-600 hover:text-blue-800 text-sm" onclick="editGoal(\${goal.id})">Edit</button>
+            <button class="text-red-600 hover:text-red-800 text-sm" onclick="deleteGoal(\${goal.id})">Delete</button>
+          </div>
         </div>
       \`).join('')
     }
