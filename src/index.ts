@@ -970,7 +970,15 @@ app.get('/', (c) => {
       document.querySelectorAll('input[name="goalSlot"]').forEach(cb => cb.checked = false)
       document.getElementById('addGoalForm').classList.add('hidden')
       
-      loadGoals()
+      await loadGoals()
+      
+      // Re-fetch goals and re-apply filter if enabled
+      if (filterByGoalsEnabled && currentUser) {
+        const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+        const data = await response.json()
+        userGoals = data.goals.filter(g => g.goal_set_name === currentGoalSet)
+        filterItems()
+      }
     })
 
     async function loadItems() {
