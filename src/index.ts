@@ -54,6 +54,12 @@ app.get('/', (c) => {
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-2xl font-semibold">My Alert Goals</h2>
           <div class="flex gap-2">
+            <button id="manageCharBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm">
+              Manage Character
+            </button>
+            <button id="manageInvBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm">
+              Manage Inventory
+            </button>
             <button id="myMatchesBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
               My Matches
             </button>
@@ -118,6 +124,31 @@ app.get('/', (c) => {
         </div>
       </div>
       
+      <!-- Create Set Modal -->
+      <div id="createSetModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full">
+          <h2 class="text-2xl font-semibold mb-4">Create New Goal Set</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Set Name</label>
+              <input type="text" id="newSetName" placeholder="e.g., Cleric - Hunting" class="border p-2 rounded w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Account Type</label>
+              <select id="newSetAccountType" class="border p-2 rounded w-full">
+                <option value="F2P">F2P / Standard</option>
+                <option value="Premium">Premium</option>
+                <option value="Platinum">Platinum</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <button id="createSetConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1">Create</button>
+              <button id="createSetCancel" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <!-- My Matches Modal -->
       <div id="myMatchesModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
@@ -135,6 +166,85 @@ app.get('/', (c) => {
             <h3 class="text-lg font-semibold mb-2 text-gray-600">Recently Sold (Last 72 Hours)</h3>
             <div id="soldMatches" class="space-y-2"></div>
           </div>
+        </div>
+      </div>
+      
+      <!-- Manage Character Modal -->
+      <div id="manageCharModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-semibold">Manage Character Data</h2>
+            <button id="closeCharBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
+          </div>
+          
+          <div class="space-y-6">
+            <div>
+              <h3 class="text-lg font-semibold mb-2">Base Stats</h3>
+              <p class="text-sm text-gray-600 mb-2">Paste output from '>stats' command (with all enhancives removed)</p>
+              <textarea id="statsInput" rows="12" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste stats here..."></textarea>
+              <button id="parseStatsBtn" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Parse Stats</button>
+              <div id="parsedStats" class="mt-2 text-sm"></div>
+            </div>
+            
+            <div>
+              <h3 class="text-lg font-semibold mb-2">Skill Ranks</h3>
+              <p class="text-sm text-gray-600 mb-2">Paste output from '>skill base' command</p>
+              <textarea id="skillsInput" rows="12" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste skills here..."></textarea>
+              <button id="parseSkillsBtn" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Parse Skills</button>
+              <div id="parsedSkills" class="mt-2 text-sm"></div>
+            </div>
+            
+            <button id="saveCharDataBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded w-full">Save Character Data</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Manage Inventory Modal -->
+      <div id="manageInvModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-semibold">Manage Inventory</h2>
+            <button id="closeInvBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
+          </div>
+          
+          <div class="mb-4">
+            <button id="addItemBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">+ Add Enhancive Item</button>
+          </div>
+          
+          <div id="addItemForm" class="hidden mb-6 p-4 border rounded bg-gray-50">
+            <h3 class="font-semibold mb-3">Add New Item</h3>
+            <textarea id="itemTextInput" rows="15" class="border p-2 rounded w-full font-mono text-sm mb-3" placeholder="Paste item description here..."></textarea>
+            <button id="parseItemBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-3">Parse Item</button>
+            
+            <div id="parsedItemInfo" class="hidden">
+              <div class="mb-3">
+                <label class="block font-medium mb-1">Item Name</label>
+                <input type="text" id="parsedItemName" class="border p-2 rounded w-full">
+              </div>
+              
+              <div class="mb-3">
+                <label class="block font-medium mb-1">Enhancives Detected</label>
+                <div id="parsedEnhancives" class="text-sm bg-white p-2 border rounded"></div>
+              </div>
+              
+              <div class="mb-3">
+                <label class="block font-medium mb-1">Permanent/Temporary</label>
+                <div id="parsedPermanence" class="text-sm"></div>
+              </div>
+              
+              <div class="mb-3">
+                <label class="block font-medium mb-1">Select Slot</label>
+                <div id="slotCheckboxes" class="grid grid-cols-3 gap-2"></div>
+              </div>
+              
+              <div class="flex gap-2">
+                <button id="confirmAddItem" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Add to Inventory</button>
+                <button id="cancelAddItem" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+              </div>
+            </div>
+          </div>
+          
+          <div id="inventoryList" class="space-y-2"></div>
         </div>
       </div>
     </div>
@@ -270,21 +380,40 @@ app.get('/', (c) => {
     })
 
     document.getElementById('newSetBtn').addEventListener('click', () => {
-      const setName = prompt('Enter name for new goal set (e.g., "Cleric - Hunting", "Rogue - PvP"):')
-      if (setName && setName.trim()) {
-        currentGoalSet = setName.trim()
-        
-        // Update dropdown immediately
-        const setSelector = document.getElementById('goalSetSelector')
-        const option = document.createElement('option')
-        option.value = currentGoalSet
-        option.textContent = currentGoalSet
-        option.selected = true
-        setSelector.appendChild(option)
-        
-        // Clear goals list for new empty set
-        document.getElementById('goalsList').innerHTML = '<p class="text-gray-500">No goals in this set. Add one to get started!</p>'
+      document.getElementById('createSetModal').classList.remove('hidden')
+    })
+
+    document.getElementById('createSetCancel').addEventListener('click', () => {
+      document.getElementById('createSetModal').classList.add('hidden')
+    })
+
+    document.getElementById('createSetConfirm').addEventListener('click', () => {
+      const setName = document.getElementById('newSetName').value.trim()
+      const accountType = document.getElementById('newSetAccountType').value
+      
+      if (!setName) {
+        alert('Please enter a set name')
+        return
       }
+      
+      currentGoalSet = setName
+      
+      // Update dropdown immediately
+      const setSelector = document.getElementById('goalSetSelector')
+      const option = document.createElement('option')
+      option.value = currentGoalSet
+      option.textContent = \`\${currentGoalSet} (\${accountType})\`
+      option.selected = true
+      option.dataset.accountType = accountType
+      setSelector.appendChild(option)
+      
+      // Clear goals list for new empty set
+      document.getElementById('goalsList').innerHTML = '<p class="text-gray-500">No goals in this set. Add one to get started!</p>'
+      
+      // Close modal and reset
+      document.getElementById('createSetModal').classList.add('hidden')
+      document.getElementById('newSetName').value = ''
+      document.getElementById('newSetAccountType').value = 'F2P'
     })
 
     document.getElementById('deleteSetBtn').addEventListener('click', async () => {
@@ -325,6 +454,241 @@ app.get('/', (c) => {
       if (!confirm('Delete this goal?')) return
       await fetch(API_BASE + '/api/goals/' + id, { method: 'DELETE' })
       loadGoals()
+    }
+
+    let parsedStatsData = null
+    let parsedSkillsData = null
+    let parsedItemData = null
+
+    document.getElementById('manageCharBtn').addEventListener('click', () => {
+      document.getElementById('manageCharModal').classList.remove('hidden')
+    })
+
+    document.getElementById('closeCharBtn').addEventListener('click', () => {
+      document.getElementById('manageCharModal').classList.add('hidden')
+    })
+
+    document.getElementById('parseStatsBtn').addEventListener('click', () => {
+      const text = document.getElementById('statsInput').value
+      // Simple parser for stats
+      const stats = {}
+      const lines = text.split('\\n')
+      const statNames = ['STR', 'CON', 'DEX', 'AGI', 'DIS', 'AUR', 'LOG', 'INT', 'WIS', 'INF']
+      
+      for (const line of lines) {
+        for (const stat of statNames) {
+          if (line.includes(\`(\${stat})\`)) {
+            const match = line.match(/\\((\\d+)\\)/)
+            if (match) {
+              stats[stat] = parseInt(match[1])
+            }
+          }
+        }
+      }
+      
+      parsedStatsData = stats
+      document.getElementById('parsedStats').innerHTML = '<div class="bg-green-50 p-2 border border-green-200 rounded">' + 
+        Object.entries(stats).map(([k, v]) => \`\${k}: \${v}\`).join(', ') + '</div>'
+    })
+
+    document.getElementById('parseSkillsBtn').addEventListener('click', () => {
+      const text = document.getElementById('skillsInput').value
+      const skills = {}
+      const lines = text.split('\\n')
+      
+      for (const line of lines) {
+        const match = line.match(/^  (.+?)\\.+\\|\\s+\\d+\\s+(\\d+)/)
+        if (match) {
+          const skillName = match[1].trim()
+          const ranks = parseInt(match[2])
+          skills[skillName] = ranks
+        }
+      }
+      
+      parsedSkillsData = skills
+      document.getElementById('parsedSkills').innerHTML = '<div class="bg-green-50 p-2 border border-green-200 rounded max-h-40 overflow-y-auto">' + 
+        Object.entries(skills).map(([k, v]) => \`\${k}: \${v}\`).join('<br>') + '</div>'
+    })
+
+    document.getElementById('saveCharDataBtn').addEventListener('click', async () => {
+      if (!parsedStatsData && !parsedSkillsData) {
+        alert('Please parse stats and/or skills first')
+        return
+      }
+      
+      await fetch(API_BASE + '/api/goal-set/' + currentUser.id + '/' + currentGoalSet, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          account_type: null,
+          base_stats: parsedStatsData ? JSON.stringify(parsedStatsData) : null,
+          skill_ranks: parsedSkillsData ? JSON.stringify(parsedSkillsData) : null
+        })
+      })
+      
+      alert('Character data saved!')
+      document.getElementById('manageCharModal').classList.add('hidden')
+    })
+
+    document.getElementById('manageInvBtn').addEventListener('click', async () => {
+      document.getElementById('manageInvModal').classList.remove('hidden')
+      await loadInventory()
+    })
+
+    document.getElementById('closeInvBtn').addEventListener('click', () => {
+      document.getElementById('manageInvModal').classList.add('hidden')
+    })
+
+    document.getElementById('addItemBtn').addEventListener('click', () => {
+      document.getElementById('addItemForm').classList.remove('hidden')
+    })
+
+    document.getElementById('cancelAddItem').addEventListener('click', () => {
+      document.getElementById('addItemForm').classList.add('hidden')
+      document.getElementById('parsedItemInfo').classList.add('hidden')
+    })
+
+    document.getElementById('parseItemBtn').addEventListener('click', () => {
+      const text = document.getElementById('itemTextInput').value
+      
+      // Parse enhancives
+      const enhancives = []
+      const lines = text.split('\\n')
+      let isPermanent = true
+      let detectedSlot = null
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]
+        
+        if (line.includes('crumble into dust')) {
+          isPermanent = false
+        }
+        
+        const boostMatch = line.match(/It provides a boost of (\\d+) to (.+)\\./);
+        if (boostMatch) {
+          const boost = parseInt(boostMatch[1])
+          const ability = boostMatch[2].trim()
+          enhancives.push({ boost, ability })
+        }
+        
+        const slotMatch = line.match(/You could (wear|put|attach|slip|hang|drape|sling).+?(around your neck|on your head|on your fingers?|on your wrists?|around your waist|on your back|over your shoulders?|on your feet|on your hands|on your arms|on your legs|on your ankle|in your hair|from.+?ears?|over your chest|over your front|on your belt|as a pin)/i)
+        if (slotMatch) {
+          const location = slotMatch[2].toLowerCase()
+          if (location.includes('neck')) detectedSlot = 'neck'
+          else if (location.includes('head')) detectedSlot = 'head'
+          else if (location.includes('hair')) detectedSlot = 'hair'
+          else if (location.includes('single ear')) detectedSlot = 'single_ear'
+          else if (location.includes('both ears')) detectedSlot = 'both_ears'
+          else if (location.includes('shoulder') && location.includes('over')) detectedSlot = 'shoulders_draped'
+          else if (location.includes('shoulder')) detectedSlot = 'shoulder_slung'
+          else if (location.includes('back')) detectedSlot = 'back'
+          else if (location.includes('chest')) detectedSlot = 'chest'
+          else if (location.includes('front')) detectedSlot = 'front'
+          else if (location.includes('arms')) detectedSlot = 'arms'
+          else if (location.includes('wrist')) detectedSlot = 'wrist'
+          else if (location.includes('hands')) detectedSlot = 'hands'
+          else if (location.includes('finger')) detectedSlot = 'fingers'
+          else if (location.includes('waist')) detectedSlot = 'waist'
+          else if (location.includes('belt')) detectedSlot = 'belt'
+          else if (location.includes('legs')) detectedSlot = 'legs_attached'
+          else if (location.includes('ankle')) detectedSlot = 'ankle'
+          else if (location.includes('feet')) detectedSlot = 'feet_on'
+          else if (location.includes('pin')) detectedSlot = 'pin'
+        }
+      }
+      
+      parsedItemData = { enhancives, isPermanent, detectedSlot }
+      
+      // Extract item name from first line or prompt
+      const nameMatch = text.match(/^(.+?)\\n/)
+      const itemName = nameMatch ? nameMatch[1].trim() : 'Unknown Item'
+      document.getElementById('parsedItemName').value = itemName
+      
+      document.getElementById('parsedEnhancives').innerHTML = enhancives.map(e => 
+        \`+\${e.boost} \${e.ability}\`
+      ).join('<br>')
+      
+      document.getElementById('parsedPermanence').innerHTML = isPermanent ? 
+        '<span class="text-green-600">✓ Permanent</span>' : 
+        '<span class="text-red-600">⚠ Temporary (will crumble)</span>'
+      
+      // Show slot checkboxes
+      const slots = ['pin', 'head', 'hair', 'single_ear', 'both_ears', 'neck', 'shoulder_slung', 'shoulders_draped', 
+                     'chest', 'front', 'back', 'arms', 'wrist', 'hands', 'fingers', 'waist', 'belt', 
+                     'legs_attached', 'ankle', 'feet_on']
+      
+      document.getElementById('slotCheckboxes').innerHTML = slots.map(slot => 
+        \`<label class="flex items-center">
+          <input type="radio" name="itemSlot" value="\${slot}" \${slot === detectedSlot ? 'checked' : ''} class="mr-1">
+          \${slot.replace(/_/g, ' ')}
+        </label>\`
+      ).join('')
+      
+      document.getElementById('parsedItemInfo').classList.remove('hidden')
+    })
+
+    document.getElementById('confirmAddItem').addEventListener('click', async () => {
+      const itemName = document.getElementById('parsedItemName').value
+      const selectedSlot = document.querySelector('input[name="itemSlot"]:checked')?.value
+      
+      if (!itemName || !selectedSlot || !parsedItemData) {
+        alert('Please complete all fields')
+        return
+      }
+      
+      await fetch(API_BASE + '/api/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discord_id: currentUser.id,
+          goal_set_name: currentGoalSet,
+          item_name: itemName,
+          slot: selectedSlot,
+          enhancives_json: JSON.stringify(parsedItemData.enhancives),
+          is_permanent: parsedItemData.isPermanent
+        })
+      })
+      
+      alert('Item added to inventory!')
+      document.getElementById('addItemForm').classList.add('hidden')
+      document.getElementById('parsedItemInfo').classList.add('hidden')
+      document.getElementById('itemTextInput').value = ''
+      await loadInventory()
+    })
+
+    async function loadInventory() {
+      const response = await fetch(API_BASE + '/api/inventory?discord_id=' + currentUser.id + '&goal_set_name=' + currentGoalSet)
+      const data = await response.json()
+      
+      const invList = document.getElementById('inventoryList')
+      if (data.items.length === 0) {
+        invList.innerHTML = '<p class="text-gray-500">No items in inventory. Add one to get started!</p>'
+        return
+      }
+      
+      invList.innerHTML = data.items.map(item => {
+        const enhs = JSON.parse(item.enhancives_json)
+        const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
+        return \`
+          <div class="p-3 border rounded \${item.is_permanent ? 'bg-white' : 'bg-yellow-50'}">
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <div class="font-semibold">\${item.item_name}</div>
+                <div class="text-sm text-gray-600">Slot: \${item.slot.replace(/_/g, ' ')}</div>
+                <div class="text-sm text-gray-700">\${enhText}</div>
+                \${!item.is_permanent ? '<div class="text-xs text-orange-600 mt-1">⚠ Temporary (will crumble)</div>' : ''}
+              </div>
+              <button onclick="deleteInventoryItem(\${item.id})" class="text-red-600 hover:text-red-800 text-sm">Delete</button>
+            </div>
+          </div>
+        \`
+      }).join('')
+    }
+
+    window.deleteInventoryItem = async function(id) {
+      if (!confirm('Delete this item from inventory?')) return
+      await fetch(API_BASE + '/api/inventory/' + id, { method: 'DELETE' })
+      await loadInventory()
     }
 
     document.getElementById('myMatchesBtn').addEventListener('click', async () => {
