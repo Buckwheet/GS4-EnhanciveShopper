@@ -106,25 +106,25 @@ app.get('/', (c) => {
           <div class="mb-3">
             <label class="font-semibold mb-2 block">Preferred Slots (optional):</label>
             <div class="grid grid-cols-3 md:grid-cols-5 gap-2">
-              <label class="flex items-center"><input type="checkbox" value="ankle" class="mr-1"> ankle</label>
-              <label class="flex items-center"><input type="checkbox" value="arms" class="mr-1"> arms</label>
-              <label class="flex items-center"><input type="checkbox" value="belt" class="mr-1"> belt</label>
-              <label class="flex items-center"><input type="checkbox" value="chest" class="mr-1"> chest</label>
-              <label class="flex items-center"><input type="checkbox" value="cloak" class="mr-1"> cloak</label>
-              <label class="flex items-center"><input type="checkbox" value="ear" class="mr-1"> ear</label>
-              <label class="flex items-center"><input type="checkbox" value="ears" class="mr-1"> ears</label>
-              <label class="flex items-center"><input type="checkbox" value="feet" class="mr-1"> feet</label>
-              <label class="flex items-center"><input type="checkbox" value="finger" class="mr-1"> finger</label>
-              <label class="flex items-center"><input type="checkbox" value="front" class="mr-1"> front</label>
-              <label class="flex items-center"><input type="checkbox" value="hands" class="mr-1"> hands</label>
-              <label class="flex items-center"><input type="checkbox" value="head" class="mr-1"> head</label>
-              <label class="flex items-center"><input type="checkbox" value="legs" class="mr-1"> legs</label>
-              <label class="flex items-center"><input type="checkbox" value="neck" class="mr-1"> neck</label>
-              <label class="flex items-center"><input type="checkbox" value="pants" class="mr-1"> pants</label>
-              <label class="flex items-center"><input type="checkbox" value="pin" class="mr-1"> pin</label>
-              <label class="flex items-center"><input type="checkbox" value="shoulders" class="mr-1"> shoulders</label>
-              <label class="flex items-center"><input type="checkbox" value="socks" class="mr-1"> socks</label>
-              <label class="flex items-center"><input type="checkbox" value="wrist" class="mr-1"> wrist</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ankle" class="mr-1"> ankle</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="arms" class="mr-1"> arms</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="belt" class="mr-1"> belt</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="chest" class="mr-1"> chest</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="cloak" class="mr-1"> cloak</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ear" class="mr-1"> ear</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ears" class="mr-1"> ears</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="feet" class="mr-1"> feet</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="finger" class="mr-1"> finger</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="front" class="mr-1"> front</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="hands" class="mr-1"> hands</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="head" class="mr-1"> head</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="legs" class="mr-1"> legs</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="neck" class="mr-1"> neck</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="pants" class="mr-1"> pants</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="pin" class="mr-1"> pin</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="shoulders" class="mr-1"> shoulders</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="socks" class="mr-1"> socks</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="wrist" class="mr-1"> wrist</label>
             </div>
           </div>
           <div class="flex gap-2">
@@ -892,6 +892,13 @@ app.get('/', (c) => {
     })
 
     document.getElementById('addGoalBtn').addEventListener('click', () => {
+      // Clear form for new goal
+      document.getElementById('goalStat').value = ''
+      document.getElementById('goalBoost').value = ''
+      document.getElementById('goalMaxCost').value = ''
+      document.querySelectorAll('input[name="goalSlot"]').forEach(cb => cb.checked = false)
+      editingGoalId = null
+      document.getElementById('saveGoalBtn').textContent = 'Save Goal'
       document.getElementById('addGoalForm').classList.remove('hidden')
     })
 
@@ -905,7 +912,7 @@ app.get('/', (c) => {
       const stat = document.getElementById('goalStat').value
       const boost = document.getElementById('goalBoost').value
       const maxCost = document.getElementById('goalMaxCost').value
-      const selectedSlots = Array.from(document.querySelectorAll('#addGoalForm input[type="checkbox"]:checked'))
+      const selectedSlots = Array.from(document.querySelectorAll('input[name="goalSlot"]:checked'))
         .map(cb => cb.value)
         .join(',')
 
@@ -947,7 +954,7 @@ app.get('/', (c) => {
       document.getElementById('goalStat').value = ''
       document.getElementById('goalBoost').value = ''
       document.getElementById('goalMaxCost').value = ''
-      document.querySelectorAll('#addGoalForm input[type="checkbox"]').forEach(cb => cb.checked = false)
+      document.querySelectorAll('input[name="goalSlot"]').forEach(cb => cb.checked = false)
       document.getElementById('addGoalForm').classList.add('hidden')
       
       loadGoals()
