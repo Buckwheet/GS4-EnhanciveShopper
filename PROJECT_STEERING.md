@@ -103,10 +103,18 @@ GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV p
    - Endpoint: PUT /api/goals/:id
    - Can edit: stat, min_boost, max_cost, preferred_slots
 
+11. **Discord Notification Toggle** ✅ COMPLETED 2026-03-10
+   - Settings gear icon next to username
+   - Modal with notification preference
+   - Account-wide setting (stored in users table)
+   - Defaults to OFF
+   - Matcher checks preference before sending DMs
+   - Migration: ALTER TABLE users ADD COLUMN notifications_enabled INTEGER DEFAULT 0
+
 ## Database Schema
 
 ### Tables
-- **users**: discord_id, discord_username, email, password_hash, created_at, last_login
+- **users**: discord_id, discord_username, email, password_hash, created_at, last_login, notifications_enabled
 - **user_goals**: id, discord_id, stat, min_boost, max_cost, preferred_slots, goal_set_name, account_type, base_stats (JSON), skill_ranks (JSON), created_at
 - **user_inventory**: id, discord_id, goal_set_name, item_name, slot, enhancives_json, is_permanent, created_at
 - **shop_items**: id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available, unavailable_since
@@ -159,7 +167,51 @@ GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV p
 
 ## Next Steps (Priority Order)
 
-### 1. Slot Usage Validation (NEXT)
+### 1. AI-Powered Chat Assistant (HIGH PRIORITY - IN PROGRESS)
+**Goal**: Natural language interface to query items and get recommendations
+
+**Technology**: Cloudflare Workers AI (free tier: 10,000 neurons/day)
+- Cost: Free tier, then $0.011 per 1,000 neurons
+- Models: Llama 2, Mistral
+
+**Use Cases**:
+- "Show me all strength items under 100k"
+- "What's the best neck item for my build?"
+- "Compare these two items"
+- "What am I missing to cap my dexterity?"
+- "Find upgrades for my current inventory"
+
+**Step 1**: Add AI binding to wrangler.toml
+- Configure Workers AI binding
+- Test basic AI query
+- Commit
+
+**Step 2**: Create /api/ai-chat endpoint
+- Accept user message + context (goals, inventory, stats)
+- Use AI to understand intent
+- Execute appropriate queries
+- Return structured response
+- Commit
+
+**Step 3**: Add chat button and modal UI
+- Button below "My Matches"
+- Chat interface with message history
+- Loading states
+- Commit
+
+**Step 4**: Wire up chat functionality
+- Send messages to API
+- Display AI responses
+- Show relevant items/data
+- Commit
+
+**Step 5**: Add context awareness
+- Include user's current goal set
+- Include inventory summary
+- Include stat caps
+- Commit
+
+### 2. Slot Usage Validation
 **Goal**: Prevent adding items that exceed slot limits
 
 **Step 1**: Add slot counting helper function
@@ -183,7 +235,7 @@ GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV p
 - Update when items added/removed
 - Commit
 
-### 2. Replacement Suggestions
+### 3. Replacement Suggestions
 **Goal**: Alert when new item is better than equipped item
 
 **Step 1**: Add comparison logic to matcher
@@ -203,46 +255,12 @@ GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV p
 - Highlight better items
 - Commit
 
-### 3. Item Type Filtering (from TODO)
+### 4. Item Type Filtering (from TODO)
 **Goal**: Distinguish weapons vs worn equipment vs containers
 - Parse additional fields from item text
 - Add `item_type` column to shop_items
 - Separate filters in UI
 - Issue: "shoulder" slot used for both slung weapons and worn items
-
-### 4. AI-Powered Natural Language Search
-**Goal**: Let users search items using plain text queries
-
-**Approach**: Cloudflare Workers AI (free tier: 10,000 neurons/day)
-- Already on Cloudflare platform
-- Cost: Free tier, then $0.011 per 1,000 neurons
-- Models: Llama 2, Mistral
-
-**Step 1**: Add AI binding to wrangler.toml
-- Configure Workers AI binding
-- Test basic AI query
-- Commit
-
-**Step 2**: Create /api/ai-search endpoint
-- Accept natural language query
-- Use AI to parse intent
-- Return structured filter params
-- Test with sample queries
-- Commit
-
-**Step 3**: Add search box to UI
-- Simple text input above filters
-- "Try: 'strength items under 100k in Wehnimer's'"
-- Show loading state
-- Commit
-
-**Step 4**: Wire up results display
-- Execute search with AI-parsed filters
-- Display results
-- Show what filters were applied
-- Commit
-
-**Alternative**: OpenAI API (more capable, ~$5-10/month for moderate usage)
 
 ### 5. Code Quality (from TODO)
 - Add Husky pre-commit hooks
