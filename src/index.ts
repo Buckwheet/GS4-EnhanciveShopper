@@ -429,6 +429,13 @@ app.get('/', (c) => {
         await fetch(API_BASE + '/api/goals/' + goal.id, { method: 'DELETE' })
       }
       
+      // Delete inventory items for this set
+      const invResponse = await fetch(API_BASE + '/api/inventory?discord_id=' + currentUser.id + '&goal_set_name=' + currentGoalSet)
+      const invData = await invResponse.json()
+      for (const item of invData.items || []) {
+        await fetch(API_BASE + '/api/inventory/' + item.id, { method: 'DELETE' })
+      }
+      
       // Remove from dropdown
       const setSelector = document.getElementById('goalSetSelector')
       const optionToRemove = Array.from(setSelector.options).find(opt => opt.value === currentGoalSet)
@@ -438,8 +445,9 @@ app.get('/', (c) => {
       if (setSelector.options.length === 0) {
         const option = document.createElement('option')
         option.value = 'Default'
-        option.textContent = 'Default'
+        option.textContent = 'Default (F2P)'
         option.selected = true
+        option.dataset.accountType = 'F2P'
         setSelector.appendChild(option)
         currentGoalSet = 'Default'
       } else {
@@ -448,6 +456,7 @@ app.get('/', (c) => {
       }
       
       loadGoals()
+    })
     })
 
     window.deleteGoal = async function(id) {
