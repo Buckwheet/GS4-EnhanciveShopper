@@ -69,15 +69,19 @@ app.get('/', (c) => {
         <div class="flex gap-2 items-center mb-4">
             <label class="text-sm text-gray-600">Active Set:</label>
             <select id="goalSetSelector" class="border p-2 rounded">
-              <option value="Default">Default</option>
+              <option value="">No sets yet</option>
             </select>
             <button id="newSetBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm">+ New Set</button>
             <button id="deleteSetBtn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">Delete Set</button>
           </div>
         </div>
         
+        <div id="noSetWarning" class="mb-4 p-3 bg-red-50 border border-red-200 rounded">
+          <p class="text-red-700 text-sm font-semibold">⚠ Create an enhancive set first to manage character data and inventory</p>
+        </div>
+        
         <div class="mb-4">
-          <button id="addGoalBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+          <button id="addGoalBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" disabled>
             + Add Goal to Current Set
           </button>
         </div>
@@ -306,7 +310,24 @@ app.get('/', (c) => {
       document.getElementById('userInfo').classList.remove('hidden')
       document.getElementById('username').textContent = currentUser.username
       document.getElementById('goalsSection').classList.remove('hidden')
+      updateSetButtons()
       loadGoals()
+    }
+
+    function updateSetButtons() {
+      const hasSet = allKnownSets.size > 0 && currentGoalSet && currentGoalSet !== ''
+      
+      document.getElementById('manageCharBtn').disabled = !hasSet
+      document.getElementById('manageInvBtn').disabled = !hasSet
+      document.getElementById('addGoalBtn').disabled = !hasSet
+      document.getElementById('deleteSetBtn').disabled = !hasSet
+      
+      const warning = document.getElementById('noSetWarning')
+      if (hasSet) {
+        warning.classList.add('hidden')
+      } else {
+        warning.classList.remove('hidden')
+      }
     }
 
     function hideUserInfo() {
@@ -418,6 +439,8 @@ app.get('/', (c) => {
       document.getElementById('createSetModal').classList.add('hidden')
       document.getElementById('newSetName').value = ''
       document.getElementById('newSetAccountType').value = 'F2P'
+      
+      updateSetButtons()
     })
 
     document.getElementById('deleteSetBtn').addEventListener('click', async () => {
@@ -461,6 +484,7 @@ app.get('/', (c) => {
       }
       
       loadGoals()
+      updateSetButtons()
     })
 
     window.deleteGoal = async function(id) {
