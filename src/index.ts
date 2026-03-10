@@ -52,103 +52,66 @@ app.get('/', (c) => {
     <div id="goalsSection" class="hidden mb-6">
       <div class="bg-white p-6 rounded-lg shadow-md">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-2xl font-semibold">My Alert Goals</h2>
-          <div class="flex gap-2">
-            <button id="manageCharBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm">
-              Manage Character
-            </button>
-            <button id="manageInvBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm">
-              Manage Inventory
-            </button>
-            <button id="myMatchesBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-              My Matches
-            </button>
-          </div>
+          <h2 class="text-2xl font-semibold">My Characters</h2>
+          <button id="myMatchesBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+            My Matches
+          </button>
         </div>
         
         <div class="flex gap-2 items-center mb-4">
-            <label class="text-sm text-gray-600">Active Set:</label>
-            <select id="goalSetSelector" class="border p-2 rounded">
-              <option value="">No sets yet</option>
-            </select>
-            <button id="newSetBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm">+ New Set</button>
-            <button id="deleteSetBtn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">Delete Set</button>
-          </div>
+          <label class="text-sm text-gray-600">Character:</label>
+          <select id="characterSelector" class="border p-2 rounded flex-1">
+            <option value="">No characters yet</option>
+          </select>
+          <button id="newCharBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm">+ New</button>
+          <button id="deleteCharBtn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm" disabled>Delete</button>
         </div>
         
-        <div id="noSetWarning" class="mb-4 p-3 bg-red-50 border border-red-200 rounded">
-          <p class="text-red-700 text-sm font-semibold">⚠ Create an enhancive set first to manage character data and inventory</p>
+        <div id="noCharWarning" class="mb-4 p-3 bg-red-50 border border-red-200 rounded hidden">
+          <p class="text-red-700 text-sm font-semibold">⚠ Create a character first</p>
         </div>
         
-        <div class="mb-4">
-          <button id="addGoalBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" disabled>
-            + Add Goal to Current Set
-          </button>
-        </div>
-
-        <div id="addGoalForm" class="hidden mb-4 p-4 border rounded bg-gray-50">
-          <h3 class="font-semibold mb-3">Create Alert Goal</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-            <input type="text" id="goalStat" placeholder="Stat (e.g., Strength)" class="border p-2 rounded">
-            <input type="number" id="goalBoost" placeholder="Min Boost (e.g., 5)" class="border p-2 rounded">
-            <input type="number" id="goalMaxCost" placeholder="Max Cost (optional)" class="border p-2 rounded col-span-2">
+        <div id="characterDetails" class="hidden space-y-4">
+          <div class="border-t pt-4 flex gap-2 items-center">
+            <span class="font-semibold">Account:</span>
+            <span id="accountTypeBadge" class="px-2 py-1 bg-gray-100 rounded text-sm"></span>
+            <button id="editStatsBtn" class="ml-auto bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded text-sm">Edit Stats/Skills</button>
           </div>
-          <div class="mb-3">
-            <label class="font-semibold mb-2 block">Preferred Slots (optional):</label>
-            <div class="grid grid-cols-3 md:grid-cols-5 gap-2">
-              <label class="flex items-center"><input type="checkbox" value="ankle" class="mr-1"> ankle</label>
-              <label class="flex items-center"><input type="checkbox" value="arms" class="mr-1"> arms</label>
-              <label class="flex items-center"><input type="checkbox" value="belt" class="mr-1"> belt</label>
-              <label class="flex items-center"><input type="checkbox" value="chest" class="mr-1"> chest</label>
-              <label class="flex items-center"><input type="checkbox" value="cloak" class="mr-1"> cloak</label>
-              <label class="flex items-center"><input type="checkbox" value="ear" class="mr-1"> ear</label>
-              <label class="flex items-center"><input type="checkbox" value="ears" class="mr-1"> ears</label>
-              <label class="flex items-center"><input type="checkbox" value="feet" class="mr-1"> feet</label>
-              <label class="flex items-center"><input type="checkbox" value="finger" class="mr-1"> finger</label>
-              <label class="flex items-center"><input type="checkbox" value="front" class="mr-1"> front</label>
-              <label class="flex items-center"><input type="checkbox" value="hands" class="mr-1"> hands</label>
-              <label class="flex items-center"><input type="checkbox" value="head" class="mr-1"> head</label>
-              <label class="flex items-center"><input type="checkbox" value="legs" class="mr-1"> legs</label>
-              <label class="flex items-center"><input type="checkbox" value="neck" class="mr-1"> neck</label>
-              <label class="flex items-center"><input type="checkbox" value="pants" class="mr-1"> pants</label>
-              <label class="flex items-center"><input type="checkbox" value="pin" class="mr-1"> pin</label>
-              <label class="flex items-center"><input type="checkbox" value="shoulders" class="mr-1"> shoulders</label>
-              <label class="flex items-center"><input type="checkbox" value="socks" class="mr-1"> socks</label>
-              <label class="flex items-center"><input type="checkbox" value="wrist" class="mr-1"> wrist</label>
+          
+          <div class="border-t pt-4">
+            <div class="flex justify-between items-center mb-2">
+              <h3 class="font-semibold">Equipment</h3>
+              <div class="flex gap-2">
+                <select id="equipSetSelector" class="border p-2 rounded text-sm"><option value="Default">Default</option></select>
+                <button id="newEquipSetBtn" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-sm">+ Set</button>
+                <button id="manageEquipBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded text-sm">Manage</button>
+              </div>
             </div>
           </div>
-          <div class="flex gap-2">
-            <button id="saveGoalBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
-            <button id="cancelGoalBtn" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+          
+          <div class="border-t pt-4">
+            <div class="flex justify-between items-center mb-2">
+              <h3 class="font-semibold">Alert Goals</h3>
+              <button id="addGoalBtn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm">+ Add</button>
+            </div>
+            <div id="goalsList" class="space-y-2"><p class="text-gray-500 text-sm">No goals yet</p></div>
           </div>
-        </div>
-
-        <div id="goalsList" class="space-y-2">
-          <p class="text-gray-500">No goals yet. Add one to get started!</p>
         </div>
       </div>
       
-      <!-- Create Set Modal -->
-      <div id="createSetModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <!-- Create Character Modal -->
+      <div id="createCharModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 max-w-md w-full">
-          <h2 class="text-2xl font-semibold mb-4">Create New Goal Set</h2>
-          <div class="space-y-4">
-            <div>
-              <label class="block text-sm font-medium mb-1">Set Name</label>
-              <input type="text" id="newSetName" placeholder="e.g., Cleric - Hunting" class="border p-2 rounded w-full">
-            </div>
-            <div>
-              <label class="block text-sm font-medium mb-1">Account Type</label>
-              <select id="newSetAccountType" class="border p-2 rounded w-full">
-                <option value="F2P">F2P / Standard</option>
-                <option value="Premium">Premium</option>
-                <option value="Platinum">Platinum</option>
-              </select>
-            </div>
-            <div class="flex gap-2">
-              <button id="createSetConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1">Create</button>
-              <button id="createSetCancel" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
-            </div>
+          <h2 class="text-2xl font-semibold mb-4">Create Character</h2>
+          <input type="text" id="newCharName" placeholder="Character Name" class="border p-2 rounded w-full mb-3">
+          <select id="newCharAccountType" class="border p-2 rounded w-full mb-4">
+            <option value="F2P">F2P / Standard</option>
+            <option value="Premium">Premium</option>
+            <option value="Platinum">Platinum</option>
+          </select>
+          <div class="flex gap-2">
+            <button id="createCharConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1">Create</button>
+            <button id="createCharCancel" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
           </div>
         </div>
       </div>
@@ -287,14 +250,67 @@ app.get('/', (c) => {
       </table>
     </div>
   </div>
+  
+  <!-- Edit Stats/Skills Modal -->
+  <div id="editStatsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+      <h2 class="text-2xl font-semibold mb-4">Edit Stats/Skills</h2>
+      <textarea id="statsInput" rows="10" class="border p-2 rounded w-full mb-2 font-mono text-sm" placeholder="Paste >stats output"></textarea>
+      <button id="parseStatsBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-2">Parse Stats</button>
+      <div id="parsedStatsResult" class="mb-4 text-sm"></div>
+      <textarea id="skillsInput" rows="10" class="border p-2 rounded w-full mb-2 font-mono text-sm" placeholder="Paste >skill base output"></textarea>
+      <button id="parseSkillsBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-2">Parse Skills</button>
+      <div id="parsedSkillsResult" class="mb-4 text-sm"></div>
+      <div class="flex gap-2">
+        <button id="saveStatsBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex-1">Save</button>
+        <button id="closeStatsBtn" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Manage Equipment Modal -->
+  <div id="manageEquipModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+      <h2 class="text-2xl font-semibold mb-4">Manage Equipment</h2>
+      <button id="addEquipItemBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mb-4">+ Add Item</button>
+      <div id="addEquipForm" class="hidden mb-4 p-4 border rounded">
+        <textarea id="equipItemText" rows="15" class="border p-2 rounded w-full mb-2 font-mono text-sm" placeholder="Paste item description"></textarea>
+        <button id="parseEquipBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-2">Parse</button>
+        <div id="equipParseResult" class="mb-2 text-sm"></div>
+        <input type="text" id="equipItemName" placeholder="Item Name" class="border p-2 rounded w-full mb-2">
+        <div id="equipSlotRadios" class="hidden mb-2 grid grid-cols-4 gap-2 text-sm"></div>
+        <button id="saveEquipBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Save Item</button>
+      </div>
+      <div id="equipmentList" class="space-y-2"></div>
+      <button id="closeEquipBtn" class="mt-4 bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Close</button>
+    </div>
+  </div>
+  
+  <!-- Add Goal Modal -->
+  <div id="addGoalModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+      <h2 class="text-2xl font-semibold mb-4">Add Alert Goal</h2>
+      <input type="text" id="goalStat" placeholder="Stat (e.g., Strength)" class="border p-2 rounded w-full mb-2">
+      <input type="number" id="goalMinBoost" placeholder="Min Boost" class="border p-2 rounded w-full mb-2">
+      <input type="number" id="goalMaxCost" placeholder="Max Cost (optional)" class="border p-2 rounded w-full mb-4">
+      <div class="flex gap-2">
+        <button id="saveGoalBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex-1">Save</button>
+        <button id="closeGoalBtn" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const API_BASE = window.location.origin
     let allItems = []
     let filteredItems = []
     let currentUser = null
-    let currentGoalSet = 'Default'
-    let allKnownSets = new Set(['Default'])
+    let currentCharacter = null
+    let currentEquipSet = 'Default'
+    let parsedStatsData = null
+    let parsedSkillsData = null
+    let parsedItemData = null
+    let allCharacters = []
 
     // Auth handling
     function initAuth() {
@@ -310,24 +326,7 @@ app.get('/', (c) => {
       document.getElementById('userInfo').classList.remove('hidden')
       document.getElementById('username').textContent = currentUser.username
       document.getElementById('goalsSection').classList.remove('hidden')
-      updateSetButtons()
-      loadGoals()
-    }
-
-    function updateSetButtons() {
-      const hasSet = allKnownSets.size > 0 && currentGoalSet && currentGoalSet !== ''
-      
-      document.getElementById('manageCharBtn').disabled = !hasSet
-      document.getElementById('manageInvBtn').disabled = !hasSet
-      document.getElementById('addGoalBtn').disabled = !hasSet
-      document.getElementById('deleteSetBtn').disabled = !hasSet
-      
-      const warning = document.getElementById('noSetWarning')
-      if (hasSet) {
-        warning.classList.add('hidden')
-      } else {
-        warning.classList.remove('hidden')
-      }
+      loadCharacters()
     }
 
     function hideUserInfo() {
@@ -362,8 +361,308 @@ app.get('/', (c) => {
       }
     })
 
-    // Goals management
+    async function loadCharacters() {
+      const response = await fetch(API_BASE + '/api/characters?discord_id=' + currentUser.id)
+      const data = await response.json()
+      allCharacters = data.characters
+      
+      const selector = document.getElementById('characterSelector')
+      if (allCharacters.length === 0) {
+        selector.innerHTML = '<option value="">No characters yet</option>'
+        document.getElementById('noCharWarning').classList.remove('hidden')
+        document.getElementById('characterDetails').classList.add('hidden')
+        document.getElementById('deleteCharBtn').disabled = true
+        return
+      }
+      
+      selector.innerHTML = allCharacters.map(c => 
+        \`<option value="\${c.id}">\${c.character_name} (\${c.account_type})</option>\`
+      ).join('')
+      
+      document.getElementById('noCharWarning').classList.add('hidden')
+      document.getElementById('deleteCharBtn').disabled = false
+      currentCharacter = allCharacters[0]
+      selector.value = currentCharacter.id
+      loadCharacterDetails()
+    }
+
+    async function loadCharacterDetails() {
+      if (!currentCharacter) return
+      document.getElementById('characterDetails').classList.remove('hidden')
+      document.getElementById('accountTypeBadge').textContent = currentCharacter.account_type
+      await loadGoals()
+    }
+
     async function loadGoals() {
+      if (!currentCharacter) return
+      const response = await fetch(API_BASE + '/api/alert-goals?character_id=' + currentCharacter.id)
+      const data = await response.json()
+      
+      const goalsList = document.getElementById('goalsList')
+      if (data.goals.length === 0) {
+        goalsList.innerHTML = '<p class="text-gray-500 text-sm">No goals yet</p>'
+        return
+      }
+      
+      goalsList.innerHTML = data.goals.map(goal => \`
+        <div class="flex justify-between items-center p-2 border rounded text-sm">
+          <div><span class="font-semibold">\${goal.stat}</span> +\${goal.min_boost}\${goal.max_cost ? \` • Max: \${goal.max_cost.toLocaleString()}\` : ''}</div>
+          <button onclick="deleteGoal(\${goal.id})" class="text-red-600 hover:text-red-800 text-xs">Delete</button>
+        </div>
+      \`).join('')
+    }
+
+    window.deleteGoal = async function(id) {
+      if (!confirm('Delete this goal?')) return
+      await fetch(API_BASE + '/api/alert-goals/' + id, { method: 'DELETE' })
+      loadGoals()
+    }
+
+    async function loadEquipment() {
+      if (!currentCharacter) return
+      const response = await fetch(API_BASE + '/api/equipment?character_id=' + currentCharacter.id + '&set_name=' + currentEquipSet)
+      const data = await response.json()
+      
+      const list = document.getElementById('equipmentList')
+      if (data.items.length === 0) {
+        list.innerHTML = '<p class="text-gray-500 text-sm">No items yet</p>'
+        return
+      }
+      
+      list.innerHTML = data.items.map(item => {
+        const enhs = JSON.parse(item.enhancives_json)
+        return \`
+          <div class="p-2 border rounded text-sm">
+            <div class="flex justify-between">
+              <div><strong>\${item.item_name}</strong> (\${item.slot})</div>
+              <button onclick="deleteEquipItem(\${item.id})" class="text-red-600 hover:text-red-800 text-xs">Delete</button>
+            </div>
+            <div class="text-xs text-gray-600">\${enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')}</div>
+          </div>
+        \`
+      }).join('')
+    }
+
+    window.deleteEquipItem = async function(id) {
+      if (!confirm('Delete this item?')) return
+      await fetch(API_BASE + '/api/equipment/' + id, { method: 'DELETE' })
+      loadEquipment()
+    }
+      }
+    })
+
+    // Character Management Handlers
+    document.getElementById('characterSelector').addEventListener('change', (e) => {
+      const id = parseInt(e.target.value)
+      currentCharacter = allCharacters.find(c => c.id === id)
+      loadCharacterDetails()
+    })
+
+    document.getElementById('newCharBtn').addEventListener('click', () => {
+      document.getElementById('createCharModal').classList.remove('hidden')
+    })
+
+    document.getElementById('createCharConfirm').addEventListener('click', async () => {
+      const name = document.getElementById('newCharName').value.trim()
+      const accountType = document.getElementById('newCharAccountType').value
+      if (!name) return alert('Enter a name')
+      
+      await fetch(API_BASE + '/api/characters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ discord_id: currentUser.id, character_name: name, account_type: accountType })
+      })
+      
+      document.getElementById('createCharModal').classList.add('hidden')
+      document.getElementById('newCharName').value = ''
+      loadCharacters()
+    })
+
+    document.getElementById('createCharCancel').addEventListener('click', () => {
+      document.getElementById('createCharModal').classList.add('hidden')
+    })
+
+    document.getElementById('deleteCharBtn').addEventListener('click', async () => {
+      if (!confirm('Delete ' + currentCharacter.character_name + '?')) return
+      await fetch(API_BASE + '/api/characters/' + currentCharacter.id, { method: 'DELETE' })
+      loadCharacters()
+    })
+
+    // Stats/Skills Handlers
+    document.getElementById('editStatsBtn').addEventListener('click', () => {
+      document.getElementById('editStatsModal').classList.remove('hidden')
+    })
+
+    document.getElementById('parseStatsBtn').addEventListener('click', () => {
+      const text = document.getElementById('statsInput').value
+      parsedStatsData = parseStats(text)
+      document.getElementById('parsedStatsResult').innerHTML = '<div class="bg-green-50 p-2 border rounded">' + 
+        Object.entries(parsedStatsData).map(([k, v]) => \`\${k}: \${v}\`).join(', ') + '</div>'
+    })
+
+    document.getElementById('parseSkillsBtn').addEventListener('click', () => {
+      const text = document.getElementById('skillsInput').value
+      parsedSkillsData = parseSkills(text)
+      document.getElementById('parsedSkillsResult').innerHTML = '<div class="bg-green-50 p-2 border rounded max-h-40 overflow-y-auto">' + 
+        Object.entries(parsedSkillsData).map(([k, v]) => \`\${k}: \${v}\`).join('<br>') + '</div>'
+    })
+
+    document.getElementById('saveStatsBtn').addEventListener('click', async () => {
+      await fetch(API_BASE + '/api/characters/' + currentCharacter.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base_stats: JSON.stringify(parsedStatsData), skill_ranks: JSON.stringify(parsedSkillsData) })
+      })
+      alert('Saved!')
+      document.getElementById('editStatsModal').classList.add('hidden')
+    })
+
+    document.getElementById('closeStatsBtn').addEventListener('click', () => {
+      document.getElementById('editStatsModal').classList.add('hidden')
+    })
+
+    // Equipment Handlers
+    document.getElementById('equipSetSelector').addEventListener('change', (e) => {
+      currentEquipSet = e.target.value
+      loadEquipment()
+    })
+
+    document.getElementById('newEquipSetBtn').addEventListener('click', () => {
+      const name = prompt('Enter set name:')
+      if (name) {
+        const option = document.createElement('option')
+        option.value = name
+        option.textContent = name
+        document.getElementById('equipSetSelector').appendChild(option)
+        document.getElementById('equipSetSelector').value = name
+        currentEquipSet = name
+      }
+    })
+
+    document.getElementById('manageEquipBtn').addEventListener('click', () => {
+      document.getElementById('manageEquipModal').classList.remove('hidden')
+      loadEquipment()
+    })
+
+    document.getElementById('addEquipItemBtn').addEventListener('click', () => {
+      document.getElementById('addEquipForm').classList.remove('hidden')
+    })
+
+    document.getElementById('parseEquipBtn').addEventListener('click', () => {
+      const text = document.getElementById('equipItemText').value
+      parsedItemData = parseItemText(text)
+      
+      const nameMatch = text.match(/^(.+?)\\n/)
+      document.getElementById('equipItemName').value = nameMatch ? nameMatch[1].trim() : ''
+      
+      document.getElementById('equipParseResult').innerHTML = '<div class="bg-green-50 p-2 border rounded">' +
+        parsedItemData.enhancives.map(e => \`+\${e.boost} \${e.ability}\`).join(', ') +
+        (parsedItemData.isPermanent ? ' <span class="text-green-600">✓ Permanent</span>' : ' <span class="text-red-600">⚠ Temporary</span>') +
+        '</div>'
+      
+      const slots = ['pin', 'head', 'hair', 'single_ear', 'both_ears', 'neck', 'shoulder_slung', 'shoulders_draped', 
+                     'chest', 'front', 'back', 'arms', 'wrist', 'hands', 'fingers', 'waist', 'belt', 'legs', 'ankle', 'feet']
+      document.getElementById('equipSlotRadios').innerHTML = slots.map(slot => 
+        \`<label class="flex items-center"><input type="radio" name="equipSlot" value="\${slot}" \${slot === parsedItemData.slot ? 'checked' : ''}> \${slot}</label>\`
+      ).join('')
+      document.getElementById('equipSlotRadios').classList.remove('hidden')
+    })
+
+    document.getElementById('saveEquipBtn').addEventListener('click', async () => {
+      const itemName = document.getElementById('equipItemName').value
+      const slot = document.querySelector('input[name="equipSlot"]:checked')?.value
+      if (!itemName || !slot) return alert('Complete all fields')
+      
+      await fetch(API_BASE + '/api/equipment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          character_id: currentCharacter.id,
+          set_name: currentEquipSet,
+          item_name: itemName,
+          slot: slot,
+          enhancives_json: JSON.stringify(parsedItemData.enhancives),
+          is_permanent: parsedItemData.isPermanent
+        })
+      })
+      
+      document.getElementById('addEquipForm').classList.add('hidden')
+      document.getElementById('equipItemText').value = ''
+      loadEquipment()
+    })
+
+    document.getElementById('closeEquipBtn').addEventListener('click', () => {
+      document.getElementById('manageEquipModal').classList.add('hidden')
+    })
+
+    // Goal Handlers
+    document.getElementById('addGoalBtn').addEventListener('click', () => {
+      document.getElementById('addGoalModal').classList.remove('hidden')
+    })
+
+    document.getElementById('saveGoalBtn').addEventListener('click', async () => {
+      const stat = document.getElementById('goalStat').value.trim()
+      const minBoost = parseInt(document.getElementById('goalMinBoost').value)
+      const maxCost = document.getElementById('goalMaxCost').value ? parseInt(document.getElementById('goalMaxCost').value) : null
+      if (!stat || !minBoost) return alert('Enter stat and min boost')
+      
+      await fetch(API_BASE + '/api/alert-goals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ character_id: currentCharacter.id, stat, min_boost: minBoost, max_cost: maxCost })
+      })
+      
+      document.getElementById('addGoalModal').classList.add('hidden')
+      document.getElementById('goalStat').value = ''
+      document.getElementById('goalMinBoost').value = ''
+      document.getElementById('goalMaxCost').value = ''
+      loadGoals()
+    })
+
+    document.getElementById('closeGoalBtn').addEventListener('click', () => {
+      document.getElementById('addGoalModal').classList.add('hidden')
+    })
+
+    // My Matches Handler
+    document.getElementById('myMatchesBtn').addEventListener('click', async () => {
+      document.getElementById('myMatchesModal').classList.remove('hidden')
+      const response = await fetch(API_BASE + '/api/my-matches?discord_id=' + currentUser.id)
+      const data = await response.json()
+      
+      const available = document.getElementById('availableMatches')
+      const sold = document.getElementById('soldMatches')
+      
+      if (data.available.length === 0) {
+        available.innerHTML = '<p class="text-gray-500 text-sm">No matches available</p>'
+      } else {
+        available.innerHTML = data.available.map(item => \`
+          <div class="p-3 border rounded">
+            <div class="font-semibold">\${item.name}</div>
+            <div class="text-sm text-gray-600">\${item.town} - \${item.shop} - \${item.cost.toLocaleString()} silvers</div>
+            <div class="text-sm">\${JSON.parse(item.enhancives_json).map(e => \`+\${e.boost} \${e.ability}\`).join(', ')}</div>
+          </div>
+        \`).join('')
+      }
+      
+      if (data.recentlySold.length === 0) {
+        sold.innerHTML = '<p class="text-gray-500 text-sm">No recently sold items</p>'
+      } else {
+        sold.innerHTML = data.recentlySold.map(item => \`
+          <div class="p-3 border rounded bg-gray-50">
+            <div class="font-semibold">\${item.name}</div>
+            <div class="text-sm text-gray-600">\${item.town} - \${item.shop} - \${item.cost.toLocaleString()} silvers</div>
+            <div class="text-sm">\${JSON.parse(item.enhancives_json).map(e => \`+\${e.boost} \${e.ability}\`).join(', ')}</div>
+            <div class="text-xs text-gray-500 mt-1">Sold: \${new Date(item.unavailable_since).toLocaleString()}</div>
+          </div>
+        \`).join('')
+      }
+    })
+
+    document.getElementById('closeMatchesBtn').addEventListener('click', () => {
+      document.getElementById('myMatchesModal').classList.add('hidden')
+    })
+
+    function filterItems() {
       if (!currentUser) return
       
       // Get all set names first
