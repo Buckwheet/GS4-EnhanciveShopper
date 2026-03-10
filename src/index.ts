@@ -266,7 +266,7 @@ app.get('/', (c) => {
         return
       }
       
-      const confirmed = confirm(`Delete "${currentGoalSet}" and all its goals? This cannot be undone.`)
+      const confirmed = confirm('Delete "' + currentGoalSet + '" and all its goals? This cannot be undone.')
       if (!confirmed) return
       
       // Delete all goals in this set
