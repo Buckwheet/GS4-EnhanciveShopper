@@ -328,6 +328,13 @@ app.get('/', (c) => {
       const stored = localStorage.getItem('discord_user')
       if (stored) {
         currentUser = JSON.parse(stored)
+        
+        // Restore known sets from localStorage
+        const savedSets = localStorage.getItem('knownSets_' + currentUser.id)
+        if (savedSets) {
+          allKnownSets = new Set(JSON.parse(savedSets))
+        }
+        
         showUserInfo()
       }
     }
@@ -397,7 +404,13 @@ app.get('/', (c) => {
       // Get all set names first
       const setsResponse = await fetch(API_BASE + '/api/goal-sets?discord_id=' + currentUser.id)
       const setsData = await setsResponse.json()
-      allKnownSets = new Set(setsData.sets || ['Default'])
+      
+      // Merge with existing known sets (don't lose sets that have no goals/inventory)
+      setsData.sets.forEach(s => allKnownSets.add(s))
+      if (allKnownSets.size === 0) allKnownSets.add('Default')
+      
+      // Save to localStorage
+      localStorage.setItem('knownSets_' + currentUser.id, JSON.stringify([...allKnownSets]))
       
       // If current set doesn't exist, reset to Default
       if (!allKnownSets.has(currentGoalSet)) {
