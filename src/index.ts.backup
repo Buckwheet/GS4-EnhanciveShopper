@@ -2,8 +2,6 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { scrapeEnhancives, getLastUpdated } from './scraper'
 import { checkMatches } from './matcher'
-import { STAT_CAP, SKILL_CAP } from './constants'
-import { ranksToBonus } from './parser'
 import type { Env } from './types'
 
 const app = new Hono<{ Bindings: Env }>()
@@ -27,22 +25,16 @@ app.get('/', (c) => {
         <button id="loginBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold">
           Login with Discord
         </button>
-        <div id="userInfo" class="hidden flex items-center gap-3">
+        <div id="userInfo" class="hidden">
           <span class="text-gray-700">Welcome, <span id="username" class="font-bold"></span>!</span>
-          <button id="settingsBtn" class="text-gray-600 hover:text-gray-800" title="Settings">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-            </svg>
-          </button>
-          <button id="logoutBtn" class="text-sm text-gray-600 hover:text-gray-800">Logout</button>
+          <button id="logoutBtn" class="ml-4 text-sm text-gray-600 hover:text-gray-800">Logout</button>
         </div>
       </div>
     </div>
     
     <div class="bg-white p-6 rounded-lg shadow-md mb-6">
       <h2 class="text-2xl font-semibold mb-4">Search & Filter</h2>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <input type="text" id="searchName" placeholder="Search by name..." class="border p-2 rounded">
         <select id="filterTown" class="border p-2 rounded">
           <option value="">All Towns</option>
@@ -53,14 +45,6 @@ app.get('/', (c) => {
         <select id="filterStat" class="border p-2 rounded">
           <option value="">All Stats</option>
         </select>
-      </div>
-      <div class="flex items-center justify-between">
-        <label class="flex items-center cursor-pointer">
-          <input type="checkbox" id="filterByGoals" class="mr-2">
-          <span class="text-sm text-gray-700">Filter search automatically based on my goals</span>
-        </label>
-        <span id="goalFilterStatus" class="text-sm text-gray-500 hidden"></span>
-      </div>
       </div>
     </div>
 
@@ -112,25 +96,25 @@ app.get('/', (c) => {
           <div class="mb-3">
             <label class="font-semibold mb-2 block">Preferred Slots (optional):</label>
             <div class="grid grid-cols-3 md:grid-cols-5 gap-2">
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ankle" class="mr-1"> ankle</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="arms" class="mr-1"> arms</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="belt" class="mr-1"> belt</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="chest" class="mr-1"> chest</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="cloak" class="mr-1"> cloak</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ear" class="mr-1"> ear</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ears" class="mr-1"> ears</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="feet" class="mr-1"> feet</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="finger" class="mr-1"> finger</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="front" class="mr-1"> front</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="hands" class="mr-1"> hands</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="head" class="mr-1"> head</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="legs" class="mr-1"> legs</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="neck" class="mr-1"> neck</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="pants" class="mr-1"> pants</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="pin" class="mr-1"> pin</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="shoulders" class="mr-1"> shoulders</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="socks" class="mr-1"> socks</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="wrist" class="mr-1"> wrist</label>
+              <label class="flex items-center"><input type="checkbox" value="ankle" class="mr-1"> ankle</label>
+              <label class="flex items-center"><input type="checkbox" value="arms" class="mr-1"> arms</label>
+              <label class="flex items-center"><input type="checkbox" value="belt" class="mr-1"> belt</label>
+              <label class="flex items-center"><input type="checkbox" value="chest" class="mr-1"> chest</label>
+              <label class="flex items-center"><input type="checkbox" value="cloak" class="mr-1"> cloak</label>
+              <label class="flex items-center"><input type="checkbox" value="ear" class="mr-1"> ear</label>
+              <label class="flex items-center"><input type="checkbox" value="ears" class="mr-1"> ears</label>
+              <label class="flex items-center"><input type="checkbox" value="feet" class="mr-1"> feet</label>
+              <label class="flex items-center"><input type="checkbox" value="finger" class="mr-1"> finger</label>
+              <label class="flex items-center"><input type="checkbox" value="front" class="mr-1"> front</label>
+              <label class="flex items-center"><input type="checkbox" value="hands" class="mr-1"> hands</label>
+              <label class="flex items-center"><input type="checkbox" value="head" class="mr-1"> head</label>
+              <label class="flex items-center"><input type="checkbox" value="legs" class="mr-1"> legs</label>
+              <label class="flex items-center"><input type="checkbox" value="neck" class="mr-1"> neck</label>
+              <label class="flex items-center"><input type="checkbox" value="pants" class="mr-1"> pants</label>
+              <label class="flex items-center"><input type="checkbox" value="pin" class="mr-1"> pin</label>
+              <label class="flex items-center"><input type="checkbox" value="shoulders" class="mr-1"> shoulders</label>
+              <label class="flex items-center"><input type="checkbox" value="socks" class="mr-1"> socks</label>
+              <label class="flex items-center"><input type="checkbox" value="wrist" class="mr-1"> wrist</label>
             </div>
           </div>
           <div class="flex gap-2">
@@ -141,21 +125,6 @@ app.get('/', (c) => {
 
         <div id="goalsList" class="space-y-2">
           <p class="text-gray-500">No goals yet. Add one to get started!</p>
-        </div>
-      </div>
-      
-      <!-- Summary Section -->
-      <div id="summarySection" class="hidden bg-white p-6 rounded-lg shadow-md mb-6">
-        <h2 class="text-2xl font-semibold mb-4">Enhancive Summary</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 class="text-lg font-semibold text-gray-700 mb-3">Stats</h3>
-            <div id="statsSummary" class="space-y-2 text-sm"></div>
-          </div>
-          <div>
-            <h3 class="text-lg font-semibold text-gray-700 mb-3">Skills</h3>
-            <div id="skillsSummary" class="space-y-2 text-sm"></div>
-          </div>
         </div>
       </div>
       
@@ -200,30 +169,6 @@ app.get('/', (c) => {
           <div>
             <h3 class="text-lg font-semibold mb-2 text-gray-600">Recently Sold (Last 72 Hours)</h3>
             <div id="soldMatches" class="space-y-2"></div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Settings Modal -->
-      <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-md w-full">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-semibold">Settings</h2>
-            <button id="closeSettingsBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
-          </div>
-          
-          <div class="space-y-4">
-            <label class="flex items-center cursor-pointer">
-              <input type="checkbox" id="enableDiscordNotifications" class="mr-3">
-              <div>
-                <div class="font-medium">Discord Notifications</div>
-                <div class="text-sm text-gray-600">Receive Discord DMs when new items match your goals</div>
-              </div>
-            </label>
-          </div>
-          
-          <div class="mt-6 flex justify-end">
-            <button id="saveSettingsBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
           </div>
         </div>
       </div>
@@ -350,21 +295,12 @@ app.get('/', (c) => {
     let currentUser = null
     let currentGoalSet = 'Default'
     let allKnownSets = new Set(['Default'])
-    let userGoals = []
-    let filterByGoalsEnabled = false
 
     // Auth handling
     function initAuth() {
       const stored = localStorage.getItem('discord_user')
       if (stored) {
         currentUser = JSON.parse(stored)
-        
-        // Restore known sets from localStorage
-        const savedSets = localStorage.getItem('knownSets_' + currentUser.id)
-        if (savedSets) {
-          allKnownSets = new Set(JSON.parse(savedSets))
-        }
-        
         showUserInfo()
       }
     }
@@ -376,7 +312,6 @@ app.get('/', (c) => {
       document.getElementById('goalsSection').classList.remove('hidden')
       updateSetButtons()
       loadGoals()
-      loadSummary()
     }
 
     function updateSetButtons() {
@@ -434,13 +369,7 @@ app.get('/', (c) => {
       // Get all set names first
       const setsResponse = await fetch(API_BASE + '/api/goal-sets?discord_id=' + currentUser.id)
       const setsData = await setsResponse.json()
-      
-      // Merge with existing known sets (don't lose sets that have no goals/inventory)
-      setsData.sets.forEach(s => allKnownSets.add(s))
-      if (allKnownSets.size === 0) allKnownSets.add('Default')
-      
-      // Save to localStorage
-      localStorage.setItem('knownSets_' + currentUser.id, JSON.stringify([...allKnownSets]))
+      allKnownSets = new Set(setsData.sets || ['Default'])
       
       // If current set doesn't exist, reset to Default
       if (!allKnownSets.has(currentGoalSet)) {
@@ -471,10 +400,7 @@ app.get('/', (c) => {
             \${goal.max_cost ? \`<span class="text-sm text-gray-500">• Max: \${goal.max_cost.toLocaleString()}</span>\` : ''}
             \${goal.preferred_slots ? \`<span class="text-sm text-gray-500">• Slots: \${goal.preferred_slots}</span>\` : ''}
           </div>
-          <div class="flex gap-2">
-            <button class="text-blue-600 hover:text-blue-800 text-sm" onclick="editGoal(\${goal.id})">Edit</button>
-            <button class="text-red-600 hover:text-red-800 text-sm" onclick="deleteGoal(\${goal.id})">Delete</button>
-          </div>
+          <button class="text-red-600 hover:text-red-800" onclick="deleteGoal(\${goal.id})">Delete</button>
         </div>
       \`).join('')
     }
@@ -482,7 +408,6 @@ app.get('/', (c) => {
     document.getElementById('goalSetSelector').addEventListener('change', (e) => {
       currentGoalSet = e.target.value
       loadGoals()
-      loadSummary()
     })
 
     document.getElementById('newSetBtn').addEventListener('click', () => {
@@ -586,33 +511,6 @@ app.get('/', (c) => {
       if (!confirm('Delete this goal?')) return
       await fetch(API_BASE + '/api/goals/' + id, { method: 'DELETE' })
       loadGoals()
-    }
-
-    let editingGoalId = null
-
-    window.editGoal = async function(id) {
-      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
-      const data = await response.json()
-      const goal = data.goals.find(g => g.id === id)
-      
-      if (!goal) return
-      
-      editingGoalId = id
-      document.getElementById('goalStat').value = goal.stat
-      document.getElementById('goalBoost').value = goal.min_boost
-      document.getElementById('goalMaxCost').value = goal.max_cost || ''
-      
-      if (goal.preferred_slots) {
-        const slots = goal.preferred_slots.split(',').map(s => s.trim())
-        document.querySelectorAll('input[name="goalSlot"]').forEach(cb => {
-          cb.checked = slots.includes(cb.value)
-        })
-      } else {
-        document.querySelectorAll('input[name="goalSlot"]').forEach(cb => cb.checked = false)
-      }
-      
-      document.getElementById('addGoalForm').classList.remove('hidden')
-      document.getElementById('saveGoalBtn').textContent = 'Update Goal'
     }
 
     let parsedStatsData = null
@@ -813,7 +711,6 @@ app.get('/', (c) => {
       document.getElementById('parsedItemInfo').classList.add('hidden')
       document.getElementById('itemTextInput').value = ''
       await loadInventory()
-      await loadSummary()
     })
 
     async function loadInventory() {
@@ -849,41 +746,6 @@ app.get('/', (c) => {
       if (!confirm('Delete this item from inventory?')) return
       await fetch(API_BASE + '/api/inventory/' + id, { method: 'DELETE' })
       await loadInventory()
-      await loadSummary()
-    }
-
-    async function loadSummary() {
-      if (!currentUser || !currentGoalSet) return
-      
-      const response = await fetch(API_BASE + '/api/summary?discord_id=' + currentUser.id + '&goal_set_name=' + currentGoalSet)
-      const data = await response.json()
-      
-      const summarySection = document.getElementById('summarySection')
-      const statsSummary = document.getElementById('statsSummary')
-      const skillsSummary = document.getElementById('skillsSummary')
-      
-      if (Object.keys(data.stats).length === 0 && Object.keys(data.skills).length === 0) {
-        summarySection.classList.add('hidden')
-        return
-      }
-      
-      summarySection.classList.remove('hidden')
-      
-      statsSummary.innerHTML = Object.entries(data.stats).map(([name, vals]) => {
-        let color = 'text-red-600'
-        if (vals.enhancive >= vals.cap) color = 'text-green-600'
-        else if (vals.enhancive >= vals.cap * 0.8) color = 'text-yellow-600'
-        
-        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + '">' + vals.base + ' + ' + vals.enhancive + ' = ' + vals.total + ' [' + vals.enhancive + '/' + vals.cap + ']</span></div>'
-      }).join('')
-      
-      skillsSummary.innerHTML = Object.entries(data.skills).map(([name, vals]) => {
-        let color = 'text-red-600'
-        if (vals.enhancive >= vals.cap) color = 'text-green-600'
-        else if (vals.enhancive >= vals.cap * 0.8) color = 'text-yellow-600'
-        
-        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + '">' + vals.base + ' + ' + vals.enhancive + ' = ' + vals.total + ' [' + vals.enhancive + '/' + vals.cap + ']</span></div>'
-      }).join('')
     }
 
     document.getElementById('myMatchesBtn').addEventListener('click', async () => {
@@ -935,27 +797,18 @@ app.get('/', (c) => {
     })
 
     document.getElementById('addGoalBtn').addEventListener('click', () => {
-      // Clear form for new goal
-      document.getElementById('goalStat').value = ''
-      document.getElementById('goalBoost').value = ''
-      document.getElementById('goalMaxCost').value = ''
-      document.querySelectorAll('input[name="goalSlot"]').forEach(cb => cb.checked = false)
-      editingGoalId = null
-      document.getElementById('saveGoalBtn').textContent = 'Save Goal'
       document.getElementById('addGoalForm').classList.remove('hidden')
     })
 
     document.getElementById('cancelGoalBtn').addEventListener('click', () => {
       document.getElementById('addGoalForm').classList.add('hidden')
-      editingGoalId = null
-      document.getElementById('saveGoalBtn').textContent = 'Save Goal'
     })
 
     document.getElementById('saveGoalBtn').addEventListener('click', async () => {
       const stat = document.getElementById('goalStat').value
       const boost = document.getElementById('goalBoost').value
       const maxCost = document.getElementById('goalMaxCost').value
-      const selectedSlots = Array.from(document.querySelectorAll('input[name="goalSlot"]:checked'))
+      const selectedSlots = Array.from(document.querySelectorAll('#addGoalForm input[type="checkbox"]:checked'))
         .map(cb => cb.value)
         .join(',')
 
@@ -964,51 +817,26 @@ app.get('/', (c) => {
         return
       }
 
-      if (editingGoalId) {
-        // Update existing goal
-        await fetch(API_BASE + '/api/goals/' + editingGoalId, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            stat,
-            min_boost: parseInt(boost),
-            max_cost: maxCost ? parseInt(maxCost) : null,
-            preferred_slots: selectedSlots || null,
-          }),
-        })
-        editingGoalId = null
-        document.getElementById('saveGoalBtn').textContent = 'Save Goal'
-      } else {
-        // Create new goal
-        await fetch(API_BASE + '/api/goals', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            discord_id: currentUser.id,
-            stat,
-            min_boost: parseInt(boost),
-            max_cost: maxCost ? parseInt(maxCost) : null,
-            preferred_slots: selectedSlots || null,
-            goal_set_name: currentGoalSet,
-          }),
-        })
-      }
+      await fetch(API_BASE + '/api/goals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discord_id: currentUser.id,
+          stat,
+          min_boost: parseInt(boost),
+          max_cost: maxCost ? parseInt(maxCost) : null,
+          preferred_slots: selectedSlots || null,
+          goal_set_name: currentGoalSet,
+        }),
+      })
 
       document.getElementById('goalStat').value = ''
       document.getElementById('goalBoost').value = ''
       document.getElementById('goalMaxCost').value = ''
-      document.querySelectorAll('input[name="goalSlot"]').forEach(cb => cb.checked = false)
+      document.querySelectorAll('#addGoalForm input[type="checkbox"]').forEach(cb => cb.checked = false)
       document.getElementById('addGoalForm').classList.add('hidden')
       
-      await loadGoals()
-      
-      // Re-fetch goals and re-apply filter if enabled
-      if (filterByGoalsEnabled && currentUser) {
-        const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
-        const data = await response.json()
-        userGoals = data.goals.filter(g => g.goal_set_name === currentGoalSet)
-        filterItems()
-      }
+      loadGoals()
     })
 
     async function loadItems() {
@@ -1090,42 +918,6 @@ app.get('/', (c) => {
             return false
           }
         }
-        
-        // Filter by goals if enabled
-        if (filterByGoalsEnabled && userGoals.length > 0) {
-          let matchesAnyGoal = false
-          
-          for (const goal of userGoals) {
-            try {
-              const enhancives = JSON.parse(item.enhancives_json)
-              
-              // Check if item matches this goal
-              const hasStatMatch = enhancives.some(enh => 
-                enh.ability.toLowerCase().includes(goal.stat.toLowerCase()) && 
-                enh.boost >= Number(goal.min_boost)
-              )
-              
-              if (!hasStatMatch) continue
-              
-              // Check cost constraint
-              if (goal.max_cost && item.cost > Number(goal.max_cost)) continue
-              
-              // Check slot preference
-              if (goal.preferred_slots) {
-                const slots = goal.preferred_slots.split(',').map(s => s.trim())
-                if (!slots.includes(item.worn)) continue
-              }
-              
-              matchesAnyGoal = true
-              break
-            } catch {
-              continue
-            }
-          }
-          
-          if (!matchesAnyGoal) return false
-        }
-        
         return true
       })
 
@@ -1137,15 +929,6 @@ app.get('/', (c) => {
       tbody.innerHTML = ''
 
       document.getElementById('totalItems').textContent = filteredItems.length
-      
-      // Update goal filter status
-      const statusEl = document.getElementById('goalFilterStatus')
-      if (filterByGoalsEnabled && userGoals.length > 0) {
-        statusEl.textContent = 'Filtering by ' + userGoals.length + ' goal' + (userGoals.length > 1 ? 's' : '')
-        statusEl.classList.remove('hidden')
-      } else {
-        statusEl.classList.add('hidden')
-      }
 
       filteredItems.slice(0, 500).forEach(item => {
         const tr = document.createElement('tr')
@@ -1181,26 +964,6 @@ app.get('/', (c) => {
     document.getElementById('filterTown').addEventListener('change', filterItems)
     document.getElementById('filterWorn').addEventListener('change', filterItems)
     document.getElementById('filterStat').addEventListener('change', filterItems)
-    
-    document.getElementById('filterByGoals').addEventListener('change', async (e) => {
-      filterByGoalsEnabled = e.target.checked
-      localStorage.setItem('filterByGoals', filterByGoalsEnabled)
-      
-      if (filterByGoalsEnabled && currentUser) {
-        const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
-        const data = await response.json()
-        userGoals = data.goals.filter(g => g.goal_set_name === currentGoalSet)
-      }
-      
-      filterItems()
-    })
-    
-    // Restore checkbox state
-    const savedFilter = localStorage.getItem('filterByGoals')
-    if (savedFilter === 'true') {
-      document.getElementById('filterByGoals').checked = true
-      filterByGoalsEnabled = true
-    }
 
     initAuth()
     loadItems()
@@ -1210,26 +973,6 @@ app.get('/', (c) => {
 })
 
 app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }))
-
-app.get('/api/user/settings', async (c) => {
-  const discordId = c.req.query('discord_id')
-  if (!discordId) return c.json({ error: 'discord_id required' }, 400)
-
-  const user = await c.env.DB.prepare('SELECT notifications_enabled FROM users WHERE discord_id = ?').bind(discordId).first()
-  
-  return c.json({ notifications_enabled: user?.notifications_enabled === 1 })
-})
-
-app.put('/api/user/settings', async (c) => {
-  const { discord_id, notifications_enabled } = await c.req.json()
-  if (!discord_id) return c.json({ error: 'discord_id required' }, 400)
-
-  await c.env.DB.prepare(
-    'INSERT INTO users (discord_id, notifications_enabled) VALUES (?, ?) ON CONFLICT(discord_id) DO UPDATE SET notifications_enabled = ?'
-  ).bind(discord_id, notifications_enabled ? 1 : 0, notifications_enabled ? 1 : 0).run()
-
-  return c.json({ success: true })
-})
 
 app.get('/api/auth/discord', (c) => {
   const clientId = c.env.DISCORD_CLIENT_ID
@@ -1347,21 +1090,6 @@ app.post('/api/goals', async (c) => {
   return c.json({ success: true, id: result.meta.last_row_id })
 })
 
-app.put('/api/goals/:id', async (c) => {
-  const id = c.req.param('id')
-  const { stat, min_boost, max_cost, preferred_slots } = await c.req.json()
-  
-  if (!stat || min_boost === undefined || min_boost === null) {
-    return c.json({ error: 'stat and min_boost required' }, 400)
-  }
-
-  await c.env.DB.prepare(
-    'UPDATE user_goals SET stat = ?, min_boost = ?, max_cost = ?, preferred_slots = ? WHERE id = ?'
-  ).bind(stat, min_boost, max_cost || null, preferred_slots || null, id).run()
-
-  return c.json({ success: true })
-})
-
 app.put('/api/goal-set/:discord_id/:set_name', async (c) => {
   const discordId = c.req.param('discord_id')
   const setName = c.req.param('set_name')
@@ -1436,20 +1164,6 @@ app.get('/api/debug/alerts', async (c) => {
     const goal = goals[0]
     for (const item of allItems.slice(0, 100)) {
       try {
-
-app.get('/api/debug/sets', async (c) => {
-  const discordId = c.req.query('discord_id')
-  if (!discordId) return c.json({ error: 'discord_id required' }, 400)
-
-  const { results: goals } = await c.env.DB.prepare('SELECT DISTINCT goal_set_name FROM user_goals WHERE discord_id = ?').bind(discordId).all()
-  const { results: inventory } = await c.env.DB.prepare('SELECT DISTINCT goal_set_name FROM user_inventory WHERE discord_id = ?').bind(discordId).all()
-  
-  return c.json({ 
-    setsWithGoals: goals.map(r => r.goal_set_name),
-    setsWithInventory: inventory.map(r => r.goal_set_name)
-  })
-})
-
         const enhancives = JSON.parse(item.enhancives_json)
         const hasMatch = enhancives.some((enh: any) => 
           enh.ability.toLowerCase().includes(goal.stat.toLowerCase()) && enh.boost >= goal.min_boost
@@ -1513,63 +1227,6 @@ app.delete('/api/inventory/:id', async (c) => {
   const id = c.req.param('id')
   await c.env.DB.prepare('DELETE FROM user_inventory WHERE id = ?').bind(id).run()
   return c.json({ success: true })
-})
-
-app.get('/api/summary', async (c) => {
-  const discordId = c.req.query('discord_id')
-  const goalSetName = c.req.query('goal_set_name')
-  
-  if (!discordId || !goalSetName) {
-    return c.json({ error: 'discord_id and goal_set_name required' }, 400)
-  }
-
-  const goalSet = await c.env.DB.prepare(
-    'SELECT base_stats, skill_ranks FROM user_goals WHERE discord_id = ? AND goal_set_name = ? LIMIT 1'
-  ).bind(discordId, goalSetName).first()
-
-  const baseStats = goalSet?.base_stats ? JSON.parse(goalSet.base_stats as string) : {}
-  const skillRanks = goalSet?.skill_ranks ? JSON.parse(goalSet.skill_ranks as string) : {}
-
-  const { results: items } = await c.env.DB.prepare(
-    'SELECT enhancives_json FROM user_inventory WHERE discord_id = ? AND goal_set_name = ?'
-  ).bind(discordId, goalSetName).all()
-
-  const stats: Record<string, { base: number; enhancive: number; total: number; cap: number }> = {}
-  const skills: Record<string, { base: number; enhancive: number; total: number; cap: number }> = {}
-
-  for (const item of items) {
-    const enhancives = JSON.parse(item.enhancives_json as string)
-    for (const enh of enhancives) {
-      const { ability, boost } = enh
-      const isBase = ability.includes('Base')
-      const isBonus = ability.includes('Bonus')
-      const isRanks = ability.includes('Ranks')
-      
-      const cleanName = ability.replace(/ (Base|Bonus|Ranks)/g, '').trim()
-      const isStat = ['Strength', 'Constitution', 'Dexterity', 'Agility', 'Discipline', 'Aura', 'Logic', 'Intuition', 'Wisdom', 'Influence'].includes(cleanName)
-      
-      if (isStat) {
-        if (!stats[cleanName]) stats[cleanName] = { base: baseStats[cleanName] || 0, enhancive: 0, total: 0, cap: STAT_CAP }
-        stats[cleanName].enhancive += isBonus ? boost * 2 : boost
-      } else {
-        if (!skills[cleanName]) skills[cleanName] = { base: skillRanks[cleanName] || 0, enhancive: 0, total: 0, cap: SKILL_CAP }
-        if (isRanks) {
-          skills[cleanName].enhancive += ranksToBonus(boost, skills[cleanName].base)
-        } else {
-          skills[cleanName].enhancive += boost
-        }
-      }
-    }
-  }
-
-  for (const stat in stats) {
-    stats[stat].total = stats[stat].base + stats[stat].enhancive
-  }
-  for (const skill in skills) {
-    skills[skill].total = skills[skill].base + skills[skill].enhancive
-  }
-
-  return c.json({ stats, skills })
 })
 
 app.post('/api/my-matches', async (c) => {
