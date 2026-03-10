@@ -1378,6 +1378,20 @@ app.get('/api/debug/alerts', async (c) => {
     const goal = goals[0]
     for (const item of allItems.slice(0, 100)) {
       try {
+
+app.get('/api/debug/sets', async (c) => {
+  const discordId = c.req.query('discord_id')
+  if (!discordId) return c.json({ error: 'discord_id required' }, 400)
+
+  const { results: goals } = await c.env.DB.prepare('SELECT DISTINCT goal_set_name FROM user_goals WHERE discord_id = ?').bind(discordId).all()
+  const { results: inventory } = await c.env.DB.prepare('SELECT DISTINCT goal_set_name FROM user_inventory WHERE discord_id = ?').bind(discordId).all()
+  
+  return c.json({ 
+    setsWithGoals: goals.map(r => r.goal_set_name),
+    setsWithInventory: inventory.map(r => r.goal_set_name)
+  })
+})
+
         const enhancives = JSON.parse(item.enhancives_json)
         const hasMatch = enhancives.some((enh: any) => 
           enh.ability.toLowerCase().includes(goal.stat.toLowerCase()) && enh.boost >= goal.min_boost
