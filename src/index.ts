@@ -678,37 +678,49 @@ app.post('/api/scrape', async (c) => {
     const items = await scrapeEnhancives()
     const now = new Date().toISOString()
     
-    // Mark all items as unavailable first
-    await c.env.DB.prepare('UPDATE shop_items SET available = 0').run()
+    // Get current item IDs from database
+    const { results: existingItems } = await c.env.DB.prepare('SELECT id FROM shop_items WHERE available = 1').all()
+    const existingIds = new Set(existingItems.map((i: any) => i.id))
+    const scrapedIds = new Set(items.map(i => i.id))
     
-    // Upsert items (insert new or update existing)
-    const stmt = c.env.DB.prepare(
-      `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-       ON CONFLICT(id) DO UPDATE SET
-         name = excluded.name,
-         cost = excluded.cost,
-         enchant = excluded.enchant,
-         last_seen = excluded.last_seen,
-         available = 1`
-    )
+    // Find items that were removed (in DB but not in scrape)
+    const removedIds = [...existingIds].filter(id => !scrapedIds.has(id))
     
-    const batch = items.map(item => 
-      stmt.bind(
-        item.id,
-        item.name,
-        item.town,
-        item.shop,
-        item.cost,
-        item.enchant,
-        item.worn,
-        JSON.stringify(item.enhancives),
-        now,
-        now
+    // Only mark removed items as unavailable (not all items)
+    if (removedIds.length > 0) {
+      const placeholders = removedIds.map(() => '?').join(',')
+      await c.env.DB.prepare(`UPDATE shop_items SET available = 0 WHERE id IN (${placeholders})`)
+        .bind(...removedIds).run()
+      console.log(`Marked ${removedIds.length} items as unavailable`)
+    }
+    
+    // Only insert truly new items (not in DB at all)
+    const newItems = items.filter(item => !existingIds.has(item.id))
+    
+    if (newItems.length > 0) {
+      const stmt = c.env.DB.prepare(
+        `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`
       )
-    )
-    
-    await c.env.DB.batch(batch)
+      
+      const batch = newItems.map(item => 
+        stmt.bind(
+          item.id,
+          item.name,
+          item.town,
+          item.shop,
+          item.cost,
+          item.enchant,
+          item.worn,
+          JSON.stringify(item.enhancives),
+          now,
+          now
+        )
+      )
+      
+      await c.env.DB.batch(batch)
+      console.log(`Inserted ${newItems.length} new items`)
+    }
 
     // Update metadata
     if (lastUpdated) {
@@ -717,7 +729,7 @@ app.post('/api/scrape', async (c) => {
         .run()
     }
 
-    // Check for matches and send alerts (only available items)
+    // Check for matches and send alerts (only new items)
     // Only check items that were just added (scraped_at matches current scrape time)
     const newItems = items.filter(item => {
       const scrapedTime = new Date(item.scraped_at).getTime()
@@ -726,10 +738,10 @@ app.post('/api/scrape', async (c) => {
       return (currentTime - scrapedTime) < 5 * 60 * 1000
     })
     
-    console.log(`Checking ${newItems.length} new items out of ${items.length} total`)
+    console.log(`Checking ${newItems.length} new items for alerts`)
     await checkMatches(c.env, newItems)
 
-    return c.json({ success: true, count: items.length, lastUpdated })
+    return c.json({ success: true, total: items.length, new: newItems.length, removed: removedIds.length, lastUpdated })
   } catch (error) {
     console.error('Scrape error:', error)
     return c.json({ error: String(error) }, 500)
@@ -755,45 +767,58 @@ export default {
         const items = await scrapeEnhancives()
         const now = new Date().toISOString()
 
-        // Mark all items as unavailable first
-        await env.DB.prepare('UPDATE shop_items SET available = 0').run()
-
-        const stmt = env.DB.prepare(
-          `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-           ON CONFLICT(id) DO UPDATE SET
-             name = excluded.name,
-             cost = excluded.cost,
-             enchant = excluded.enchant,
-             last_seen = excluded.last_seen,
-             available = 1`
-        )
+        // Get current item IDs from database
+        const { results: existingItems } = await env.DB.prepare('SELECT id FROM shop_items WHERE available = 1').all()
+        const existingIds = new Set(existingItems.map((i: any) => i.id))
+        const scrapedIds = new Set(items.map(i => i.id))
         
-        const batch = items.map(item => 
-          stmt.bind(
-            item.id,
-            item.name,
-            item.town,
-            item.shop,
-            item.cost,
-            item.enchant,
-            item.worn,
-            JSON.stringify(item.enhancives),
-            now,
-            now
+        // Find items that were removed
+        const removedIds = [...existingIds].filter(id => !scrapedIds.has(id))
+        
+        // Only mark removed items as unavailable
+        if (removedIds.length > 0) {
+          const placeholders = removedIds.map(() => '?').join(',')
+          await env.DB.prepare(`UPDATE shop_items SET available = 0 WHERE id IN (${placeholders})`)
+            .bind(...removedIds).run()
+          console.log(`Marked ${removedIds.length} items as unavailable`)
+        }
+        
+        // Only insert truly new items
+        const newItems = items.filter(item => !existingIds.has(item.id))
+        
+        if (newItems.length > 0) {
+          const stmt = env.DB.prepare(
+            `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`
           )
-        )
-        
-        await env.DB.batch(batch)
+          
+          const batch = newItems.map(item => 
+            stmt.bind(
+              item.id,
+              item.name,
+              item.town,
+              item.shop,
+              item.cost,
+              item.enchant,
+              item.worn,
+              JSON.stringify(item.enhancives),
+              now,
+              now
+            )
+          )
+          
+          await env.DB.batch(batch)
+          console.log(`Inserted ${newItems.length} new items`)
+        }
 
-        // Check for matches and send alerts
-        await checkMatches(env, items)
+        // Check for matches and send alerts (only new items)
+        await checkMatches(env, newItems)
 
         await env.DB.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)')
           .bind('last_updated', lastUpdated)
           .run()
 
-        console.log(`Scraped ${items.length} items`)
+        console.log(`Scrape complete: ${items.length} total, ${newItems.length} new, ${removedIds.length} removed`)
       }
     } catch (error) {
       console.error('Scheduled scrape error:', error)
