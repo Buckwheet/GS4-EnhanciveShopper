@@ -1220,6 +1220,21 @@ app.post('/api/goals', async (c) => {
   return c.json({ success: true, id: result.meta.last_row_id })
 })
 
+app.put('/api/goals/:id', async (c) => {
+  const id = c.req.param('id')
+  const { stat, min_boost, max_cost, preferred_slots } = await c.req.json()
+  
+  if (!stat || min_boost === undefined || min_boost === null) {
+    return c.json({ error: 'stat and min_boost required' }, 400)
+  }
+
+  await c.env.DB.prepare(
+    'UPDATE user_goals SET stat = ?, min_boost = ?, max_cost = ?, preferred_slots = ? WHERE id = ?'
+  ).bind(stat, min_boost, max_cost || null, preferred_slots || null, id).run()
+
+  return c.json({ success: true })
+})
+
 app.put('/api/goal-set/:discord_id/:set_name', async (c) => {
   const discordId = c.req.param('discord_id')
   const setName = c.req.param('set_name')
