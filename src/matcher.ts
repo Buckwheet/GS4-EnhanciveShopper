@@ -43,10 +43,19 @@ export async function checkMatches(env: Env, newItems: any[]) {
       ).bind(goal.discord_id, item.id).all()
 
       if (existing.length === 0) {
-        console.log(`Sending alert for item ${item.id} to ${goal.discord_id}`)
-        const message = formatItemAlert(item)
-        const sent = await sendDiscordDM(env.DISCORD_BOT_TOKEN, goal.discord_id, message)
-        console.log(`Alert sent: ${sent}`)
+        // Check if user has notifications enabled
+        const user = await env.DB.prepare('SELECT notifications_enabled FROM users WHERE discord_id = ?').bind(goal.discord_id).first()
+        const notificationsEnabled = user?.notifications_enabled === 1
+        
+        let sent = false
+        if (notificationsEnabled) {
+          console.log(`Sending alert for item ${item.id} to ${goal.discord_id}`)
+          const message = formatItemAlert(item)
+          sent = await sendDiscordDM(env.DISCORD_BOT_TOKEN, goal.discord_id, message)
+          console.log(`Alert sent: ${sent}`)
+        } else {
+          console.log(`Skipping Discord DM for ${goal.discord_id} - notifications disabled`)
+        }
 
         await env.DB.prepare(
           'INSERT INTO alerts (discord_id, item_id, goal_id, sent_at, delivered) VALUES (?, ?, ?, ?, ?)'
