@@ -998,6 +998,11 @@ app.get('/', (c) => {
     })
 
     document.getElementById('aiChatBtn').addEventListener('click', () => {
+      const saved = localStorage.getItem('chatHistory_' + currentUser.id)
+      if (saved) {
+        chatHistory = JSON.parse(saved)
+        chatHistory.forEach(msg => addChatMessage(msg.content, msg.role === 'user'))
+      }
       document.getElementById('aiChatModal').classList.remove('hidden')
       document.getElementById('chatInput').focus()
     })
@@ -1008,6 +1013,7 @@ app.get('/', (c) => {
 
     document.getElementById('clearChatBtn').addEventListener('click', () => {
       chatHistory = []
+      localStorage.removeItem('chatHistory_' + currentUser.id)
       document.getElementById('chatMessages').innerHTML = ''
     })
 
@@ -1033,6 +1039,16 @@ app.get('/', (c) => {
       
       loadingMsg.remove()
       
+      if (data.error) {
+        addChatMessage('Error: ' + data.error, false)
+      } else {
+        addChatMessage(data.response, false)
+        chatHistory.push({ role: 'assistant', content: data.response })
+        localStorage.setItem('chatHistory_' + currentUser.id, JSON.stringify(chatHistory))
+      }
+    })
+
+    document.getElementById('chatInput').addEventListener('keypress', (e) => {
       if (data.error) {
         addChatMessage('Error: ' + data.error, false)
       } else {
