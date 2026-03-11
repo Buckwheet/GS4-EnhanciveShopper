@@ -1521,7 +1521,22 @@ app.post('/api/ai-chat', async (c) => {
   
   try {
     const aiResponse = await c.env.AI.run('@cf/meta/llama-2-7b-chat-int8', { messages })
-    return c.json({ response: aiResponse.response })
+    let responseText = aiResponse.response
+    
+    const sqlMatch = responseText.match(/SELECT[\s\S]*?FROM[\s\S]*?;/i)
+    if (sqlMatch) {
+      const sql = sqlMatch[0]
+      if (sql.toLowerCase().includes('select') && sql.toLowerCase().includes('from shop_items')) {
+        try {
+          const queryResult = await c.env.DB.prepare(sql).all()
+          responseText += '\n\nFound ' + queryResult.results.length + ' items.'
+        } catch (e) {
+          responseText += '\n\n(Query error)'
+        }
+      }
+    }
+    
+    return c.json({ response: responseText })
   } catch (error) {
     console.error('AI error:', error)
     return c.json({ error: 'AI request failed' }, 500)
