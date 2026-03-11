@@ -386,7 +386,7 @@ app.get('/', (c) => {
     function addChatMessage(text, isUser) {
       const div = document.createElement('div')
       div.className = 'p-3 rounded ' + (isUser ? 'bg-blue-100 ml-8' : 'bg-gray-100 mr-8')
-      div.textContent = text
+      div.innerHTML = text.replace(/\b(neck|finger|wrist|head|ear|waist|arms|legs|feet|shoulder)\b/gi, '<span class="font-semibold text-blue-600">$1</span>')
       document.getElementById('chatMessages').appendChild(div)
       div.scrollIntoView({ behavior: 'smooth' })
     }
