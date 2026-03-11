@@ -675,15 +675,20 @@ app.get('/', (c) => {
       updateSetButtons()
     })
 
+    let currentSetId = null
+
     document.getElementById('editSetBtn').addEventListener('click', async () => {
       if (!currentGoalSet) return
       
-      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      const response = await fetch(API_BASE + '/api/character-sets?discord_id=' + currentUser.id)
       const data = await response.json()
-      const activeGoal = data.goals.find(g => g.goal_set_name === currentGoalSet)
+      const activeSet = data.sets.find(s => s.set_name === currentGoalSet)
       
-      document.getElementById('editSetName').value = currentGoalSet
-      document.getElementById('editSetAccountType').value = activeGoal?.account_type || 'F2P'
+      if (!activeSet) return
+      
+      currentSetId = activeSet.id
+      document.getElementById('editSetName').value = activeSet.set_name
+      document.getElementById('editSetAccountType').value = activeSet.account_type || 'F2P'
       document.getElementById('editSetModal').classList.remove('hidden')
     })
 
