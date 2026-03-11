@@ -2,13 +2,19 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { scrapeEnhancives, getLastUpdated } from './scraper'
 import { checkMatches } from './matcher'
-import { STAT_CAP, SKILL_CAP } from './constants'
+import { STAT_CAP, SKILL_CAP, SLOT_LIMITS } from './constants'
 import { ranksToBonus } from './parser'
 import type { Env } from './types'
 
 const app = new Hono<{ Bindings: Env }>()
 
 app.use('/*', cors())
+
+function countSlotUsage(items: any[], slot: string, accountType: string): number {
+  const limit = SLOT_LIMITS[accountType as keyof typeof SLOT_LIMITS]?.[slot] || 1
+  const count = items.filter(i => i.slot === slot).length
+  return count
+}
 
 app.get('/', (c) => {
   return c.html(`<!DOCTYPE html>
