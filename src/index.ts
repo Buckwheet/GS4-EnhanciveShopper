@@ -1554,7 +1554,26 @@ app.post('/api/ai-chat', async (c) => {
     if (needs.length > 0) statsContext = ' To cap: ' + needs.join(', ') + '.'
   }
   
-  const systemPrompt = 'You are a helpful assistant for GS4 Enhancive Shopper. You help users find enhancive items. When asked to search for items, provide helpful guidance on using the search filters. You can explain: stats (Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence), skills (Combat Maneuvers, Physical Fitness, Dodging, Magic Item Use, etc), slots (neck, finger, wrist, head, ear, waist, arms, legs, feet, shoulder), and what the user needs based on their context.' + goalsContext + invContext + statsContext
+  let itemsContext = ''
+  const lowerMsg = message.toLowerCase()
+  const stats = ['strength', 'constitution', 'dexterity', 'agility', 'discipline', 'aura', 'logic', 'intuition', 'wisdom', 'influence']
+  const matchedStat = stats.find(s => lowerMsg.includes(s))
+  
+  if (matchedStat && (lowerMsg.includes('show') || lowerMsg.includes('find') || lowerMsg.includes('search') || lowerMsg.includes('item'))) {
+    const itemsQuery = await c.env.DB.prepare(
+      "SELECT name, town, cost, worn, enhancives_json FROM shop_items WHERE available = 1 AND enhancives_json LIKE ? LIMIT 10"
+    ).bind('%' + matchedStat.charAt(0).toUpperCase() + matchedStat.slice(1) + '%').all()
+    
+    if (itemsQuery.results.length > 0) {
+      itemsContext = ' Available ' + matchedStat + ' items: ' + itemsQuery.results.map((item: any) => {
+        const enhs = JSON.parse(item.enhancives_json)
+        const enhText = enhs.map((e: any) => '+' + e.boost + ' ' + e.ability).join(', ')
+        return item.name + ' (' + item.worn + ') - ' + (item.cost ? item.cost.toLocaleString() : '?') + ' silvers in ' + item.town + ' - ' + enhText
+      }).join('; ') + '.'
+    }
+  }
+  
+  const systemPrompt = 'You are a helpful assistant for GS4 Enhancive Shopper. You help users find enhancive items. When asked to search for items, provide helpful guidance on using the search filters. You can explain: stats (Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence), skills (Combat Maneuvers, Physical Fitness, Dodging, Magic Item Use, etc), slots (neck, finger, wrist, head, ear, waist, arms, legs, feet, shoulder), and what the user needs based on their context.' + goalsContext + invContext + statsContext + itemsContext
   
   const messages = [{ role: 'system', content: systemPrompt }]
   if (history && history.length > 0) {
