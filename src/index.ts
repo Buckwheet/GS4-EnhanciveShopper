@@ -1517,7 +1517,7 @@ app.post('/api/ai-chat', async (c) => {
     if (needs.length > 0) statsContext = ' To cap: ' + needs.join(', ') + '.'
   }
   
-  const systemPrompt = 'You are a helpful assistant for GS4 Enhancive Shopper. You help users find enhancive items from shops across 9 towns. Database: shop_items table has columns: name, town, shop, cost, enchant, worn (slot), enhancives_json (array of {boost, ability}), available (1=yes, 0=sold). Stats: Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence. Skills: Combat Maneuvers, Physical Fitness, Dodging, Arcane Symbols, Magic Item Use, Harness Power, Elemental Mana Control, Mental Mana Control, Spirit Mana Control, Elemental Lore Earth/Air/Fire/Water, Spiritual Lore Blessings/Religion/Summoning, Sorcerous Lore Demonology/Necromancy, Mental Lore Telepathy/Manipulation/Transformation. Slots: neck, finger, wrist, head, ear, waist, arms, legs, feet, shoulder. Answer questions about items, help find matches, explain stats.' + goalsContext + invContext + statsContext
+  const systemPrompt = 'You are a helpful assistant for GS4 Enhancive Shopper. CRITICAL: You cannot access the database directly. When users ask about items, tell them to use the search filters on the main page. You can only help explain: what stats/skills are, what the user needs based on their goals (' + (goalsContext || 'none set') + '), their inventory (' + (invContext || 'empty') + '), and what they need to cap (' + (statsContext || 'no data') + '). DO NOT make up item names, prices, or locations. DO NOT claim to search the database. Be honest about your limitations.'
   
   const messages = [{ role: 'system', content: systemPrompt }]
   if (history && history.length > 0) {
