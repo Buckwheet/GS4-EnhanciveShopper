@@ -1028,13 +1028,6 @@ app.get('/', (c) => {
     })
 
     document.getElementById('chatInput').addEventListener('keypress', (e) => {
-        addChatMessage('Error: ' + data.error, false)
-      } else {
-        addChatMessage(data.response, false)
-      }
-    })
-
-    document.getElementById('chatInput').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault()
         document.getElementById('sendChatBtn').click()
