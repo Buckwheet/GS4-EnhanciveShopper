@@ -1405,6 +1405,13 @@ app.delete('/api/goals/:id', async (c) => {
   return c.json({ success: true })
 })
 
+app.post('/api/ai-chat', async (c) => {
+  const { message, discord_id } = await c.req.json()
+  if (!message || !discord_id) return c.json({ error: 'message and discord_id required' }, 400)
+  
+  return c.json({ response: 'Echo: ' + message })
+})
+
 app.post('/api/test-dm', async (c) => {
   const { discord_id } = await c.req.json()
   if (!discord_id) return c.json({ error: 'discord_id required' }, 400)
