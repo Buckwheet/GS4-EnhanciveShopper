@@ -215,6 +215,12 @@ app.get('/', (c) => {
             <button id="closeAiChatBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
           </div>
           
+          <div class="mb-3 flex gap-2 flex-wrap">
+            <button class="example-query bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">What are my goals?</button>
+            <button class="example-query bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">What do I need to cap?</button>
+            <button class="example-query bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded text-sm">Explain stat bonuses</button>
+          </div>
+          
           <div id="chatMessages" class="flex-1 overflow-y-auto mb-4 space-y-2 min-h-[400px]"></div>
           
           <div class="flex gap-2">
@@ -1032,6 +1038,13 @@ app.get('/', (c) => {
         e.preventDefault()
         document.getElementById('sendChatBtn').click()
       }
+    })
+
+    document.querySelectorAll('.example-query').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('chatInput').value = btn.textContent
+        document.getElementById('sendChatBtn').click()
+      })
     })
 
     document.getElementById('addGoalBtn').addEventListener('click', () => {
