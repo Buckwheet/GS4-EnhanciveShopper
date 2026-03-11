@@ -1409,9 +1409,14 @@ app.post('/api/ai-chat', async (c) => {
   const { message, discord_id } = await c.req.json()
   if (!message || !discord_id) return c.json({ error: 'message and discord_id required' }, 400)
   
+  const systemPrompt = 'You are a helpful assistant for GS4 Enhancive Shopper. You help users find enhancive items. Available stats: Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence. Available skills: Combat Maneuvers, Physical Fitness, Dodging, Arcane Symbols, Magic Item Use, Harness Power, Elemental Mana Control, Mental Mana Control, Spirit Mana Control, Elemental Lore Earth, Elemental Lore Air, Elemental Lore Fire, Elemental Lore Water, Spiritual Lore Blessings, Spiritual Lore Religion, Spiritual Lore Summoning, Sorcerous Lore Demonology, Sorcerous Lore Necromancy, Mental Lore Telepathy, Mental Lore Manipulation, Mental Lore Transformation.'
+  
   try {
     const aiResponse = await c.env.AI.run('@cf/meta/llama-2-7b-chat-int8', {
-      messages: [{ role: 'user', content: message }]
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: message }
+      ]
     })
     return c.json({ response: aiResponse.response })
   } catch (error) {
