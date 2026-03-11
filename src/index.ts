@@ -652,39 +652,23 @@ app.get('/', (c) => {
       if (!confirmed) return
       
       // Delete all goals in this set
-      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
-      const data = await response.json()
-      const goalsToDelete = data.goals.filter(g => (g.goal_set_name || 'Default') === currentGoalSet)
+      const setsResponse = await fetch(API_BASE + '/api/character-sets?discord_id=' + currentUser.id)
+      const setsData = await setsResponse.json()
+      const setToDelete = setsData.sets.find(s => s.set_name === currentGoalSet)
       
-      for (const goal of goalsToDelete) {
-        await fetch(API_BASE + '/api/goals/' + goal.id, { method: 'DELETE' })
+      if (setToDelete) {
+        await fetch(API_BASE + '/api/character-sets/' + setToDelete.id, { method: 'DELETE' })
       }
       
-      // Delete inventory items for this set
-      const invResponse = await fetch(API_BASE + '/api/inventory?discord_id=' + currentUser.id + '&goal_set_name=' + currentGoalSet)
-      const invData = await invResponse.json()
-      for (const item of invData.items || []) {
-        await fetch(API_BASE + '/api/inventory/' + item.id, { method: 'DELETE' })
-      }
-      
-      // Remove from dropdown and known sets
+      // Remove from known sets
       allKnownSets.delete(currentGoalSet)
-      const setSelector = document.getElementById('goalSetSelector')
-      const optionToRemove = Array.from(setSelector.options).find(opt => opt.value === currentGoalSet)
-      if (optionToRemove) optionToRemove.remove()
       
-      // Switch to first remaining set or create Default if none left
-      if (setSelector.options.length === 0) {
-        const option = document.createElement('option')
-        option.value = 'Default'
-        option.textContent = 'Default (F2P)'
-        option.selected = true
-        option.dataset.accountType = 'F2P'
-        setSelector.appendChild(option)
+      // Switch to first remaining set
+      if (allKnownSets.size === 0) {
         currentGoalSet = 'Default'
+        allKnownSets.add('Default')
       } else {
-        currentGoalSet = setSelector.options[0].value
-        setSelector.value = currentGoalSet
+        currentGoalSet = [...allKnownSets][0]
       }
       
       loadGoals()
