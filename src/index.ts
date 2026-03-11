@@ -536,34 +536,40 @@ app.get('/', (c) => {
     async function loadGoals() {
       if (!currentUser) return
       
-      // Get all set names first
-      const setsResponse = await fetch(API_BASE + '/api/goal-sets?discord_id=' + currentUser.id)
+      // Get all character sets
+      const setsResponse = await fetch(API_BASE + '/api/character-sets?discord_id=' + currentUser.id)
       const setsData = await setsResponse.json()
       
-      // Merge with existing known sets (don't lose sets that have no goals/inventory)
-      setsData.sets.forEach(s => allKnownSets.add(s))
+      // Update known sets
+      allKnownSets.clear()
+      setsData.sets.forEach(s => allKnownSets.add(s.set_name))
       if (allKnownSets.size === 0) allKnownSets.add('Default')
       
       // Save to localStorage
       localStorage.setItem('knownSets_' + currentUser.id, JSON.stringify([...allKnownSets]))
       
-      // If current set doesn't exist, reset to Default
+      // If current set doesn't exist, reset to first available
       if (!allKnownSets.has(currentGoalSet)) {
-        currentGoalSet = 'Default'
+        currentGoalSet = [...allKnownSets][0]
       }
       
+      // Find current set data
+      const currentSet = setsData.sets.find(s => s.set_name === currentGoalSet)
+      
       const setSelector = document.getElementById('goalSetSelector')
-      setSelector.innerHTML = [...allKnownSets].map(s => \`<option value="\${s}" \${s === currentGoalSet ? 'selected' : ''}>\${s}</option>\`).join('')
+      setSelector.innerHTML = setsData.sets.map(s => \`<option value="\${s.set_name}" data-set-id="\${s.id}" data-account-type="\${s.account_type}" \${s.set_name === currentGoalSet ? 'selected' : ''}>\${s.set_name} (\${s.account_type})</option>\`).join('')
       
       // Load goals for current set
-      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
-      const data = await response.json()
+      if (!currentSet) {
+        document.getElementById('goalsList').innerHTML = '<p class="text-gray-500">No goals in this set. Add one to get started!</p>'
+        return
+      }
       
-      // Filter goals by current set
-      const currentSetGoals = data.goals.filter(g => (g.goal_set_name || 'Default') === currentGoalSet)
+      const goalsResponse = await fetch(API_BASE + '/api/character-sets/' + currentSet.id + '/goals')
+      const goalsData = await goalsResponse.json()
       
       const goalsList = document.getElementById('goalsList')
-      if (currentSetGoals.length === 0) {
+      if (goalsData.goals.length === 0) {
         goalsList.innerHTML = '<p class="text-gray-500">No goals in this set. Add one to get started!</p>'
         return
       }
@@ -1703,6 +1709,19 @@ app.get('/api/goal-sets', async (c) => {
   return c.json({ sets: [...sets] })
 })
 
+// New API: Get character sets
+app.get('/api/character-sets', async (c) => {
+  const discordId = c.req.query('discord_id')
+  if (!discordId) return c.json({ error: 'discord_id required' }, 400)
+
+  const { results: sets } = await c.env.DB.prepare('SELECT * FROM character_sets WHERE discord_id = ?')
+    .bind(discordId)
+    .all()
+
+  return c.json({ sets })
+})
+
+// Legacy: Keep for backwards compatibility during transition
 app.get('/api/goals', async (c) => {
   const discordId = c.req.query('discord_id')
   if (!discordId) return c.json({ error: 'discord_id required' }, 400)
@@ -1712,6 +1731,65 @@ app.get('/api/goals', async (c) => {
     .all()
 
   return c.json({ goals: results })
+})
+
+// New API: Create character set
+app.post('/api/character-sets', async (c) => {
+  const { discord_id, set_name, account_type } = await c.req.json()
+  
+  if (!discord_id || !set_name) {
+    return c.json({ error: 'discord_id and set_name required' }, 400)
+  }
+
+  const result = await c.env.DB.prepare(
+    'INSERT INTO character_sets (discord_id, set_name, account_type, created_at) VALUES (?, ?, ?, ?)'
+  ).bind(discord_id, set_name, account_type || 'F2P', new Date().toISOString()).run()
+
+  return c.json({ success: true, id: result.meta.last_row_id })
+})
+
+// New API: Update character set
+app.put('/api/character-sets/:id', async (c) => {
+  const id = c.req.param('id')
+  const { set_name, account_type, base_stats, skill_ranks } = await c.req.json()
+
+  await c.env.DB.prepare(
+    'UPDATE character_sets SET set_name = ?, account_type = ?, base_stats = ?, skill_ranks = ? WHERE id = ?'
+  ).bind(set_name, account_type, base_stats || null, skill_ranks || null, id).run()
+
+  return c.json({ success: true })
+})
+
+// New API: Delete character set (cascades to goals and inventory)
+app.delete('/api/character-sets/:id', async (c) => {
+  const id = c.req.param('id')
+  await c.env.DB.prepare('DELETE FROM character_sets WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+// New API: Get goals for a character set
+app.get('/api/character-sets/:id/goals', async (c) => {
+  const id = c.req.param('id')
+  const { results } = await c.env.DB.prepare('SELECT * FROM set_goals WHERE character_set_id = ?')
+    .bind(id)
+    .all()
+  return c.json({ goals: results })
+})
+
+// New API: Add goal to character set
+app.post('/api/character-sets/:id/goals', async (c) => {
+  const setId = c.req.param('id')
+  const { stat, min_boost, max_cost, preferred_slots } = await c.req.json()
+  
+  if (!stat || min_boost === undefined || min_boost === null) {
+    return c.json({ error: 'stat and min_boost required' }, 400)
+  }
+
+  const result = await c.env.DB.prepare(
+    'INSERT INTO set_goals (character_set_id, stat, min_boost, max_cost, preferred_slots, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(setId, stat, min_boost, max_cost || null, preferred_slots || null, new Date().toISOString()).run()
+
+  return c.json({ success: true, id: result.meta.last_row_id })
 })
 
 app.post('/api/goals', async (c) => {
