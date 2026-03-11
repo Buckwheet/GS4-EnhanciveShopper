@@ -864,7 +864,7 @@ app.get('/', (c) => {
         return
       }
       
-      await fetch(API_BASE + '/api/inventory', {
+      const response = await fetch(API_BASE + '/api/inventory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -876,6 +876,13 @@ app.get('/', (c) => {
           is_permanent: parsedItemData.isPermanent
         })
       })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        alert('Error: ' + (data.error || 'Failed to add item'))
+        return
+      }
       
       alert('Item added to inventory!')
       document.getElementById('addItemForm').classList.add('hidden')
