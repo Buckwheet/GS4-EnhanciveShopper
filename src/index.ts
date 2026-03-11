@@ -700,58 +700,21 @@ app.get('/', (c) => {
       const newName = document.getElementById('editSetName').value.trim()
       const newAccountType = document.getElementById('editSetAccountType').value
       
-      if (!newName) {
+      if (!newName || !currentSetId) {
         alert('Please enter a set name')
         return
       }
       
       const oldName = currentGoalSet
       
-      // Update all goals in this set
-      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
-      const data = await response.json()
-      const goalsToUpdate = data.goals.filter(g => g.goal_set_name === oldName)
-      
-      if (goalsToUpdate.length === 0) {
-        // No goals exist, create placeholder to store account_type
-        await fetch(API_BASE + '/api/goals', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            discord_id: currentUser.id,
-            stat: '_placeholder',
-            min_boost: 0,
-            goal_set_name: newName,
-            account_type: newAccountType
-          })
+      await fetch(API_BASE + '/api/character-sets/' + currentSetId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          set_name: newName,
+          account_type: newAccountType
         })
-      } else {
-        for (const goal of goalsToUpdate) {
-          await fetch(API_BASE + '/api/goals/' + goal.id, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              ...goal,
-              goal_set_name: newName,
-              account_type: newAccountType
-            })
-          })
-        }
-      }
-      
-      // Update inventory items for this set
-      const invResponse = await fetch(API_BASE + '/api/inventory?discord_id=' + currentUser.id + '&goal_set_name=' + oldName)
-      const invData = await invResponse.json()
-      for (const item of invData.items || []) {
-        await fetch(API_BASE + '/api/inventory/' + item.id, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...item,
-            goal_set_name: newName
-          })
-        })
-      }
+      })
       
       // Update local state
       allKnownSets.delete(oldName)
