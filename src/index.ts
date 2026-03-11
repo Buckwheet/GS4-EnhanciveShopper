@@ -996,6 +996,27 @@ app.get('/', (c) => {
       document.getElementById('aiChatModal').classList.add('hidden')
     })
 
+    document.getElementById('sendChatBtn').addEventListener('click', async () => {
+      const input = document.getElementById('chatInput')
+      const message = input.value.trim()
+      if (!message) return
+      
+      addChatMessage(message, true)
+      input.value = ''
+      
+      addChatMessage('...', false)
+      const loadingMsg = document.getElementById('chatMessages').lastChild
+      
+      const response = await fetch(API_BASE + '/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: message, discord_id: currentUser.id })
+      })
+      const data = await response.json()
+      
+      loadingMsg.remove()
+    })
+
     document.getElementById('addGoalBtn').addEventListener('click', () => {
       // Clear form for new goal
       document.getElementById('goalStat').value = ''
