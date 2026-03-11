@@ -79,6 +79,9 @@ app.get('/', (c) => {
             <button id="myMatchesBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
               My Matches
             </button>
+            <button id="aiChatBtn" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-2 rounded font-semibold">
+              🤖 AI Assistant
+            </button>
           </div>
         </div>
         
