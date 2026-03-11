@@ -1023,6 +1023,13 @@ app.get('/', (c) => {
       }
     })
 
+    document.getElementById('chatInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        document.getElementById('sendChatBtn').click()
+      }
+    })
+
     document.getElementById('addGoalBtn').addEventListener('click', () => {
       // Clear form for new goal
       document.getElementById('goalStat').value = ''
