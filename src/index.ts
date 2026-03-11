@@ -301,6 +301,8 @@ app.get('/', (c) => {
             <button id="closeInvBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
           </div>
           
+          <div id="slotUsageDisplay" class="mb-4 p-3 bg-blue-50 rounded text-sm"></div>
+          
           <div class="mb-4">
             <button id="addItemBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">+ Add Enhancive Item</button>
           </div>
@@ -895,6 +897,27 @@ app.get('/', (c) => {
     async function loadInventory() {
       const response = await fetch(API_BASE + '/api/inventory?discord_id=' + currentUser.id + '&goal_set_name=' + currentGoalSet)
       const data = await response.json()
+      
+      const slotCounts = {}
+      data.items.forEach(item => {
+        slotCounts[item.slot] = (slotCounts[item.slot] || 0) + 1
+      })
+      
+      const goalResponse = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      const goalData = await goalResponse.json()
+      const accountType = goalData.goals[0]?.account_type || 'F2P'
+      
+      const slotLimits = { 'F2P': { 'neck': 3, 'finger': 2, 'wrist': 2 }, 'Premium': { 'neck': 4, 'finger': 3, 'wrist': 3 }, 'Platinum': { 'neck': 5, 'finger': 4, 'wrist': 4 } }
+      const limits = slotLimits[accountType] || slotLimits['F2P']
+      
+      const slotUsageDiv = document.getElementById('slotUsageDisplay')
+      const usageText = Object.keys(limits).map(slot => {
+        const count = slotCounts[slot] || 0
+        const limit = limits[slot]
+        const color = count >= limit ? 'text-red-600' : count >= limit * 0.8 ? 'text-yellow-600' : 'text-green-600'
+        return '<span class="' + color + '">' + slot.charAt(0).toUpperCase() + slot.slice(1) + ': ' + count + '/' + limit + '</span>'
+      }).join(' | ')
+      slotUsageDiv.innerHTML = '<strong>Slot Usage:</strong> ' + usageText
       
       const invList = document.getElementById('inventoryList')
       if (data.items.length === 0) {
