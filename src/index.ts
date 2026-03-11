@@ -924,7 +924,7 @@ app.get('/', (c) => {
       const limits = slotLimits[accountType] || slotLimits['F2P']
       
       const slotUsageDiv = document.getElementById('slotUsageDisplay')
-      const usageText = Object.keys(limits).filter(slot => slotCounts[slot] || limits[slot] > 1).map(slot => {
+      const usageText = Object.keys(limits).map(slot => {
         const count = slotCounts[slot] || 0
         const limit = limits[slot]
         const color = count >= limit ? 'text-red-600' : count >= limit * 0.8 ? 'text-yellow-600' : 'text-green-600'
@@ -990,7 +990,7 @@ app.get('/', (c) => {
       const slotUsageSection = document.getElementById('slotUsageSection')
       const mainSlotUsage = document.getElementById('mainSlotUsage')
       
-      const usageText = Object.keys(limits).filter(slot => slotCounts[slot] || limits[slot] > 1).map(slot => {
+      const usageText = Object.keys(limits).map(slot => {
         const count = slotCounts[slot] || 0
         const limit = limits[slot]
         const color = count >= limit ? 'text-red-600' : count >= limit * 0.8 ? 'text-yellow-600' : 'text-green-600'
