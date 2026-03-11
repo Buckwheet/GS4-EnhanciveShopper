@@ -979,6 +979,15 @@ app.get('/', (c) => {
       document.getElementById('myMatchesModal').classList.add('hidden')
     })
 
+    document.getElementById('aiChatBtn').addEventListener('click', () => {
+      document.getElementById('aiChatModal').classList.remove('hidden')
+      document.getElementById('chatInput').focus()
+    })
+
+    document.getElementById('closeAiChatBtn').addEventListener('click', () => {
+      document.getElementById('aiChatModal').classList.add('hidden')
+    })
+
     document.getElementById('addGoalBtn').addEventListener('click', () => {
       // Clear form for new goal
       document.getElementById('goalStat').value = ''
