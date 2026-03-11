@@ -1497,7 +1497,13 @@ app.post('/api/ai-chat', async (c) => {
     goalsContext = ' User goals: ' + goalsResult.results.map(g => g.stat + ' +' + g.min_boost + ' under ' + g.max_cost + ' silvers' + (g.preferred_slots ? ' in slots ' + g.preferred_slots : '')).join(', ') + '.'
   }
   
-  const systemPrompt = 'You are a helpful assistant for GS4 Enhancive Shopper. You help users find enhancive items from shops across 9 towns. Database: shop_items table has columns: name, town, shop, cost, enchant, worn (slot), enhancives_json (array of {boost, ability}), available (1=yes, 0=sold). Stats: Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence. Skills: Combat Maneuvers, Physical Fitness, Dodging, Arcane Symbols, Magic Item Use, Harness Power, Elemental Mana Control, Mental Mana Control, Spirit Mana Control, Elemental Lore Earth/Air/Fire/Water, Spiritual Lore Blessings/Religion/Summoning, Sorcerous Lore Demonology/Necromancy, Mental Lore Telepathy/Manipulation/Transformation. Slots: neck, finger, wrist, head, ear, waist, arms, legs, feet, shoulder. Answer questions about items, help find matches, explain stats.' + goalsContext
+  const invResult = await c.env.DB.prepare('SELECT item_name, slot, enhancives_json FROM user_inventory WHERE discord_id = ?').bind(discord_id).all()
+  let invContext = ''
+  if (invResult.results.length > 0) {
+    invContext = ' User inventory: ' + invResult.results.map(i => i.item_name + ' (' + i.slot + ')').join(', ') + '.'
+  }
+  
+  const systemPrompt = 'You are a helpful assistant for GS4 Enhancive Shopper. You help users find enhancive items from shops across 9 towns. Database: shop_items table has columns: name, town, shop, cost, enchant, worn (slot), enhancives_json (array of {boost, ability}), available (1=yes, 0=sold). Stats: Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence. Skills: Combat Maneuvers, Physical Fitness, Dodging, Arcane Symbols, Magic Item Use, Harness Power, Elemental Mana Control, Mental Mana Control, Spirit Mana Control, Elemental Lore Earth/Air/Fire/Water, Spiritual Lore Blessings/Religion/Summoning, Sorcerous Lore Demonology/Necromancy, Mental Lore Telepathy/Manipulation/Transformation. Slots: neck, finger, wrist, head, ear, waist, arms, legs, feet, shoulder. Answer questions about items, help find matches, explain stats.' + goalsContext + invContext
   
   const messages = [{ role: 'system', content: systemPrompt }]
   if (history && history.length > 0) {
