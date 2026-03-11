@@ -1529,7 +1529,17 @@ app.post('/api/ai-chat', async (c) => {
       if (sql.toLowerCase().includes('select') && sql.toLowerCase().includes('from shop_items')) {
         try {
           const queryResult = await c.env.DB.prepare(sql).all()
-          responseText += '\n\nFound ' + queryResult.results.length + ' items.'
+          if (queryResult.results.length > 0) {
+            const itemList = queryResult.results.slice(0, 5).map((item: any) => {
+              const enhs = JSON.parse(item.enhancives_json || '[]')
+              const enhText = enhs.map((e: any) => '+' + e.boost + ' ' + e.ability).join(', ')
+              return item.name + ' - ' + (item.cost ? item.cost.toLocaleString() + ' silvers' : 'unknown cost') + ' - ' + item.town + ' - ' + enhText
+            }).join('\n')
+            responseText += '\n\nFound ' + queryResult.results.length + ' items:\n' + itemList
+            if (queryResult.results.length > 5) responseText += '\n... and ' + (queryResult.results.length - 5) + ' more'
+          } else {
+            responseText += '\n\nNo items found.'
+          }
         } catch (e) {
           responseText += '\n\n(Query error)'
         }
