@@ -1015,6 +1015,12 @@ app.get('/', (c) => {
       const data = await response.json()
       
       loadingMsg.remove()
+      
+      if (data.error) {
+        addChatMessage('Error: ' + data.error, false)
+      } else {
+        addChatMessage(data.response, false)
+      }
     })
 
     document.getElementById('addGoalBtn').addEventListener('click', () => {
