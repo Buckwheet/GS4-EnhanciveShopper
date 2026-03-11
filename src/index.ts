@@ -97,6 +97,7 @@ app.get('/', (c) => {
               <option value="">No sets yet</option>
             </select>
             <button id="newSetBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm">+ New Set</button>
+            <button id="editSetBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">Edit Set</button>
             <button id="deleteSetBtn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">Delete Set</button>
           </div>
         </div>
@@ -194,6 +195,30 @@ app.get('/', (c) => {
             <div class="flex gap-2">
               <button id="createSetConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1">Create</button>
               <button id="createSetCancel" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="editSetModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full">
+          <h2 class="text-2xl font-semibold mb-4">Edit Goal Set</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Set Name</label>
+              <input type="text" id="editSetName" class="border p-2 rounded w-full">
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Account Type</label>
+              <select id="editSetAccountType" class="border p-2 rounded w-full">
+                <option value="F2P">F2P / Standard</option>
+                <option value="Premium">Premium</option>
+                <option value="Platinum">Platinum</option>
+              </select>
+            </div>
+            <div class="flex gap-2">
+              <button id="editSetConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1">Save</button>
+              <button id="editSetCancel" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
             </div>
           </div>
         </div>
@@ -658,6 +683,75 @@ app.get('/', (c) => {
       }
       
       loadGoals()
+      updateSetButtons()
+    })
+
+    document.getElementById('editSetBtn').addEventListener('click', async () => {
+      if (!currentGoalSet) return
+      
+      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      const data = await response.json()
+      const activeGoal = data.goals.find(g => g.goal_set_name === currentGoalSet)
+      
+      document.getElementById('editSetName').value = currentGoalSet
+      document.getElementById('editSetAccountType').value = activeGoal?.account_type || 'F2P'
+      document.getElementById('editSetModal').classList.remove('hidden')
+    })
+
+    document.getElementById('editSetCancel').addEventListener('click', () => {
+      document.getElementById('editSetModal').classList.add('hidden')
+    })
+
+    document.getElementById('editSetConfirm').addEventListener('click', async () => {
+      const newName = document.getElementById('editSetName').value.trim()
+      const newAccountType = document.getElementById('editSetAccountType').value
+      
+      if (!newName) {
+        alert('Please enter a set name')
+        return
+      }
+      
+      const oldName = currentGoalSet
+      
+      // Update all goals in this set
+      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      const data = await response.json()
+      const goalsToUpdate = data.goals.filter(g => g.goal_set_name === oldName)
+      
+      for (const goal of goalsToUpdate) {
+        await fetch(API_BASE + '/api/goals/' + goal.id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...goal,
+            goal_set_name: newName,
+            account_type: newAccountType
+          })
+        })
+      }
+      
+      // Update inventory items for this set
+      const invResponse = await fetch(API_BASE + '/api/inventory?discord_id=' + currentUser.id + '&goal_set_name=' + oldName)
+      const invData = await invResponse.json()
+      for (const item of invData.items || []) {
+        await fetch(API_BASE + '/api/inventory/' + item.id, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...item,
+            goal_set_name: newName
+          })
+        })
+      }
+      
+      // Update local state
+      allKnownSets.delete(oldName)
+      allKnownSets.add(newName)
+      currentGoalSet = newName
+      
+      await loadGoals()
+      
+      document.getElementById('editSetModal').classList.add('hidden')
       updateSetButtons()
     })
 
