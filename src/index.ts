@@ -720,16 +720,31 @@ app.get('/', (c) => {
       const data = await response.json()
       const goalsToUpdate = data.goals.filter(g => g.goal_set_name === oldName)
       
-      for (const goal of goalsToUpdate) {
-        await fetch(API_BASE + '/api/goals/' + goal.id, {
-          method: 'PUT',
+      if (goalsToUpdate.length === 0) {
+        // No goals exist, create placeholder to store account_type
+        await fetch(API_BASE + '/api/goals', {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            ...goal,
+            discord_id: currentUser.id,
+            stat: '_placeholder',
+            min_boost: 0,
             goal_set_name: newName,
             account_type: newAccountType
           })
         })
+      } else {
+        for (const goal of goalsToUpdate) {
+          await fetch(API_BASE + '/api/goals/' + goal.id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              ...goal,
+              goal_set_name: newName,
+              account_type: newAccountType
+            })
+          })
+        }
       }
       
       // Update inventory items for this set
