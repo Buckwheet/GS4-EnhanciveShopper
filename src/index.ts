@@ -1040,7 +1040,12 @@ app.get('/', (c) => {
         if (vals.enhancive >= vals.cap) color = 'text-green-600'
         else if (vals.enhancive >= vals.cap * 0.8) color = 'text-yellow-600'
         
-        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + '">' + vals.base + ' + ' + vals.enhancive + ' = ' + vals.total + ' [' + vals.enhancive + '/' + vals.cap + ']</span></div>'
+        const isRecovery = name.includes('Recovery')
+        const displayText = isRecovery 
+          ? vals.enhancive + '/' + vals.cap
+          : vals.base + ' + ' + vals.enhancive + ' = ' + vals.total + ' [' + vals.enhancive + '/' + vals.cap + ']'
+        
+        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + '">' + displayText + '</span></div>'
       }).join('')
     }
 
