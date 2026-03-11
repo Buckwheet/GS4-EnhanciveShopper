@@ -167,188 +167,28 @@ GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV p
 
 ## Next Steps (Priority Order)
 
-### 1. AI-Powered Chat Assistant (HIGH PRIORITY - IN PROGRESS)
-**Goal**: Natural language interface to query items and get recommendations
+### 1. AI-Powered Chat Assistant ✅ COMPLETED 2026-03-11
+**Goal**: Natural language interface to help users understand their goals and stats
 
-**Technology**: Cloudflare Workers AI (free tier: 10,000 neurons/day)
-- Cost: Free tier, then $0.011 per 1,000 neurons
-- Models: Llama 2, Mistral
+**Technology**: Cloudflare Workers AI - Llama 3.1 8B Instruct
+- Free tier: 10,000 neurons/day
+- Model: @cf/meta/llama-3.1-8b-instruct
 
-**Use Cases**:
-- "Show me all strength items under 100k"
-- "What's the best neck item for my build?"
-- "Compare these two items"
-- "What am I missing to cap my dexterity?"
-- "Find upgrades for my current inventory"
+**Features Implemented**:
+- Chat modal with message history
+- Context-aware responses (knows user's goals, inventory, stat gaps)
+- Example query buttons
+- Clear chat functionality
+- Chat history persisted to localStorage
+- Rate limiting (50 messages per session)
+- Slot name highlighting in responses
 
-**Progress**: 1/28 steps complete
+**Current Scope**: Advisory assistant that explains stats, goals, and what user needs to cap. Does not directly query shop database (AI hallucination issues with smaller models).
 
-**Step 1**: ✅ Add AI binding to wrangler.toml and types
-
-**Step 2**: Add basic /api/ai-chat endpoint skeleton
-- Accept POST with { message, discord_id }
-- Return { response: "echo" } for now
-- Test with curl
-- Commit
-
-**Step 3**: Test AI binding with simple query
-- Call c.env.AI.run() with @cf/meta/llama-2-7b-chat-int8
-- Log response
-- Return AI response
-- Commit
-
-**Step 4**: Add system prompt for item queries
-- Define system prompt explaining available data
-- Include stat/skill names
-- Test with "show me strength items"
-- Commit
-
-**Step 5**: Add chat button to UI
-- Add button below "My Matches" button
-- Style as prominent/wide button
-- No functionality yet
-- Commit
-
-**Step 6**: Add chat modal HTML structure
-- Modal with header "AI Assistant"
-- Message container (empty for now)
-- Input box at bottom
-- Close button
-- Commit
-
-**Step 7**: Wire up chat button to open modal
-- Click handler on button
-- Show/hide modal
-- Focus input on open
-- Commit
-
-**Step 8**: Add message display function
-- Function to append user message to chat
-- Function to append AI message to chat
-- Style with different colors
-- Commit
-
-**Step 9**: Wire up send message functionality
-- Get input value
-- POST to /api/ai-chat
-- Display user message immediately
-- Show loading indicator
-- Commit
-
-**Step 10**: Display AI response in chat
-- Parse API response
-- Append AI message to chat
-- Clear input
-- Remove loading indicator
-- Commit
-
-**Step 11**: Add Enter key to send
-- Listen for Enter key in input
-- Call send function
-- Prevent default form submission
-- Commit
-
-**Step 12**: Add message history array
-- Store messages in memory
-- Include in API request
-- AI can reference previous messages
-- Commit
-
-**Step 13**: Improve AI prompt with data schema
-- Explain shop_items table structure
-- Explain enhancives format
-- Give examples of queries
-- Commit
-
-**Step 14**: Add function to fetch user's goals
-- Query user_goals table in endpoint
-- Include in context sent to AI
-- Format as readable text
-- Commit
-
-**Step 15**: Add function to fetch user's inventory
-- Query user_inventory table
-- Include in context sent to AI
-- Format as readable text
-- Commit
-
-**Step 16**: Add function to calculate current stats
-- Use existing /api/summary logic
-- Include in context sent to AI
-- Show what user needs to cap
-- Commit
-
-**Step 17**: Parse AI response for SQL queries
-- Look for patterns like "SELECT..." in AI response
-- Extract and sanitize SQL
-- Execute against DB
-- Commit
-
-**Step 18**: Format item results as readable text
-- Convert query results to natural language
-- Include item name, cost, stats, location
-- Return formatted response
-- Commit
-
-**Step 19**: Add error handling for AI failures
-- Catch AI errors
-- Show friendly message in chat
-- Log error details
-- Commit
-
-**Step 20**: Add rate limiting check
-- Track AI calls per user
-- Warn when approaching limit
-- Return error if exceeded
-- Commit
-
-**Step 21**: Add example queries to chat UI
-- Show 3-4 example queries as buttons
-- Click to populate input
-- Helps users understand capabilities
-- Commit
-
-**Step 22**: Add "Clear chat" button
-- Button in modal header
-- Clears message history
-- Resets conversation
-- Commit
-
-**Step 23**: Persist chat history to localStorage
-- Save messages on send
-- Load on modal open
-- Key by discord_id
-- Commit
-
-**Step 24**: Add typing indicator
-- Show "AI is thinking..." while waiting
-- Animated dots
-- Remove when response arrives
-- Commit
-
-**Step 25**: Improve prompt with query examples
-- Add examples of good queries
-- Show expected SQL output format
-- Include edge cases
-- Commit
-
-**Step 26**: Add support for comparison queries
-- Parse "compare X and Y" requests
-- Fetch both items
-- Show side-by-side comparison
-- Commit
-
-**Step 27**: Add support for recommendation queries
-- Parse "what should I buy" requests
-- Consider goals + inventory + budget
-- Return top 3 suggestions
-- Commit
-
-**Step 28**: Add clickable item links in responses
-- Parse item names in AI responses
-- Make them clickable
-- Scroll to item in main list
-- Commit
+**Future Enhancement Options**:
+- Intent-based search (AI detects intent → backend writes SQL)
+- Upgrade to OpenAI API for better query generation
+- Add clickable "Search for this" buttons that populate main filters
 
 ### 2. Slot Usage Validation
 **Goal**: Prevent adding items that exceed slot limits
