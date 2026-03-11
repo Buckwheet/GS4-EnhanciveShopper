@@ -372,6 +372,7 @@ app.get('/', (c) => {
     let allKnownSets = new Set(['Default'])
     let userGoals = []
     let filterByGoalsEnabled = false
+    let chatHistory = []
 
     function addChatMessage(text, isUser) {
       const div = document.createElement('div')
@@ -1004,19 +1005,29 @@ app.get('/', (c) => {
       addChatMessage(message, true)
       input.value = ''
       
+      chatHistory.push({ role: 'user', content: message })
+      
       addChatMessage('...', false)
       const loadingMsg = document.getElementById('chatMessages').lastChild
       
       const response = await fetch(API_BASE + '/api/ai-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: message, discord_id: currentUser.id })
+        body: JSON.stringify({ message: message, discord_id: currentUser.id, history: chatHistory })
       })
       const data = await response.json()
       
       loadingMsg.remove()
       
       if (data.error) {
+        addChatMessage('Error: ' + data.error, false)
+      } else {
+        addChatMessage(data.response, false)
+        chatHistory.push({ role: 'assistant', content: data.response })
+      }
+    })
+
+    document.getElementById('chatInput').addEventListener('keypress', (e) => {
         addChatMessage('Error: ' + data.error, false)
       } else {
         addChatMessage(data.response, false)
@@ -1477,18 +1488,18 @@ app.delete('/api/goals/:id', async (c) => {
 })
 
 app.post('/api/ai-chat', async (c) => {
-  const { message, discord_id } = await c.req.json()
+  const { message, discord_id, history } = await c.req.json()
   if (!message || !discord_id) return c.json({ error: 'message and discord_id required' }, 400)
   
   const systemPrompt = 'You are a helpful assistant for GS4 Enhancive Shopper. You help users find enhancive items. Available stats: Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence. Available skills: Combat Maneuvers, Physical Fitness, Dodging, Arcane Symbols, Magic Item Use, Harness Power, Elemental Mana Control, Mental Mana Control, Spirit Mana Control, Elemental Lore Earth, Elemental Lore Air, Elemental Lore Fire, Elemental Lore Water, Spiritual Lore Blessings, Spiritual Lore Religion, Spiritual Lore Summoning, Sorcerous Lore Demonology, Sorcerous Lore Necromancy, Mental Lore Telepathy, Mental Lore Manipulation, Mental Lore Transformation.'
   
+  const messages = [{ role: 'system', content: systemPrompt }]
+  if (history && history.length > 0) {
+    messages.push(...history)
+  }
+  
   try {
-    const aiResponse = await c.env.AI.run('@cf/meta/llama-2-7b-chat-int8', {
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message }
-      ]
-    })
+    const aiResponse = await c.env.AI.run('@cf/meta/llama-2-7b-chat-int8', { messages })
     return c.json({ response: aiResponse.response })
   } catch (error) {
     console.error('AI error:', error)
