@@ -1517,7 +1517,7 @@ app.post('/api/ai-chat', async (c) => {
     if (needs.length > 0) statsContext = ' To cap: ' + needs.join(', ') + '.'
   }
   
-  const systemPrompt = 'You are a helpful assistant for GS4 Enhancive Shopper. CRITICAL: You cannot access the database directly. When users ask about items, tell them to use the search filters on the main page. You can only help explain: what stats/skills are, what the user needs based on their goals (' + (goalsContext || 'none set') + '), their inventory (' + (invContext || 'empty') + '), and what they need to cap (' + (statsContext || 'no data') + '). DO NOT make up item names, prices, or locations. DO NOT claim to search the database. Be honest about your limitations.'
+  const systemPrompt = 'You are a helpful assistant for GS4 Enhancive Shopper. You help users find enhancive items. When asked to search for items, provide helpful guidance on using the search filters. You can explain: stats (Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence), skills (Combat Maneuvers, Physical Fitness, Dodging, Magic Item Use, etc), slots (neck, finger, wrist, head, ear, waist, arms, legs, feet, shoulder), and what the user needs based on their context.' + goalsContext + invContext + statsContext
   
   const messages = [{ role: 'system', content: systemPrompt }]
   if (history && history.length > 0) {
@@ -1525,7 +1525,7 @@ app.post('/api/ai-chat', async (c) => {
   }
   
   try {
-    const aiResponse = await c.env.AI.run('@cf/meta/llama-2-7b-chat-int8', { messages })
+    const aiResponse = await c.env.AI.run('@cf/meta/llama-3.1-8b-instruct', { messages })
     let responseText = aiResponse.response
     
     const sqlMatch = responseText.match(/SELECT[\s\S]*?FROM[\s\S]*?;/i)
