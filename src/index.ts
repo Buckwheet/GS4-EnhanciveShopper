@@ -619,15 +619,12 @@ app.get('/', (c) => {
         return
       }
       
-      // Create placeholder goal to persist the set in database
-      const response = await fetch(API_BASE + '/api/goals', {
+      const response = await fetch(API_BASE + '/api/character-sets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           discord_id: currentUser.id,
-          stat: '_placeholder',
-          min_boost: 0,
-          goal_set_name: setName,
+          set_name: setName,
           account_type: accountType
         })
       })
