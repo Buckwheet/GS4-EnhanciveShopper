@@ -1409,7 +1409,15 @@ app.post('/api/ai-chat', async (c) => {
   const { message, discord_id } = await c.req.json()
   if (!message || !discord_id) return c.json({ error: 'message and discord_id required' }, 400)
   
-  return c.json({ response: 'Echo: ' + message })
+  try {
+    const aiResponse = await c.env.AI.run('@cf/meta/llama-2-7b-chat-int8', {
+      messages: [{ role: 'user', content: message }]
+    })
+    return c.json({ response: aiResponse.response })
+  } catch (error) {
+    console.error('AI error:', error)
+    return c.json({ error: 'AI request failed' }, 500)
+  }
 })
 
 app.post('/api/test-dm', async (c) => {
