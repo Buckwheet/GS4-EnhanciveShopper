@@ -153,6 +153,12 @@ app.get('/', (c) => {
         </div>
       </div>
       
+      <!-- Slot Usage Section -->
+      <div id="slotUsageSection" class="hidden bg-white p-6 rounded-lg shadow-md mb-6">
+        <h2 class="text-2xl font-semibold mb-4">Slot Usage</h2>
+        <div id="mainSlotUsage" class="text-sm"></div>
+      </div>
+      
       <!-- Summary Section -->
       <div id="summarySection" class="hidden bg-white p-6 rounded-lg shadow-md mb-6">
         <h2 class="text-2xl font-semibold mb-4">Enhancive Summary</h2>
@@ -422,6 +428,7 @@ app.get('/', (c) => {
       document.getElementById('goalsSection').classList.remove('hidden')
       updateSetButtons()
       loadGoals()
+      loadSlotUsage()
       loadSummary()
     }
 
@@ -553,6 +560,7 @@ app.get('/', (c) => {
     document.getElementById('goalSetSelector').addEventListener('change', (e) => {
       currentGoalSet = e.target.value
       loadGoals()
+      loadSlotUsage()
       loadSummary()
     })
 
@@ -891,6 +899,7 @@ app.get('/', (c) => {
       document.getElementById('parsedItemInfo').classList.add('hidden')
       document.getElementById('itemTextInput').value = ''
       await loadInventory()
+      await loadSlotUsage()
       await loadSummary()
     })
 
@@ -907,15 +916,19 @@ app.get('/', (c) => {
       const goalData = await goalResponse.json()
       const accountType = goalData.goals[0]?.account_type || 'F2P'
       
-      const slotLimits = { 'F2P': { 'neck': 3, 'finger': 2, 'wrist': 2 }, 'Premium': { 'neck': 4, 'finger': 3, 'wrist': 3 }, 'Platinum': { 'neck': 5, 'finger': 4, 'wrist': 4 } }
+      const slotLimits = {
+        'F2P': { 'pin': 8, 'head': 1, 'hair': 1, 'single_ear': 1, 'both_ears': 1, 'neck': 3, 'shoulder_slung': 2, 'shoulders_draped': 1, 'chest': 1, 'front': 1, 'chest_slipped': 1, 'back': 1, 'arms': 1, 'wrist': 2, 'hands': 1, 'fingers': 2, 'waist': 1, 'belt': 3, 'legs_pulled': 1, 'legs_attached': 1, 'legs_slipped': 1, 'ankle': 1, 'feet_slipped': 1, 'feet_on': 1 },
+        'Premium': { 'pin': 8, 'head': 1, 'hair': 1, 'single_ear': 2, 'both_ears': 2, 'neck': 4, 'shoulder_slung': 2, 'shoulders_draped': 1, 'chest': 1, 'front': 1, 'chest_slipped': 1, 'back': 1, 'arms': 1, 'wrist': 3, 'hands': 1, 'fingers': 3, 'waist': 1, 'belt': 3, 'legs_pulled': 1, 'legs_attached': 1, 'legs_slipped': 1, 'ankle': 1, 'feet_slipped': 1, 'feet_on': 1 },
+        'Platinum': { 'pin': 8, 'head': 1, 'hair': 1, 'single_ear': 3, 'both_ears': 3, 'neck': 5, 'shoulder_slung': 2, 'shoulders_draped': 1, 'chest': 1, 'front': 1, 'chest_slipped': 1, 'back': 1, 'arms': 1, 'wrist': 4, 'hands': 1, 'fingers': 4, 'waist': 1, 'belt': 3, 'legs_pulled': 1, 'legs_attached': 1, 'legs_slipped': 1, 'ankle': 1, 'feet_slipped': 1, 'feet_on': 1 }
+      }
       const limits = slotLimits[accountType] || slotLimits['F2P']
       
       const slotUsageDiv = document.getElementById('slotUsageDisplay')
-      const usageText = Object.keys(limits).map(slot => {
+      const usageText = Object.keys(limits).filter(slot => slotCounts[slot] || limits[slot] > 1).map(slot => {
         const count = slotCounts[slot] || 0
         const limit = limits[slot]
         const color = count >= limit ? 'text-red-600' : count >= limit * 0.8 ? 'text-yellow-600' : 'text-green-600'
-        return '<span class="' + color + '">' + slot.charAt(0).toUpperCase() + slot.slice(1) + ': ' + count + '/' + limit + '</span>'
+        return '<span class="' + color + '">' + slot.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + ': ' + count + '/' + limit + '</span>'
       }).join(' | ')
       slotUsageDiv.innerHTML = '<strong>Slot Usage:</strong> ' + usageText
       
@@ -948,7 +961,48 @@ app.get('/', (c) => {
       if (!confirm('Delete this item from inventory?')) return
       await fetch(API_BASE + '/api/inventory/' + id, { method: 'DELETE' })
       await loadInventory()
+      await loadSlotUsage()
       await loadSummary()
+    }
+
+    async function loadSlotUsage() {
+      if (!currentUser || !currentGoalSet) return
+      
+      const response = await fetch(API_BASE + '/api/inventory?discord_id=' + currentUser.id + '&goal_set_name=' + currentGoalSet)
+      const data = await response.json()
+      
+      const slotCounts = {}
+      data.items.forEach(item => {
+        slotCounts[item.slot] = (slotCounts[item.slot] || 0) + 1
+      })
+      
+      const goalResponse = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      const goalData = await goalResponse.json()
+      const accountType = goalData.goals[0]?.account_type || 'F2P'
+      
+      const slotLimits = {
+        'F2P': { 'pin': 8, 'head': 1, 'hair': 1, 'single_ear': 1, 'both_ears': 1, 'neck': 3, 'shoulder_slung': 2, 'shoulders_draped': 1, 'chest': 1, 'front': 1, 'chest_slipped': 1, 'back': 1, 'arms': 1, 'wrist': 2, 'hands': 1, 'fingers': 2, 'waist': 1, 'belt': 3, 'legs_pulled': 1, 'legs_attached': 1, 'legs_slipped': 1, 'ankle': 1, 'feet_slipped': 1, 'feet_on': 1 },
+        'Premium': { 'pin': 8, 'head': 1, 'hair': 1, 'single_ear': 2, 'both_ears': 2, 'neck': 4, 'shoulder_slung': 2, 'shoulders_draped': 1, 'chest': 1, 'front': 1, 'chest_slipped': 1, 'back': 1, 'arms': 1, 'wrist': 3, 'hands': 1, 'fingers': 3, 'waist': 1, 'belt': 3, 'legs_pulled': 1, 'legs_attached': 1, 'legs_slipped': 1, 'ankle': 1, 'feet_slipped': 1, 'feet_on': 1 },
+        'Platinum': { 'pin': 8, 'head': 1, 'hair': 1, 'single_ear': 3, 'both_ears': 3, 'neck': 5, 'shoulder_slung': 2, 'shoulders_draped': 1, 'chest': 1, 'front': 1, 'chest_slipped': 1, 'back': 1, 'arms': 1, 'wrist': 4, 'hands': 1, 'fingers': 4, 'waist': 1, 'belt': 3, 'legs_pulled': 1, 'legs_attached': 1, 'legs_slipped': 1, 'ankle': 1, 'feet_slipped': 1, 'feet_on': 1 }
+      }
+      const limits = slotLimits[accountType] || slotLimits['F2P']
+      
+      const slotUsageSection = document.getElementById('slotUsageSection')
+      const mainSlotUsage = document.getElementById('mainSlotUsage')
+      
+      const usageText = Object.keys(limits).filter(slot => slotCounts[slot] || limits[slot] > 1).map(slot => {
+        const count = slotCounts[slot] || 0
+        const limit = limits[slot]
+        const color = count >= limit ? 'text-red-600' : count >= limit * 0.8 ? 'text-yellow-600' : 'text-green-600'
+        return '<span class="' + color + ' font-medium">' + slot.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + ': ' + count + '/' + limit + '</span>'
+      }).join(' | ')
+      
+      if (usageText) {
+        slotUsageSection.classList.remove('hidden')
+        mainSlotUsage.innerHTML = usageText
+      } else {
+        slotUsageSection.classList.add('hidden')
+      }
     }
 
     async function loadSummary() {
