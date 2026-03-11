@@ -574,7 +574,7 @@ app.get('/', (c) => {
         return
       }
 
-      goalsList.innerHTML = currentSetGoals.map(goal => \`
+      goalsList.innerHTML = goalsData.goals.map(goal => \`
         <div class="flex justify-between items-center p-3 border rounded hover:bg-gray-50">
           <div>
             <span class="font-semibold">\${goal.stat}</span> 
