@@ -1113,7 +1113,13 @@ app.get('/', (c) => {
     async function loadSummary() {
       if (!currentUser || !currentGoalSet) return
       
-      const response = await fetch(API_BASE + '/api/summary?discord_id=' + currentUser.id + '&goal_set_name=' + currentGoalSet)
+      const setsResponse = await fetch(API_BASE + '/api/character-sets?discord_id=' + currentUser.id)
+      const setsData = await setsResponse.json()
+      const currentSet = setsData.sets.find(s => s.set_name === currentGoalSet)
+      
+      if (!currentSet) return
+      
+      const response = await fetch(API_BASE + '/api/summary?set_id=' + currentSet.id)
       const data = await response.json()
       
       const summarySection = document.getElementById('summarySection')
@@ -2107,22 +2113,22 @@ app.get('/api/migrate-schema', async (c) => {
 
 app.get('/api/summary', async (c) => {
   const discordId = c.req.query('discord_id')
-  const goalSetName = c.req.query('goal_set_name')
+  const setId = c.req.query('set_id')
   
-  if (!discordId || !goalSetName) {
-    return c.json({ error: 'discord_id and goal_set_name required' }, 400)
+  if (!setId) {
+    return c.json({ error: 'set_id required' }, 400)
   }
 
-  const goalSet = await c.env.DB.prepare(
-    'SELECT base_stats, skill_ranks FROM user_goals WHERE discord_id = ? AND goal_set_name = ? LIMIT 1'
-  ).bind(discordId, goalSetName).first()
+  const characterSet = await c.env.DB.prepare(
+    'SELECT base_stats, skill_ranks FROM character_sets WHERE id = ?'
+  ).bind(setId).first()
 
-  const baseStats = goalSet?.base_stats ? JSON.parse(goalSet.base_stats as string) : {}
-  const skillRanks = goalSet?.skill_ranks ? JSON.parse(goalSet.skill_ranks as string) : {}
+  const baseStats = characterSet?.base_stats ? JSON.parse(characterSet.base_stats as string) : {}
+  const skillRanks = characterSet?.skill_ranks ? JSON.parse(characterSet.skill_ranks as string) : {}
 
   const { results: items } = await c.env.DB.prepare(
-    'SELECT enhancives_json FROM user_inventory WHERE discord_id = ? AND goal_set_name = ?'
-  ).bind(discordId, goalSetName).all()
+    'SELECT enhancives_json FROM set_inventory WHERE character_set_id = ?'
+  ).bind(setId).all()
 
   const stats: Record<string, { base: number; enhancive: number; total: number; cap: number }> = {}
   const skills: Record<string, { base: number; enhancive: number; total: number; cap: number }> = {}
