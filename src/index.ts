@@ -1484,6 +1484,11 @@ app.post('/api/ai-chat', async (c) => {
   const { message, discord_id, history } = await c.req.json()
   if (!message || !discord_id) return c.json({ error: 'message and discord_id required' }, 400)
   
+  const callCount = (history || []).length / 2
+  if (callCount > 50) {
+    return c.json({ error: 'Rate limit: Maximum 50 messages per session. Please refresh to start a new session.' }, 429)
+  }
+  
   const goalsResult = await c.env.DB.prepare('SELECT stat, min_boost, max_cost, preferred_slots FROM user_goals WHERE discord_id = ?').bind(discord_id).all()
   let goalsContext = ''
   if (goalsResult.results.length > 0) {
