@@ -302,6 +302,8 @@ app.get('/', (c) => {
             <button id="closeCharBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
           </div>
           
+          <div id="currentCharSummary" class="mb-6"></div>
+          
           <div class="space-y-6">
             <div>
               <h3 class="text-lg font-semibold mb-2">Base Stats</h3>
@@ -792,7 +794,37 @@ app.get('/', (c) => {
     let parsedSkillsData = null
     let parsedItemData = null
 
-    document.getElementById('manageCharBtn').addEventListener('click', () => {
+    document.getElementById('manageCharBtn').addEventListener('click', async () => {
+      const summaryDiv = document.getElementById('currentCharSummary')
+      
+      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      const data = await response.json()
+      const activeGoal = data.goals.find(g => g.goal_set_name === currentGoalSet)
+      
+      if (activeGoal && (activeGoal.base_stats || activeGoal.skill_ranks)) {
+        const baseStats = activeGoal.base_stats ? JSON.parse(activeGoal.base_stats) : {}
+        const skillRanks = activeGoal.skill_ranks ? JSON.parse(activeGoal.skill_ranks) : {}
+        
+        let html = '<div class="p-4 bg-blue-50 border border-blue-200 rounded"><h3 class="font-semibold mb-2">Current Character Data</h3>'
+        
+        if (Object.keys(baseStats).length > 0) {
+          html += '<div class="mb-2"><strong>Base Stats:</strong> '
+          html += Object.entries(baseStats).map(([k, v]) => k + ': ' + v).join(', ')
+          html += '</div>'
+        }
+        
+        if (Object.keys(skillRanks).length > 0) {
+          html += '<div><strong>Skill Ranks:</strong> '
+          html += Object.entries(skillRanks).map(([k, v]) => k + ': ' + v).join(', ')
+          html += '</div>'
+        }
+        
+        html += '<p class="text-sm text-gray-600 mt-2">Update by pasting new data below</p></div>'
+        summaryDiv.innerHTML = html
+      } else {
+        summaryDiv.innerHTML = '<div class="p-4 bg-yellow-50 border border-yellow-200 rounded"><p class="text-sm text-gray-700"><strong>No character data yet.</strong> Paste your stats and skills below to get started. This helps calculate your enhancive needs.</p></div>'
+      }
+      
       document.getElementById('manageCharModal').classList.remove('hidden')
     })
 
