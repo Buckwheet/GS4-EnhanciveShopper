@@ -207,6 +207,23 @@ app.get('/', (c) => {
         </div>
       </div>
       
+      <!-- AI Chat Modal -->
+      <div id="aiChatModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] flex flex-col">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-semibold">🤖 AI Assistant</h2>
+            <button id="closeAiChatBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
+          </div>
+          
+          <div id="chatMessages" class="flex-1 overflow-y-auto mb-4 space-y-2 min-h-[400px]"></div>
+          
+          <div class="flex gap-2">
+            <input id="chatInput" type="text" placeholder="Ask me anything..." class="flex-1 border rounded px-3 py-2" />
+            <button id="sendChatBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">Send</button>
+          </div>
+        </div>
+      </div>
+      
       <!-- Settings Modal -->
       <div id="settingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 max-w-md w-full">
