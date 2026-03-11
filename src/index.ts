@@ -752,6 +752,7 @@ app.get('/', (c) => {
       currentGoalSet = newName
       
       await loadGoals()
+      await loadSlotUsage()
       
       document.getElementById('editSetModal').classList.add('hidden')
       updateSetButtons()
@@ -1714,15 +1715,15 @@ app.post('/api/goals', async (c) => {
 
 app.put('/api/goals/:id', async (c) => {
   const id = c.req.param('id')
-  const { stat, min_boost, max_cost, preferred_slots } = await c.req.json()
+  const { stat, min_boost, max_cost, preferred_slots, goal_set_name, account_type } = await c.req.json()
   
   if (!stat || min_boost === undefined || min_boost === null) {
     return c.json({ error: 'stat and min_boost required' }, 400)
   }
 
   await c.env.DB.prepare(
-    'UPDATE user_goals SET stat = ?, min_boost = ?, max_cost = ?, preferred_slots = ? WHERE id = ?'
-  ).bind(stat, min_boost, max_cost || null, preferred_slots || null, id).run()
+    'UPDATE user_goals SET stat = ?, min_boost = ?, max_cost = ?, preferred_slots = ?, goal_set_name = ?, account_type = ? WHERE id = ?'
+  ).bind(stat, min_boost, max_cost || null, preferred_slots || null, goal_set_name || null, account_type || null, id).run()
 
   return c.json({ success: true })
 })
