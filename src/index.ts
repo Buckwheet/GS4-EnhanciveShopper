@@ -768,13 +768,13 @@ app.get('/', (c) => {
     document.getElementById('manageCharBtn').addEventListener('click', async () => {
       const summaryDiv = document.getElementById('currentCharSummary')
       
-      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      const response = await fetch(API_BASE + '/api/character-sets?discord_id=' + currentUser.id)
       const data = await response.json()
-      const activeGoal = data.goals.find(g => g.goal_set_name === currentGoalSet)
+      const activeSet = data.sets.find(s => s.set_name === currentGoalSet)
       
-      if (activeGoal && (activeGoal.base_stats || activeGoal.skill_ranks)) {
-        const baseStats = activeGoal.base_stats ? JSON.parse(activeGoal.base_stats) : {}
-        const skillRanks = activeGoal.skill_ranks ? JSON.parse(activeGoal.skill_ranks) : {}
+      if (activeSet && (activeSet.base_stats || activeSet.skill_ranks)) {
+        const baseStats = activeSet.base_stats ? JSON.parse(activeSet.base_stats) : {}
+        const skillRanks = activeSet.skill_ranks ? JSON.parse(activeSet.skill_ranks) : {}
         
         let html = '<div class="p-4 bg-blue-50 border border-blue-200 rounded"><h3 class="font-semibold mb-2">Current Character Data</h3>'
         
