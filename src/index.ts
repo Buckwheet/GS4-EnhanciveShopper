@@ -1549,7 +1549,8 @@ app.post('/api/ai-chat', async (c) => {
     return c.json({ response: responseText })
   } catch (error) {
     console.error('AI error:', error)
-    return c.json({ error: 'AI request failed' }, 500)
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+    return c.json({ error: 'AI request failed: ' + errorMsg + '. Please try again or rephrase your question.' }, 500)
   }
 })
 
