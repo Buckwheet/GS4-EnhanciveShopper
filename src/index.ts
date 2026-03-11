@@ -1728,6 +1728,22 @@ app.post('/api/inventory', async (c) => {
     return c.json({ error: 'Missing required fields' }, 400)
   }
 
+  const existingItems = await c.env.DB.prepare(
+    'SELECT slot FROM user_inventory WHERE discord_id = ? AND goal_set_name = ?'
+  ).bind(discord_id, goal_set_name).all()
+
+  const goalData = await c.env.DB.prepare(
+    'SELECT account_type FROM user_goals WHERE discord_id = ? AND goal_set_name = ? LIMIT 1'
+  ).bind(discord_id, goal_set_name).first()
+
+  const accountType = goalData?.account_type || 'F2P'
+  const slotCount = countSlotUsage(existingItems.results, slot, accountType)
+  const slotLimit = SLOT_LIMITS[accountType as keyof typeof SLOT_LIMITS]?.[slot] || 1
+
+  if (slotCount >= slotLimit) {
+    return c.json({ error: 'Slot limit exceeded: ' + slot + ' is ' + slotCount + '/' + slotLimit }, 400)
+  }
+
   const result = await c.env.DB.prepare(
     'INSERT INTO user_inventory (discord_id, goal_set_name, item_name, slot, enhancives_json, is_permanent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
   ).bind(discord_id, goal_set_name, item_name, slot, enhancives_json, is_permanent ? 1 : 0, new Date().toISOString()).run()
