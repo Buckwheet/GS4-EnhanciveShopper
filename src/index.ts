@@ -212,7 +212,10 @@ app.get('/', (c) => {
         <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] flex flex-col">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-2xl font-semibold">🤖 AI Assistant</h2>
-            <button id="closeAiChatBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
+            <div class="flex gap-2">
+              <button id="clearChatBtn" class="text-gray-600 hover:text-gray-800 text-sm">Clear</button>
+              <button id="closeAiChatBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
           </div>
           
           <div class="mb-3 flex gap-2 flex-wrap">
@@ -1001,6 +1004,11 @@ app.get('/', (c) => {
 
     document.getElementById('closeAiChatBtn').addEventListener('click', () => {
       document.getElementById('aiChatModal').classList.add('hidden')
+    })
+
+    document.getElementById('clearChatBtn').addEventListener('click', () => {
+      chatHistory = []
+      document.getElementById('chatMessages').innerHTML = ''
     })
 
     document.getElementById('sendChatBtn').addEventListener('click', async () => {
