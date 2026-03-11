@@ -373,6 +373,14 @@ app.get('/', (c) => {
     let userGoals = []
     let filterByGoalsEnabled = false
 
+    function addChatMessage(text, isUser) {
+      const div = document.createElement('div')
+      div.className = 'p-3 rounded ' + (isUser ? 'bg-blue-100 ml-8' : 'bg-gray-100 mr-8')
+      div.textContent = text
+      document.getElementById('chatMessages').appendChild(div)
+      div.scrollIntoView({ behavior: 'smooth' })
+    }
+
     // Auth handling
     function initAuth() {
       const stored = localStorage.getItem('discord_user')
