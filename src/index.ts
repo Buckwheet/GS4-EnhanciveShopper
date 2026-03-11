@@ -2016,6 +2016,53 @@ app.post('/api/inventory', async (c) => {
   return c.json({ success: true, id: result.meta.last_row_id })
 })
 
+// New API: Get inventory for character set
+app.get('/api/character-sets/:id/inventory', async (c) => {
+  const setId = c.req.param('id')
+  
+  const { results } = await c.env.DB.prepare(
+    'SELECT * FROM set_inventory WHERE character_set_id = ?'
+  ).bind(setId).all()
+
+  return c.json({ items: results })
+})
+
+// New API: Add item to character set inventory
+app.post('/api/character-sets/:id/inventory', async (c) => {
+  const setId = c.req.param('id')
+  const { item_name, slot, enhancives_json, is_permanent } = await c.req.json()
+  
+  if (!item_name || !slot || !enhancives_json) {
+    return c.json({ error: 'item_name, slot, and enhancives_json required' }, 400)
+  }
+
+  const result = await c.env.DB.prepare(
+    'INSERT INTO set_inventory (character_set_id, item_name, slot, enhancives_json, is_permanent, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(setId, item_name, slot, enhancives_json, is_permanent ? 1 : 0, new Date().toISOString()).run()
+
+  return c.json({ success: true, id: result.meta.last_row_id })
+})
+
+// New API: Update inventory item
+app.put('/api/set-inventory/:id', async (c) => {
+  const id = c.req.param('id')
+  const { item_name, slot, enhancives_json, is_permanent } = await c.req.json()
+
+  await c.env.DB.prepare(
+    'UPDATE set_inventory SET item_name = ?, slot = ?, enhancives_json = ?, is_permanent = ? WHERE id = ?'
+  ).bind(item_name, slot, enhancives_json, is_permanent ? 1 : 0, id).run()
+
+  return c.json({ success: true })
+})
+
+// New API: Delete inventory item
+app.delete('/api/set-inventory/:id', async (c) => {
+  const id = c.req.param('id')
+  await c.env.DB.prepare('DELETE FROM set_inventory WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+// Legacy: Keep for backwards compatibility
 app.get('/api/inventory', async (c) => {
   const discordId = c.req.query('discord_id')
   const goalSetName = c.req.query('goal_set_name')
