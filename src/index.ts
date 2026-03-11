@@ -1496,7 +1496,23 @@ app.post('/api/ai-chat', async (c) => {
     invContext = ' User inventory: ' + invResult.results.map(i => i.item_name + ' (' + i.slot + ')').join(', ') + '.'
   }
   
-  const systemPrompt = 'You are a helpful assistant for GS4 Enhancive Shopper. You help users find enhancive items from shops across 9 towns. Database: shop_items table has columns: name, town, shop, cost, enchant, worn (slot), enhancives_json (array of {boost, ability}), available (1=yes, 0=sold). Stats: Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence. Skills: Combat Maneuvers, Physical Fitness, Dodging, Arcane Symbols, Magic Item Use, Harness Power, Elemental Mana Control, Mental Mana Control, Spirit Mana Control, Elemental Lore Earth/Air/Fire/Water, Spiritual Lore Blessings/Religion/Summoning, Sorcerous Lore Demonology/Necromancy, Mental Lore Telepathy/Manipulation/Transformation. Slots: neck, finger, wrist, head, ear, waist, arms, legs, feet, shoulder. Answer questions about items, help find matches, explain stats.' + goalsContext + invContext
+  const summaryResponse = await fetch(c.req.url.replace('/api/ai-chat', '/api/summary') + '?discord_id=' + discord_id + '&goal_set_name=Default')
+  let statsContext = ''
+  if (summaryResponse.ok) {
+    const summaryData = await summaryResponse.json()
+    const needs = []
+    for (const stat in summaryData.stats) {
+      const s = summaryData.stats[stat]
+      if (s.enhancive < s.cap) needs.push(stat + ' needs +' + (s.cap - s.enhancive))
+    }
+    for (const skill in summaryData.skills) {
+      const sk = summaryData.skills[skill]
+      if (sk.enhancive < sk.cap) needs.push(skill + ' needs +' + (sk.cap - sk.enhancive))
+    }
+    if (needs.length > 0) statsContext = ' To cap: ' + needs.join(', ') + '.'
+  }
+  
+  const systemPrompt = 'You are a helpful assistant for GS4 Enhancive Shopper. You help users find enhancive items from shops across 9 towns. Database: shop_items table has columns: name, town, shop, cost, enchant, worn (slot), enhancives_json (array of {boost, ability}), available (1=yes, 0=sold). Stats: Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence. Skills: Combat Maneuvers, Physical Fitness, Dodging, Arcane Symbols, Magic Item Use, Harness Power, Elemental Mana Control, Mental Mana Control, Spirit Mana Control, Elemental Lore Earth/Air/Fire/Water, Spiritual Lore Blessings/Religion/Summoning, Sorcerous Lore Demonology/Necromancy, Mental Lore Telepathy/Manipulation/Transformation. Slots: neck, finger, wrist, head, ear, waist, arms, legs, feet, shoulder. Answer questions about items, help find matches, explain stats.' + goalsContext + invContext + statsContext
   
   const messages = [{ role: 'system', content: systemPrompt }]
   if (history && history.length > 0) {
