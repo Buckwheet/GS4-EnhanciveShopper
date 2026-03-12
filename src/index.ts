@@ -92,6 +92,16 @@ app.get('/', (c) => {
         </div>
         
         <div class="flex gap-2 items-center mb-4">
+            <label class="text-sm text-gray-600">Character:</label>
+            <select id="characterSelector" class="border p-2 rounded">
+              <option value="">No characters yet</option>
+            </select>
+            <button id="newCharacterBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm">+ New Character</button>
+            <button id="editCharacterBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">Edit Character</button>
+            <button id="deleteCharacterBtn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">Delete Character</button>
+          </div>
+        
+        <div class="flex gap-2 items-center mb-4">
             <label class="text-sm text-gray-600">Active Set:</label>
             <select id="goalSetSelector" class="border p-2 rounded">
               <option value="">No sets yet</option>
@@ -102,8 +112,12 @@ app.get('/', (c) => {
           </div>
         </div>
         
-        <div id="noSetWarning" class="mb-4 p-3 bg-red-50 border border-red-200 rounded">
-          <p class="text-red-700 text-sm font-semibold">⚠ Create an enhancive set first to manage character data and inventory</p>
+        <div id="noCharacterWarning" class="mb-4 p-3 bg-red-50 border border-red-200 rounded hidden">
+          <p class="text-red-700 text-sm font-semibold">⚠ Create a character first</p>
+        </div>
+        
+        <div id="noSetWarning" class="mb-4 p-3 bg-red-50 border border-red-200 rounded hidden">
+          <p class="text-red-700 text-sm font-semibold">⚠ Create a set for this character first</p>
         </div>
         
         <div class="mb-4">
@@ -176,13 +190,47 @@ app.get('/', (c) => {
       </div>
       
       <!-- Create Set Modal -->
+      <!-- Character Modals -->
+      <div id="createCharacterModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full">
+          <h2 class="text-2xl font-semibold mb-4">Create New Character</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Character Name</label>
+              <input type="text" id="newCharacterName" placeholder="e.g., Mejora" class="border p-2 rounded w-full">
+            </div>
+            <div class="flex gap-2">
+              <button id="createCharacterConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1">Create</button>
+              <button id="createCharacterCancel" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="editCharacterModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full">
+          <h2 class="text-2xl font-semibold mb-4">Edit Character</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium mb-1">Character Name</label>
+              <input type="text" id="editCharacterName" class="border p-2 rounded w-full">
+            </div>
+            <div class="flex gap-2">
+              <button id="editCharacterConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1">Save</button>
+              <button id="editCharacterCancel" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Set Modals -->
       <div id="createSetModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 max-w-md w-full">
-          <h2 class="text-2xl font-semibold mb-4">Create New Goal Set</h2>
+          <h2 class="text-2xl font-semibold mb-4">Create New Set</h2>
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium mb-1">Set Name</label>
-              <input type="text" id="newSetName" placeholder="e.g., Cleric - Hunting" class="border p-2 rounded w-full">
+              <input type="text" id="newSetName" placeholder="e.g., Hunting, PvP" class="border p-2 rounded w-full">
             </div>
             <div>
               <label class="block text-sm font-medium mb-1">Account Type</label>
@@ -202,7 +250,7 @@ app.get('/', (c) => {
 
       <div id="editSetModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg p-6 max-w-md w-full">
-          <h2 class="text-2xl font-semibold mb-4">Edit Goal Set</h2>
+          <h2 class="text-2xl font-semibold mb-4">Edit Set</h2>
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium mb-1">Set Name</label>
@@ -418,6 +466,10 @@ app.get('/', (c) => {
     let allItems = []
     let filteredItems = []
     let currentUser = null
+    let currentCharacterId = null
+    let currentCharacterName = ''
+    let currentSetId = null
+    let currentSetName = 'Default'
     let currentGoalSet = 'Default'
     let allKnownSets = new Set(['Default'])
     let userGoals = []
@@ -612,7 +664,217 @@ app.get('/', (c) => {
       loadSummary()
     })
 
+    // Character Management
+    async function loadCharacters() {
+      if (!currentUser) return
+      
+      const response = await fetch(API_BASE + '/api/characters?discord_id=' + currentUser.id)
+      const data = await response.json()
+      
+      const selector = document.getElementById('characterSelector')
+      selector.innerHTML = ''
+      
+      if (data.characters.length === 0) {
+        selector.innerHTML = '<option value="">No characters yet</option>'
+        document.getElementById('noCharacterWarning').classList.remove('hidden')
+        currentCharacterId = null
+        currentCharacterName = ''
+      } else {
+        document.getElementById('noCharacterWarning').classList.add('hidden')
+        data.characters.forEach(char => {
+          const opt = document.createElement('option')
+          opt.value = char.id
+          opt.textContent = char.character_name
+          selector.appendChild(opt)
+        })
+        
+        if (!currentCharacterId && data.characters.length > 0) {
+          currentCharacterId = data.characters[0].id
+          currentCharacterName = data.characters[0].character_name
+        }
+        
+        selector.value = currentCharacterId
+      }
+      
+      await loadSets()
+    }
+
+    async function loadSets() {
+      if (!currentCharacterId) {
+        document.getElementById('goalSetSelector').innerHTML = '<option value="">No sets yet</option>'
+        document.getElementById('noSetWarning').classList.remove('hidden')
+        return
+      }
+      
+      const response = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/sets')
+      const data = await response.json()
+      
+      const selector = document.getElementById('goalSetSelector')
+      selector.innerHTML = ''
+      
+      if (data.sets.length === 0) {
+        selector.innerHTML = '<option value="">No sets yet</option>'
+        document.getElementById('noSetWarning').classList.remove('hidden')
+        currentSetId = null
+        currentSetName = ''
+      } else {
+        document.getElementById('noSetWarning').classList.add('hidden')
+        data.sets.forEach(set => {
+          const opt = document.createElement('option')
+          opt.value = set.id
+          opt.textContent = set.set_name + ' (' + set.account_type + ')'
+          selector.appendChild(opt)
+        })
+        
+        if (!currentSetId && data.sets.length > 0) {
+          currentSetId = data.sets[0].id
+          currentSetName = data.sets[0].set_name
+        }
+        
+        selector.value = currentSetId
+      }
+      
+      await loadGoalsForSet()
+      await loadInventory()
+      await loadSlotUsage()
+      await loadSummary()
+    }
+
+    async function loadGoalsForSet() {
+      if (!currentSetId) return
+      
+      const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/goals')
+      const data = await response.json()
+      userGoals = data.goals
+      
+      const list = document.getElementById('goalsList')
+      if (data.goals.length === 0) {
+        list.innerHTML = '<p class="text-gray-500">No goals yet. Add one above!</p>'
+      } else {
+        list.innerHTML = data.goals.map(g => {
+          const slots = g.preferred_slots ? ' (slots: ' + g.preferred_slots + ')' : ''
+          const cost = g.max_cost ? ' under ' + g.max_cost.toLocaleString() + ' silvers' : ''
+          return '<div class="flex justify-between items-center p-2 border-b"><span>' + g.stat + ' +' + g.min_boost + cost + slots + '</span><div><button onclick="editGoal(' + g.id + ')" class="text-blue-600 hover:underline mr-2">Edit</button><button onclick="deleteGoal(' + g.id + ')" class="text-red-600 hover:underline">Delete</button></div></div>'
+        }).join('')
+      }
+    }
+
+    document.getElementById('characterSelector').addEventListener('change', async (e) => {
+      currentCharacterId = e.target.value
+      const opt = e.target.selectedOptions[0]
+      currentCharacterName = opt ? opt.textContent : ''
+      await loadSets()
+    })
+
+    document.getElementById('newCharacterBtn').addEventListener('click', () => {
+      document.getElementById('createCharacterModal').classList.remove('hidden')
+    })
+
+    document.getElementById('createCharacterCancel').addEventListener('click', () => {
+      document.getElementById('createCharacterModal').classList.add('hidden')
+    })
+
+    document.getElementById('createCharacterConfirm').addEventListener('click', async () => {
+      const name = document.getElementById('newCharacterName').value.trim()
+      
+      if (!name) {
+        alert('Please enter a character name')
+        return
+      }
+      
+      const response = await fetch(API_BASE + '/api/characters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          discord_id: currentUser.id,
+          character_name: name
+        })
+      })
+      
+      if (!response.ok) {
+        alert('Failed to create character')
+        return
+      }
+      
+      const result = await response.json()
+      currentCharacterId = result.id
+      currentCharacterName = name
+      
+      document.getElementById('createCharacterModal').classList.add('hidden')
+      document.getElementById('newCharacterName').value = ''
+      
+      await loadCharacters()
+    })
+
+    document.getElementById('editCharacterBtn').addEventListener('click', async () => {
+      if (!currentCharacterId) return
+      
+      const response = await fetch(API_BASE + '/api/characters?discord_id=' + currentUser.id)
+      const data = await response.json()
+      const char = data.characters.find(c => c.id == currentCharacterId)
+      
+      if (char) {
+        document.getElementById('editCharacterName').value = char.character_name
+        document.getElementById('editCharacterModal').classList.remove('hidden')
+      }
+    })
+
+    document.getElementById('editCharacterCancel').addEventListener('click', () => {
+      document.getElementById('editCharacterModal').classList.add('hidden')
+    })
+
+    document.getElementById('editCharacterConfirm').addEventListener('click', async () => {
+      const name = document.getElementById('editCharacterName').value.trim()
+      
+      if (!name) {
+        alert('Please enter a character name')
+        return
+      }
+      
+      await fetch(API_BASE + '/api/characters/' + currentCharacterId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          character_name: name,
+          base_stats: null,
+          skill_ranks: null
+        })
+      })
+      
+      currentCharacterName = name
+      document.getElementById('editCharacterModal').classList.add('hidden')
+      await loadCharacters()
+    })
+
+    document.getElementById('deleteCharacterBtn').addEventListener('click', async () => {
+      if (!currentCharacterId) return
+      
+      const confirmed = confirm('Delete "' + currentCharacterName + '" and all its sets? This cannot be undone.')
+      if (!confirmed) return
+      
+      await fetch(API_BASE + '/api/characters/' + currentCharacterId, { method: 'DELETE' })
+      
+      currentCharacterId = null
+      currentCharacterName = ''
+      await loadCharacters()
+    })
+
+    document.getElementById('goalSetSelector').addEventListener('change', async (e) => {
+      currentSetId = e.target.value
+      const opt = e.target.selectedOptions[0]
+      currentSetName = opt ? opt.textContent.split(' (')[0] : ''
+      await loadGoalsForSet()
+      await loadInventory()
+      await loadSlotUsage()
+      await loadSummary()
+    })
+
+    // Set Management
     document.getElementById('newSetBtn').addEventListener('click', () => {
+      if (!currentCharacterId) {
+        alert('Please select a character first')
+        return
+      }
       document.getElementById('createSetModal').classList.remove('hidden')
     })
 
@@ -629,73 +891,53 @@ app.get('/', (c) => {
         return
       }
       
-      if (!currentUser) {
-        alert('Not logged in')
+      if (!currentCharacterId) {
+        alert('Please select a character first')
         return
       }
       
-      const response = await fetch(API_BASE + '/api/character-sets', {
+      const response = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/sets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          discord_id: currentUser.id,
           set_name: setName,
           account_type: accountType
         })
       })
       
       if (!response.ok) {
-        alert('Failed to create set: ' + await response.text())
+        alert('Failed to create set')
         return
       }
       
-      currentGoalSet = setName
-      allKnownSets.add(setName)
+      const result = await response.json()
+      currentSetId = result.id
+      currentSetName = setName
       
-      await loadGoals()
-      
-      // Close modal and reset
       document.getElementById('createSetModal').classList.add('hidden')
       document.getElementById('newSetName').value = ''
       document.getElementById('newSetAccountType').value = 'F2P'
       
-      updateSetButtons()
+      await loadSets()
     })
 
     document.getElementById('deleteSetBtn').addEventListener('click', async () => {
-      const confirmed = confirm('Delete "' + currentGoalSet + '" and all its goals? This cannot be undone.')
+      if (!currentSetId) return
+      
+      const confirmed = confirm('Delete "' + currentSetName + '" and all its goals? This cannot be undone.')
       if (!confirmed) return
       
-      // Delete all goals in this set
-      const setsResponse = await fetch(API_BASE + '/api/character-sets?discord_id=' + currentUser.id)
-      const setsData = await setsResponse.json()
-      const setToDelete = setsData.sets.find(s => s.set_name === currentGoalSet)
+      await fetch(API_BASE + '/api/sets/' + currentSetId, { method: 'DELETE' })
       
-      if (setToDelete) {
-        await fetch(API_BASE + '/api/character-sets/' + setToDelete.id, { method: 'DELETE' })
-      }
-      
-      // Remove from known sets
-      allKnownSets.delete(currentGoalSet)
-      
-      // Switch to first remaining set
-      if (allKnownSets.size === 0) {
-        currentGoalSet = 'Default'
-        allKnownSets.add('Default')
-      } else {
-        currentGoalSet = [...allKnownSets][0]
-      }
-      
-      loadGoals()
-      updateSetButtons()
+      currentSetId = null
+      currentSetName = ''
+      await loadSets()
     })
 
-    let currentSetId = null
-
     document.getElementById('editSetBtn').addEventListener('click', async () => {
-      if (!currentGoalSet) return
+      if (!currentSetId) return
       
-      const response = await fetch(API_BASE + '/api/character-sets?discord_id=' + currentUser.id)
+      const response = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/sets')
       const data = await response.json()
       const activeSet = data.sets.find(s => s.set_name === currentGoalSet)
       
