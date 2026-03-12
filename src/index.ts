@@ -559,7 +559,9 @@ app.get('/', (c) => {
       }
     })
 
-    // Helper: Get current set ID
+    // Legacy functions - no longer used with new hierarchy
+    // Kept for reference but should not be called
+    /*
     async function getCurrentSetId() {
       if (!currentUser || !currentGoalSet) return null
       const response = await fetch(API_BASE + '/api/character-sets?discord_id=' + currentUser.id)
@@ -568,7 +570,6 @@ app.get('/', (c) => {
       return currentSet?.id || null
     }
 
-    // Goals management
     async function loadGoals() {
       if (!currentUser) return
       
@@ -631,6 +632,7 @@ app.get('/', (c) => {
         </div>
       \`).join('')
     }
+    */
 
     // Character Management
     async function loadCharacters() {
@@ -907,11 +909,10 @@ app.get('/', (c) => {
       
       const response = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/sets')
       const data = await response.json()
-      const activeSet = data.sets.find(s => s.set_name === currentGoalSet)
+      const activeSet = data.sets.find(s => s.id == currentSetId)
       
       if (!activeSet) return
       
-      currentSetId = activeSet.id
       document.getElementById('editSetName').value = activeSet.set_name
       document.getElementById('editSetAccountType').value = activeSet.account_type || 'F2P'
       document.getElementById('editSetModal').classList.remove('hidden')
@@ -930,9 +931,7 @@ app.get('/', (c) => {
         return
       }
       
-      const oldName = currentGoalSet
-      
-      await fetch(API_BASE + '/api/character-sets/' + currentSetId, {
+      await fetch(API_BASE + '/api/sets/' + currentSetId, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -941,22 +940,18 @@ app.get('/', (c) => {
         })
       })
       
-      // Update local state
-      allKnownSets.delete(oldName)
-      allKnownSets.add(newName)
-      currentGoalSet = newName
+      currentSetName = newName
       
-      await loadGoals()
+      await loadSets()
       await loadSlotUsage()
       
       document.getElementById('editSetModal').classList.add('hidden')
-      updateSetButtons()
     })
 
     window.deleteGoal = async function(id) {
       if (!confirm('Delete this goal?')) return
-      await fetch(API_BASE + '/api/set-goals/' + id, { method: 'DELETE' })
-      loadGoals()
+      await fetch(API_BASE + '/api/sets/' + currentSetId + '/goals/' + id, { method: 'DELETE' })
+      loadGoalsForSet()
     }
 
     let editingGoalId = null
