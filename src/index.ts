@@ -2374,6 +2374,25 @@ app.get('/api/debug/alerts', async (c) => {
     for (const item of allItems.slice(0, 100)) {
       try {
 
+app.get('/api/debug/migration', async (c) => {
+  const discordId = c.req.query('discord_id')
+  if (!discordId) return c.json({ error: 'discord_id required' }, 400)
+
+  const { results: oldSets } = await c.env.DB.prepare('SELECT * FROM character_sets WHERE discord_id = ?').bind(discordId).all()
+  const { results: characters } = await c.env.DB.prepare('SELECT * FROM characters WHERE discord_id = ?').bind(discordId).all()
+  const { results: sets } = await c.env.DB.prepare('SELECT s.* FROM sets s JOIN characters c ON s.character_id = c.id WHERE c.discord_id = ?').bind(discordId).all()
+  const { results: goals } = await c.env.DB.prepare('SELECT * FROM set_goals WHERE set_id IS NOT NULL').all()
+  const { results: inventory } = await c.env.DB.prepare('SELECT * FROM set_inventory WHERE set_id IS NOT NULL').all()
+
+  return c.json({ 
+    oldSets,
+    characters,
+    sets,
+    goalsCount: goals.length,
+    inventoryCount: inventory.length
+  })
+})
+
 app.get('/api/debug/sets', async (c) => {
   const discordId = c.req.query('discord_id')
   if (!discordId) return c.json({ error: 'discord_id required' }, 400)
