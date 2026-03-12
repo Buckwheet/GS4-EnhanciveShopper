@@ -997,6 +997,11 @@ app.get('/', (c) => {
       await loadInventory()
       await loadSlotUsage()
       await loadSummary()
+      
+      // Refresh item filter if filtering by goals is enabled
+      if (filterByGoalsEnabled) {
+        filterItems()
+      }
     })
 
     // Set Management
