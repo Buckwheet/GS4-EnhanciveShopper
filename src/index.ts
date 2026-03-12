@@ -752,9 +752,9 @@ app.get('/', (c) => {
     let editingGoalId = null
 
     window.editGoal = async function(id) {
-      const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      const response = await fetch(API_BASE + '/api/set-goals/' + id)
       const data = await response.json()
-      const goal = data.goals.find(g => g.id === id)
+      const goal = data.goal
       
       if (!goal) return
       
@@ -1338,7 +1338,7 @@ app.get('/', (c) => {
 
       if (editingGoalId) {
         // Update existing goal
-        await fetch(API_BASE + '/api/goals/' + editingGoalId, {
+        await fetch(API_BASE + '/api/set-goals/' + editingGoalId, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1818,6 +1818,29 @@ app.put('/api/goal-set/:discord_id/:set_name', async (c) => {
   await c.env.DB.prepare(
     'UPDATE user_goals SET account_type = ?, base_stats = ?, skill_ranks = ? WHERE discord_id = ? AND goal_set_name = ?'
   ).bind(account_type, base_stats, skill_ranks, discordId, setName).run()
+
+  return c.json({ success: true })
+})
+
+// New API: Get single goal
+app.get('/api/set-goals/:id', async (c) => {
+  const id = c.req.param('id')
+  const goal = await c.env.DB.prepare('SELECT * FROM set_goals WHERE id = ?').bind(id).first()
+  return c.json({ goal })
+})
+
+// New API: Update goal
+app.put('/api/set-goals/:id', async (c) => {
+  const id = c.req.param('id')
+  const { stat, min_boost, max_cost, preferred_slots } = await c.req.json()
+  
+  if (!stat || min_boost === undefined || min_boost === null) {
+    return c.json({ error: 'stat and min_boost required' }, 400)
+  }
+
+  await c.env.DB.prepare(
+    'UPDATE set_goals SET stat = ?, min_boost = ?, max_cost = ?, preferred_slots = ? WHERE id = ?'
+  ).bind(stat, min_boost, max_cost || null, preferred_slots || null, id).run()
 
   return c.json({ success: true })
 })
