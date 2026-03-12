@@ -632,13 +632,6 @@ app.get('/', (c) => {
       \`).join('')
     }
 
-    document.getElementById('goalSetSelector').addEventListener('change', (e) => {
-      currentGoalSet = e.target.value
-      loadGoals()
-      loadSlotUsage()
-      loadSummary()
-    })
-
     // Character Management
     async function loadCharacters() {
       if (!currentUser) return
