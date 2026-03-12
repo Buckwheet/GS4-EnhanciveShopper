@@ -1579,11 +1579,11 @@ app.get('/', (c) => {
         document.getElementById('saveGoalBtn').textContent = 'Save Goal'
       } else {
         if (!currentSetId) {
-          alert('No active set found')
+          alert('No active set found. Please select a character and set first.')
           return
         }
         
-        await fetch(API_BASE + '/api/sets/' + currentSetId + '/goals', {
+        const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/goals', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1593,6 +1593,12 @@ app.get('/', (c) => {
             preferred_slots: selectedSlots || null
           }),
         })
+        
+        const data = await response.json()
+        if (!response.ok) {
+          alert('Error adding goal: ' + (data.error || 'Unknown error'))
+          return
+        }
       }
 
       document.getElementById('goalStat').value = ''
@@ -2028,18 +2034,23 @@ app.get('/api/sets/:id/goals', async (c) => {
 
 // New API: Create goal for set
 app.post('/api/sets/:id/goals', async (c) => {
-  const setId = c.req.param('id')
-  const { stat, min_boost, max_cost, preferred_slots } = await c.req.json()
-  
-  if (!stat || min_boost === undefined || min_boost === null) {
-    return c.json({ error: 'stat and min_boost required' }, 400)
+  try {
+    const setId = c.req.param('id')
+    const { stat, min_boost, max_cost, preferred_slots } = await c.req.json()
+    
+    if (!stat || min_boost === undefined || min_boost === null) {
+      return c.json({ error: 'stat and min_boost required' }, 400)
+    }
+
+    const result = await c.env.DB.prepare(
+      'INSERT INTO set_goals (set_id, stat, min_boost, max_cost, preferred_slots, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(setId, stat, min_boost, max_cost || null, preferred_slots || null, new Date().toISOString()).run()
+
+    return c.json({ success: true, id: result.meta.last_row_id })
+  } catch (error) {
+    console.error('Error adding goal:', error)
+    return c.json({ error: error.message || 'Failed to add goal' }, 500)
   }
-
-  const result = await c.env.DB.prepare(
-    'INSERT INTO set_goals (set_id, stat, min_boost, max_cost, preferred_slots, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(setId, stat, min_boost, max_cost || null, preferred_slots || null, new Date().toISOString()).run()
-
-  return c.json({ success: true, id: result.meta.last_row_id })
 })
 
 // New API: Get inventory for set
