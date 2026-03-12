@@ -1084,7 +1084,7 @@ app.get('/', (c) => {
 
     window.deleteInventoryItem = async function(id) {
       if (!confirm('Delete this item from inventory?')) return
-      await fetch(API_BASE + '/api/inventory/' + id, { method: 'DELETE' })
+      await fetch(API_BASE + '/api/set-inventory/' + id, { method: 'DELETE' })
       await loadInventory()
       await loadSlotUsage()
       await loadSummary()
