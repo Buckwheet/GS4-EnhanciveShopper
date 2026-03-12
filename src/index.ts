@@ -1182,8 +1182,128 @@ app.get('/', (c) => {
         return
       }
       
-      // TODO: Parse and process bulk import
-      alert('Bulk import processing will be implemented once you provide the format example')
+      try {
+        // Parse enhancive detail to extract items and their enhancives
+        const itemEnhancives = {}
+        const detailLines = enhanciveDetail.split('\\n')
+        let currentStat = null
+        
+        for (const line of detailLines) {
+          const trimmed = line.trim()
+          if (!trimmed || trimmed.startsWith('Stats:') || trimmed.startsWith('Skills:') || 
+              trimmed.startsWith('Resources:') || trimmed.startsWith('Statistics:') || 
+              trimmed.startsWith('For fewer') || trimmed.startsWith('Enhancive')) continue
+          
+          // Check if it's a stat/skill/resource header (e.g., "Discipline (DIS): 40/40")
+          if (trimmed.match(/^[A-Za-z ]+(?:\\([A-Z]+\\))?:\\s*\\d+\\/\\d+/)) {
+            const match = trimmed.match(/^([^:]+?)(?:\\s*\\([A-Z]+\\))?:/)
+            if (match) currentStat = match[1].trim()
+            continue
+          }
+          
+          // Check if it's an item line (starts with +/- and has "a/an/some")
+          const itemMatch = trimmed.match(/^([+-]\\d+):\\s+((?:a|an|some|the)\\s+.+?)(?:\\s*\\(|$)/)
+          if (itemMatch && currentStat) {
+            const boost = parseInt(itemMatch[1])
+            const itemName = itemMatch[2].trim()
+            
+            if (!itemEnhancives[itemName]) {
+              itemEnhancives[itemName] = []
+            }
+            itemEnhancives[itemName].push({ ability: currentStat, boost: boost })
+          }
+        }
+        
+        // Parse inventory location to map items to slots
+        const itemSlots = {}
+        const locationLines = inventoryLocation.split('\\n')
+        let currentSlot = null
+        
+        for (const line of locationLines) {
+          const trimmed = line.trim()
+          if (!trimmed || trimmed.startsWith('You are currently') || trimmed.match(/^\\(\\d+ items/)) continue
+          
+          // Check if it's a slot header (ends with colon)
+          if (trimmed.endsWith(':')) {
+            // Map slot descriptions to our slot names
+            const slotMap = {
+              'As a pin': 'pin',
+              'On your head': 'head',
+              'Placed in your hair': 'head',
+              'Hung from a single ear': 'ear',
+              'Hung around your neck': 'neck',
+              'Draped over your shoulders': 'shoulders',
+              'Over your chest': 'chest',
+              'Put over your front': 'front',
+              'Attached to your arms': 'arms',
+              'Attached to your wrist': 'wrist',
+              'Slipped over your hands': 'hands',
+              'On your fingers': 'finger',
+              'Around your waist': 'belt',
+              'Attached to your belt': 'belt',
+              'Attached to your legs': 'legs',
+              'On your feet': 'feet',
+              'As a battle standard': 'nugget',
+              'Elsewhere': 'nugget'
+            }
+            const slotDesc = trimmed.slice(0, -1)
+            currentSlot = slotMap[slotDesc] || 'nugget'
+            continue
+          }
+          
+          // Extract item name from line (remove functional/nonfunctional)
+          const itemMatch = trimmed.match(/^((?:a|an|some|the)\\s+.+?)\\s*\\((functional|nonfunctional)\\)/)
+          if (itemMatch && currentSlot) {
+            const itemName = itemMatch[1].trim()
+            const isFunctional = itemMatch[2] === 'functional'
+            if (isFunctional) {
+              itemSlots[itemName] = currentSlot
+            }
+          }
+        }
+        
+        // Match items and create inventory entries
+        let imported = 0
+        let skipped = 0
+        
+        for (const [itemName, enhancives] of Object.entries(itemEnhancives)) {
+          const slot = itemSlots[itemName]
+          if (!slot) {
+            console.log('Skipping item (no slot found):', itemName)
+            skipped++
+            continue
+          }
+          
+          // Add to inventory
+          const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/inventory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              item_name: itemName,
+              slot: slot,
+              enhancives_json: JSON.stringify(enhancives),
+              is_permanent: true
+            })
+          })
+          
+          if (response.ok) {
+            imported++
+          } else {
+            console.error('Failed to import:', itemName)
+            skipped++
+          }
+        }
+        
+        alert('Import complete!\\n\\nImported: ' + imported + ' items\\nSkipped: ' + skipped + ' items')
+        document.getElementById('bulkImportForm').classList.add('hidden')
+        document.getElementById('bulkEnhanciveDetail').value = ''
+        document.getElementById('bulkInventoryLocation').value = ''
+        loadInventoryForSet()
+        
+      } catch (error) {
+        console.error('Bulk import error:', error)
+        alert('Error processing bulk import. Check console for details.')
+      }
     })
 
     document.getElementById('cancelAddItem').addEventListener('click', () => {
