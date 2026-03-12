@@ -1282,7 +1282,7 @@ app.get('/', (c) => {
               'Attached to your wrist': 'wrist',
               'Slipped over your hands': 'hands',
               'On your fingers': 'finger',
-              'Around your waist': 'belt',
+              'Around your waist': 'waist',
               'Attached to your belt': 'belt',
               'Pulled over your legs': 'leggings',
               'Attached to your legs': 'legs',
