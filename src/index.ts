@@ -857,6 +857,11 @@ app.get('/', (c) => {
       await loadInventory()
       await loadSlotUsage()
       await loadSummary()
+      
+      // Refresh item filter if filtering by goals is enabled
+      if (filterByGoalsEnabled) {
+        filterItems()
+      }
     }
 
     async function loadGoalsForSet() {
@@ -1116,7 +1121,15 @@ app.get('/', (c) => {
     window.deleteGoal = async function(id) {
       if (!confirm('Delete this goal?')) return
       await fetch(API_BASE + '/api/set-goals/' + id, { method: 'DELETE' })
-      loadGoalsForSet()
+      await loadGoalsForSet()
+      
+      // Refresh item filter if filtering by goals is enabled
+      if (filterByGoalsEnabled) {
+        const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/goals')
+        const data = await response.json()
+        userGoals = data.goals || []
+        filterItems()
+      }
     }
 
     let editingGoalId = null
