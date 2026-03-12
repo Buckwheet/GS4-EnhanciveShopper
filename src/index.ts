@@ -2219,8 +2219,9 @@ app.post('/api/ai-chat', async (c) => {
   const goalsResult = await c.env.DB.prepare(`
     SELECT sg.stat, sg.min_boost, sg.max_cost, sg.preferred_slots 
     FROM set_goals sg
-    JOIN character_sets cs ON sg.character_set_id = cs.id
-    WHERE cs.discord_id = ?
+    JOIN sets s ON sg.set_id = s.id
+    JOIN characters c ON s.character_id = c.id
+    WHERE c.discord_id = ?
   `).bind(discord_id).all()
   let goalsContext = ''
   if (goalsResult.results.length > 0) {
@@ -2230,8 +2231,9 @@ app.post('/api/ai-chat', async (c) => {
   const invResult = await c.env.DB.prepare(`
     SELECT si.item_name, si.slot, si.enhancives_json 
     FROM set_inventory si
-    JOIN character_sets cs ON si.character_set_id = cs.id
-    WHERE cs.discord_id = ?
+    JOIN sets s ON si.set_id = s.id
+    JOIN characters c ON s.character_id = c.id
+    WHERE c.discord_id = ?
   `).bind(discord_id).all()
   let invContext = ''
   if (invResult.results.length > 0) {
