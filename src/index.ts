@@ -1299,7 +1299,7 @@ app.get('/', (c) => {
         document.getElementById('bulkImportForm').classList.add('hidden')
         document.getElementById('bulkEnhanciveDetail').value = ''
         document.getElementById('bulkInventoryLocation').value = ''
-        loadInventoryForSet()
+        loadInventory()
         
       } catch (error) {
         console.error('Bulk import error:', error)
