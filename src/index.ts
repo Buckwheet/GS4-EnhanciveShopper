@@ -977,7 +977,7 @@ app.get('/', (c) => {
 
     window.deleteGoal = async function(id) {
       if (!confirm('Delete this goal?')) return
-      await fetch(API_BASE + '/api/sets/' + currentSetId + '/goals/' + id, { method: 'DELETE' })
+      await fetch(API_BASE + '/api/set-goals/' + id, { method: 'DELETE' })
       loadGoalsForSet()
     }
 
