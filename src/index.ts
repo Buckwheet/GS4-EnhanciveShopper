@@ -1193,7 +1193,8 @@ app.get('/', (c) => {
           const trimmed = line.trim()
           if (!trimmed || trimmed.startsWith('Stats:') || trimmed.startsWith('Skills:') || 
               trimmed.startsWith('Resources:') || trimmed.startsWith('Statistics:') || 
-              trimmed.startsWith('For fewer') || trimmed.startsWith('Enhancive')) continue
+              trimmed.startsWith('For fewer') || trimmed.startsWith('Enhancive') ||
+              trimmed.startsWith('Self Knowledge Spells:')) continue
           
           // Check if it's a stat/skill/resource header (e.g., "Discipline (DIS): 40/40")
           if (trimmed.match(/^[A-Za-z ]+(?:\\([A-Z]+\\))?:\\s*\\d+\\/\\d+/)) {
@@ -1207,6 +1208,9 @@ app.get('/', (c) => {
           if (itemMatch && currentStat) {
             const boost = parseInt(itemMatch[1])
             const itemName = itemMatch[2].trim()
+            
+            // Skip unknown sources
+            if (itemName.includes('unknown source')) continue
             
             if (!itemEnhancives[itemName]) {
               itemEnhancives[itemName] = []
