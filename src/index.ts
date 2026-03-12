@@ -404,7 +404,8 @@ app.get('/', (c) => {
           
           <div class="mb-4">
             <button id="addItemBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mr-2">+ Add Enhancive Item</button>
-            <button id="bulkImportBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Bulk Import</button>
+            <button id="bulkImportBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mr-2">Bulk Import</button>
+            <button id="deleteAllInventoryBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete All</button>
           </div>
           
           <div id="bulkImportForm" class="hidden mb-6 p-4 border rounded bg-gray-50">
@@ -1176,6 +1177,31 @@ app.get('/', (c) => {
       document.getElementById('addItemForm').classList.add('hidden')
     })
     
+    document.getElementById('deleteAllInventoryBtn').addEventListener('click', async () => {
+      if (!currentSetId) {
+        alert('Please select a set first')
+        return
+      }
+      
+      if (!confirm('Delete ALL items from this inventory? This cannot be undone!')) return
+      
+      try {
+        const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/inventory', {
+          method: 'DELETE'
+        })
+        
+        if (response.ok) {
+          alert('All inventory items deleted')
+          loadInventory()
+        } else {
+          alert('Error deleting inventory')
+        }
+      } catch (error) {
+        console.error('Delete all error:', error)
+        alert('Error deleting inventory')
+      }
+    })
+    
     document.getElementById('cancelBulkImport').addEventListener('click', () => {
       document.getElementById('bulkImportForm').classList.add('hidden')
       document.getElementById('bulkEnhanciveDetail').value = ''
@@ -1528,11 +1554,18 @@ app.get('/', (c) => {
                 <div class="text-sm text-gray-700">\${enhText}</div>
                 \${!item.is_permanent ? '<div class="text-xs text-orange-600 mt-1">⚠ Temporary (will crumble)</div>' : ''}
               </div>
-              <button onclick="deleteInventoryItem(\${item.id})" class="text-red-600 hover:text-red-800 text-sm">Delete</button>
+              <div class="flex gap-2">
+                <button onclick="editInventoryItem(\${item.id})" class="text-blue-600 hover:text-blue-800 text-sm">Edit</button>
+                <button onclick="deleteInventoryItem(\${item.id})" class="text-red-600 hover:text-red-800 text-sm">Delete</button>
+              </div>
             </div>
           </div>
         \`
       }).join('')
+    }
+
+    window.editInventoryItem = async function(id) {
+      alert('Edit functionality coming soon')
     }
 
     window.deleteInventoryItem = async function(id) {
@@ -3011,6 +3044,13 @@ app.put('/api/set-inventory/:id', async (c) => {
 app.delete('/api/set-inventory/:id', async (c) => {
   const id = c.req.param('id')
   await c.env.DB.prepare('DELETE FROM set_inventory WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+// Delete all inventory items for a set
+app.delete('/api/sets/:setId/inventory', async (c) => {
+  const setId = c.req.param('setId')
+  await c.env.DB.prepare('DELETE FROM set_inventory WHERE set_id = ?').bind(setId).run()
   return c.json({ success: true })
 })
 
