@@ -27,6 +27,7 @@ export async function scrapeEnhancives(): Promise<EnhanciveItem[]> {
           for (const item of room.items || []) {
             const details = item.details || {}
             if (details.enhancives && Array.isArray(details.enhancives)) {
+              const isPermanent = Array.isArray(details.tags) && details.tags.includes('persists')
               items.push({
                 id: item.id,
                 name: item.name,
@@ -36,6 +37,7 @@ export async function scrapeEnhancives(): Promise<EnhanciveItem[]> {
                 enchant: details.enchant || null,
                 worn: details.worn || null,
                 enhancives: details.enhancives,
+                is_permanent: isPermanent,
               })
             }
           }

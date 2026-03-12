@@ -3413,8 +3413,8 @@ app.post('/api/scrape', async (c) => {
     
     if (newItems.length > 0) {
       const stmt = c.env.DB.prepare(
-        `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`
+        `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available, is_permanent)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`
       )
       
       const batch = newItems.map(item => 
@@ -3428,7 +3428,8 @@ app.post('/api/scrape', async (c) => {
           item.worn,
           JSON.stringify(item.enhancives),
           now,
-          now
+          now,
+          item.is_permanent ? 1 : 0
         )
       )
       
@@ -3494,8 +3495,8 @@ export default {
         
         if (newItems.length > 0) {
           const stmt = env.DB.prepare(
-            `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`
+            `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available, is_permanent)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`
           )
           
           const batch = newItems.map(item => 
@@ -3509,7 +3510,8 @@ export default {
               item.worn,
               JSON.stringify(item.enhancives),
               now,
-              now
+              now,
+              item.is_permanent ? 1 : 0
             )
           )
           

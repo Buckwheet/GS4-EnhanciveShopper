@@ -13,6 +13,7 @@ export interface EnhanciveItem {
   enchant: number | null
   worn: string | null
   enhancives: Enhancive[]
+  is_permanent: boolean
 }
 
 export interface Env {
