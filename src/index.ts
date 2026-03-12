@@ -1649,7 +1649,13 @@ app.get('/', (c) => {
     }
 
     function populateFilters() {
-      const towns = [...new Set(allItems.map(item => item.town))].sort()
+      // Map towns, converting crossbows and N/A to Nugget
+      const towns = [...new Set(allItems.map(item => {
+        if (item.name.toLowerCase().includes('crossbow')) return 'Nugget'
+        if (!item.town || item.town === 'N/A') return 'Nugget'
+        return item.town
+      }))].sort()
+      
       const worn = [...new Set(allItems.map(item => item.worn).filter(Boolean))].sort()
       const stats = [...new Set(allItems.flatMap(item => {
         try {
@@ -1815,7 +1821,16 @@ app.get('/', (c) => {
 
       filteredItems = allItems.filter(item => {
         if (searchName && !item.name.toLowerCase().includes(searchName)) return false
-        if (filterTown && item.town !== filterTown) return false
+        
+        // Handle Nugget filter
+        if (filterTown) {
+          let itemTown = item.town
+          if (item.name.toLowerCase().includes('crossbow')) itemTown = 'Nugget'
+          else if (!itemTown || itemTown === 'N/A') itemTown = 'Nugget'
+          
+          if (itemTown !== filterTown) return false
+        }
+        
         if (filterWorn && item.worn !== filterWorn) return false
         if (filterStat) {
           try {
@@ -1910,10 +1925,18 @@ app.get('/', (c) => {
         
         const totalSum = calculateTotalSum(item)
         const totalSumDisplay = totalSum > 0 ? totalSum : '-'
+        
+        // Override location for crossbows (Nugget items)
+        let displayTown = item.town
+        if (item.name.toLowerCase().includes('crossbow')) {
+          displayTown = 'Nugget'
+        } else if (!displayTown || displayTown === 'N/A') {
+          displayTown = 'Nugget'
+        }
 
         tr.innerHTML = \`
           <td class="px-4 py-3">\${item.name}</td>
-          <td class="px-4 py-3">\${item.town}</td>
+          <td class="px-4 py-3">\${displayTown}</td>
           <td class="px-4 py-3">\${item.shop}</td>
           <td class="px-4 py-3 text-right">\${item.cost ? item.cost.toLocaleString() : 'N/A'}</td>
           <td class="px-4 py-3">\${item.worn || 'N/A'}</td>
