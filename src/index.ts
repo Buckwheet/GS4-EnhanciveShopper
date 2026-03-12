@@ -66,6 +66,10 @@ app.get('/', (c) => {
           <span class="text-sm text-gray-700">Filter search automatically based on my goals</span>
         </label>
         <label class="flex items-center cursor-pointer">
+          <input type="checkbox" id="filterPermanentOnly" class="mr-2">
+          <span class="text-sm text-gray-700">Only show permanent items</span>
+        </label>
+        <label class="flex items-center cursor-pointer">
           <input type="checkbox" id="useAdvancedSkillCalc" class="mr-2">
           <span class="text-sm text-gray-700">Use advanced skill rank calculation</span>
         </label>
@@ -565,6 +569,7 @@ app.get('/', (c) => {
     let includeNuggetPrice = false
     let includeSwatchPrice = false // DISABLED: Swatch feature not yet implemented
     let filterByGoalsEnabled = false
+    let filterPermanentOnly = false
     let useAdvancedSkillCalc = false
     let chatHistory = []
 
@@ -2253,6 +2258,7 @@ app.get('/', (c) => {
 
       filteredItems = allItems.filter(item => {
         if (searchName && !item.name.toLowerCase().includes(searchName)) return false
+        if (filterPermanentOnly && !item.is_permanent) return false
         if (filterTown && item.town !== filterTown) return false
         
         // Handle nugget slot filter
@@ -2438,11 +2444,23 @@ app.get('/', (c) => {
       renderItems()
     })
     
+    document.getElementById('filterPermanentOnly').addEventListener('change', (e) => {
+      filterPermanentOnly = e.target.checked
+      localStorage.setItem('filterPermanentOnly', filterPermanentOnly)
+      filterItems()
+    })
+    
     // Restore checkbox state
     const savedFilter = localStorage.getItem('filterByGoals')
     if (savedFilter === 'true') {
       document.getElementById('filterByGoals').checked = true
       filterByGoalsEnabled = true
+    }
+    
+    const savedPermanentFilter = localStorage.getItem('filterPermanentOnly')
+    if (savedPermanentFilter === 'true') {
+      document.getElementById('filterPermanentOnly').checked = true
+      filterPermanentOnly = true
     }
     
     const savedNuggetPrice = localStorage.getItem('includeNuggetPrice')
