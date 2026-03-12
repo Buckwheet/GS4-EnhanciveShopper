@@ -1207,13 +1207,12 @@ app.get('/', (c) => {
         return
       }
       
-      const setId = await getCurrentSetId()
-      if (!setId) {
+      if (!currentSetId) {
         alert('No active set found')
         return
       }
       
-      const response = await fetch(API_BASE + '/api/character-sets/' + setId + '/inventory', {
+      const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/inventory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
