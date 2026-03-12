@@ -48,8 +48,15 @@
 
 ## 🚧 Remaining Work
 
+### Known Issues
+- ⚠️ **User's sets not appearing**: Only "Shollindal" set visible, "Default" and "Mejora" missing
+  - Migration ran successfully
+  - Need to debug: Check character_sets table data
+  - Possible issue: Frontend not loading sets correctly or migration didn't capture all data
+
 ### Deployment & Testing
-- [ ] Deploy to Cloudflare Workers
+- ✅ Deployed to Cloudflare Workers (2026-03-12)
+- [ ] Debug missing sets issue
 - [ ] Test all functionality end-to-end
 - [ ] Verify user's sets appear correctly
 
