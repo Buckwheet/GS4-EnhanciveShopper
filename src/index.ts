@@ -1699,6 +1699,153 @@ app.get('/api/goal-sets', async (c) => {
 })
 
 // New API: Get character sets
+// New API: Get all characters for user
+app.get('/api/characters', async (c) => {
+  const discordId = c.req.query('discord_id')
+  if (!discordId) return c.json({ error: 'discord_id required' }, 400)
+
+  const { results: characters } = await c.env.DB.prepare('SELECT * FROM characters WHERE discord_id = ?')
+    .bind(discordId)
+    .all()
+
+  return c.json({ characters })
+})
+
+// New API: Create character
+app.post('/api/characters', async (c) => {
+  const { discord_id, character_name, base_stats, skill_ranks } = await c.req.json()
+  
+  if (!discord_id || !character_name) {
+    return c.json({ error: 'discord_id and character_name required' }, 400)
+  }
+
+  const result = await c.env.DB.prepare(
+    'INSERT INTO characters (discord_id, character_name, base_stats, skill_ranks, created_at) VALUES (?, ?, ?, ?, ?)'
+  ).bind(discord_id, character_name, base_stats || null, skill_ranks || null, new Date().toISOString()).run()
+
+  return c.json({ success: true, id: result.meta.last_row_id })
+})
+
+// New API: Update character
+app.put('/api/characters/:id', async (c) => {
+  const id = c.req.param('id')
+  const { character_name, base_stats, skill_ranks } = await c.req.json()
+
+  await c.env.DB.prepare(
+    'UPDATE characters SET character_name = ?, base_stats = ?, skill_ranks = ? WHERE id = ?'
+  ).bind(character_name, base_stats || null, skill_ranks || null, id).run()
+
+  return c.json({ success: true })
+})
+
+// New API: Delete character
+app.delete('/api/characters/:id', async (c) => {
+  const id = c.req.param('id')
+  await c.env.DB.prepare('DELETE FROM characters WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+// New API: Get sets for character
+app.get('/api/characters/:id/sets', async (c) => {
+  const characterId = c.req.param('id')
+  
+  const { results: sets } = await c.env.DB.prepare('SELECT * FROM sets WHERE character_id = ?')
+    .bind(characterId)
+    .all()
+
+  return c.json({ sets })
+})
+
+// New API: Create set for character
+app.post('/api/characters/:id/sets', async (c) => {
+  const characterId = c.req.param('id')
+  const { set_name, account_type } = await c.req.json()
+  
+  if (!set_name) {
+    return c.json({ error: 'set_name required' }, 400)
+  }
+
+  const result = await c.env.DB.prepare(
+    'INSERT INTO sets (character_id, set_name, account_type, created_at) VALUES (?, ?, ?, ?)'
+  ).bind(characterId, set_name, account_type || 'F2P', new Date().toISOString()).run()
+
+  return c.json({ success: true, id: result.meta.last_row_id })
+})
+
+// New API: Update set
+app.put('/api/sets/:id', async (c) => {
+  const id = c.req.param('id')
+  const { set_name, account_type } = await c.req.json()
+
+  await c.env.DB.prepare(
+    'UPDATE sets SET set_name = ?, account_type = ? WHERE id = ?'
+  ).bind(set_name, account_type, id).run()
+
+  return c.json({ success: true })
+})
+
+// New API: Delete set
+app.delete('/api/sets/:id', async (c) => {
+  const id = c.req.param('id')
+  await c.env.DB.prepare('DELETE FROM sets WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+// New API: Get goals for set
+app.get('/api/sets/:id/goals', async (c) => {
+  const setId = c.req.param('id')
+  
+  const { results: goals } = await c.env.DB.prepare('SELECT * FROM set_goals WHERE set_id = ?')
+    .bind(setId)
+    .all()
+
+  return c.json({ goals })
+})
+
+// New API: Create goal for set
+app.post('/api/sets/:id/goals', async (c) => {
+  const setId = c.req.param('id')
+  const { stat, min_boost, max_cost, preferred_slots } = await c.req.json()
+  
+  if (!stat || min_boost === undefined || min_boost === null) {
+    return c.json({ error: 'stat and min_boost required' }, 400)
+  }
+
+  const result = await c.env.DB.prepare(
+    'INSERT INTO set_goals (set_id, stat, min_boost, max_cost, preferred_slots, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(setId, stat, min_boost, max_cost || null, preferred_slots || null, new Date().toISOString()).run()
+
+  return c.json({ success: true, id: result.meta.last_row_id })
+})
+
+// New API: Get inventory for set
+app.get('/api/sets/:id/inventory', async (c) => {
+  const setId = c.req.param('id')
+  
+  const { results: inventory } = await c.env.DB.prepare('SELECT * FROM set_inventory WHERE set_id = ?')
+    .bind(setId)
+    .all()
+
+  return c.json({ inventory })
+})
+
+// New API: Add item to set inventory
+app.post('/api/sets/:id/inventory', async (c) => {
+  const setId = c.req.param('id')
+  const { item_name, slot, enhancives_json, is_permanent } = await c.req.json()
+  
+  if (!item_name || !slot || !enhancives_json) {
+    return c.json({ error: 'item_name, slot, and enhancives_json required' }, 400)
+  }
+
+  const result = await c.env.DB.prepare(
+    'INSERT INTO set_inventory (set_id, item_name, slot, enhancives_json, is_permanent, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(setId, item_name, slot, enhancives_json, is_permanent ? 1 : 0, new Date().toISOString()).run()
+
+  return c.json({ success: true, id: result.meta.last_row_id })
+})
+
+// Legacy: character_sets endpoints (keep during transition)
 app.get('/api/character-sets', async (c) => {
   const discordId = c.req.query('discord_id')
   if (!discordId) return c.json({ error: 'discord_id required' }, 400)
