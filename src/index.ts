@@ -1219,13 +1219,15 @@ app.get('/', (c) => {
       const itemName = document.getElementById('parsedItemName').value
       const selectedSlot = document.querySelector('input[name="itemSlot"]:checked')?.value
       
+      console.log('Add item clicked:', { itemName, selectedSlot, currentSetId, parsedItemData })
+      
       if (!itemName || !selectedSlot || !parsedItemData) {
         alert('Please complete all fields')
         return
       }
       
       if (!currentSetId) {
-        alert('No active set found')
+        alert('No active set found. Please select a character and set first.')
         return
       }
       
