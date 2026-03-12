@@ -2545,22 +2545,29 @@ app.get('/api/migrate-hierarchy', async (c) => {
 })
 
 app.get('/api/summary', async (c) => {
-  const discordId = c.req.query('discord_id')
   const setId = c.req.query('set_id')
   
   if (!setId) {
     return c.json({ error: 'set_id required' }, 400)
   }
 
-  const characterSet = await c.env.DB.prepare(
-    'SELECT base_stats, skill_ranks FROM character_sets WHERE id = ?'
+  const set = await c.env.DB.prepare(
+    'SELECT character_id FROM sets WHERE id = ?'
   ).bind(setId).first()
 
-  const baseStats = characterSet?.base_stats ? JSON.parse(characterSet.base_stats as string) : {}
-  const skillRanks = characterSet?.skill_ranks ? JSON.parse(characterSet.skill_ranks as string) : {}
+  if (!set) {
+    return c.json({ error: 'Set not found' }, 404)
+  }
+
+  const character = await c.env.DB.prepare(
+    'SELECT base_stats, skill_ranks FROM characters WHERE id = ?'
+  ).bind(set.character_id).first()
+
+  const baseStats = character?.base_stats ? JSON.parse(character.base_stats as string) : {}
+  const skillRanks = character?.skill_ranks ? JSON.parse(character.skill_ranks as string) : {}
 
   const { results: items } = await c.env.DB.prepare(
-    'SELECT enhancives_json FROM set_inventory WHERE character_set_id = ?'
+    'SELECT enhancives_json FROM set_inventory WHERE set_id = ?'
   ).bind(setId).all()
 
   const stats: Record<string, { base: number; enhancive: number; total: number; cap: number }> = {}
