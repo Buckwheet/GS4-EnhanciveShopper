@@ -144,6 +144,7 @@ app.get('/', (c) => {
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="arms" class="mr-1"> arms</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ankle" class="mr-1"> ankle</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="arms" class="mr-1"> arms</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="back" class="mr-1"> back</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="belt" class="mr-1"> belt</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="chest" class="mr-1"> chest</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="cloak" class="mr-1"> cloak</label>
@@ -156,12 +157,16 @@ app.get('/', (c) => {
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="hair" class="mr-1"> hair</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="hands" class="mr-1"> hands</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="head" class="mr-1"> head</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="leggings" class="mr-1"> leggings</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="legs" class="mr-1"> legs</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="neck" class="mr-1"> neck</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="pants" class="mr-1"> pants</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="pin" class="mr-1"> pin</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="shoulder" class="mr-1"> shoulder</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="shoulders" class="mr-1"> shoulders</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="socks" class="mr-1"> socks</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="torso" class="mr-1"> torso</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="undershirt" class="mr-1"> undershirt</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="wrist" class="mr-1"> wrist</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="nugget" class="mr-1"> nugget</label>
               <label class="flex items-center ml-4">
@@ -1241,20 +1246,23 @@ app.get('/', (c) => {
               'Hung from a single ear': 'ear',
               'Hung from both ears': 'ears',
               'Hung around your neck': 'neck',
+              'Slung over your shoulder': 'shoulder',
               'Draped over your shoulders': 'shoulders',
-              'Over your chest': 'chest',
+              'On your back': 'back',
+              'Over your chest': 'torso',
               'Put over your front': 'front',
-              'Slipped into, on your chest': 'chest',
+              'Slipped into, on your chest': 'undershirt',
               'Attached to your arms': 'arms',
               'Attached to your wrist': 'wrist',
               'Slipped over your hands': 'hands',
               'On your fingers': 'finger',
               'Around your waist': 'belt',
               'Attached to your belt': 'belt',
-              'Pulled over your legs': 'legs',
+              'Pulled over your legs': 'leggings',
               'Attached to your legs': 'legs',
               'Attached to your ankle': 'ankle',
               'On your feet': 'feet',
+              'Slipped on your feet': 'socks',
               'As a battle standard': 'nugget',
               'Elsewhere': 'elsewhere'
             }
