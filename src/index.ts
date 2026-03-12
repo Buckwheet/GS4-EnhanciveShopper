@@ -1827,6 +1827,17 @@ app.get('/', (c) => {
         
         return true
       })
+      
+      // Auto-sort by Match Sum when filtering by goals
+      if (filterByGoalsEnabled && userGoals.length > 0) {
+        currentSortColumn = 'matchSum'
+        currentSortDirection = 'desc'
+        filteredItems.sort((a, b) => {
+          const aSum = calculateMatchSum(a)
+          const bSum = calculateMatchSum(b)
+          return bSum - aSum // Descending
+        })
+      }
 
       renderItems()
     }
