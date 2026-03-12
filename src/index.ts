@@ -2055,18 +2055,23 @@ app.get('/api/sets/:id/inventory', async (c) => {
 
 // New API: Add item to set inventory
 app.post('/api/sets/:id/inventory', async (c) => {
-  const setId = c.req.param('id')
-  const { item_name, slot, enhancives_json, is_permanent } = await c.req.json()
-  
-  if (!item_name || !slot || !enhancives_json) {
-    return c.json({ error: 'item_name, slot, and enhancives_json required' }, 400)
+  try {
+    const setId = c.req.param('id')
+    const { item_name, slot, enhancives_json, is_permanent } = await c.req.json()
+    
+    if (!item_name || !slot || !enhancives_json) {
+      return c.json({ error: 'item_name, slot, and enhancives_json required' }, 400)
+    }
+
+    const result = await c.env.DB.prepare(
+      'INSERT INTO set_inventory (set_id, item_name, slot, enhancives_json, is_permanent, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+    ).bind(setId, item_name, slot, enhancives_json, is_permanent ? 1 : 0, new Date().toISOString()).run()
+
+    return c.json({ success: true, id: result.meta.last_row_id })
+  } catch (error) {
+    console.error('Error adding inventory:', error)
+    return c.json({ error: error.message || 'Failed to add item' }, 500)
   }
-
-  const result = await c.env.DB.prepare(
-    'INSERT INTO set_inventory (set_id, item_name, slot, enhancives_json, is_permanent, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(setId, item_name, slot, enhancives_json, is_permanent ? 1 : 0, new Date().toISOString()).run()
-
-  return c.json({ success: true, id: result.meta.last_row_id })
 })
 
 // Legacy: character_sets endpoints (keep during transition)
