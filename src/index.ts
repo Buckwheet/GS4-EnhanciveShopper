@@ -1584,9 +1584,26 @@ app.get('/', (c) => {
       
       const items = data.inventory || []
       
+      // Map database slot names to display slot names
+      const slotMapping = {
+        'ear': 'single_ear',
+        'ears': 'both_ears',
+        'undershirt': 'chest_slipped',
+        'leggings': 'legs_pulled',
+        'legs': 'legs_attached',
+        'feet': 'feet_on',
+        'socks': 'feet_slipped',
+        'shoulder': 'shoulder_slung',
+        'shoulders': 'shoulders_draped',
+        'torso': 'chest',
+        'belt': 'belt',
+        'waist': 'waist'
+      }
+      
       const slotCounts = {}
       items.forEach(item => {
-        slotCounts[item.slot] = (slotCounts[item.slot] || 0) + 1
+        const displaySlot = slotMapping[item.slot] || item.slot
+        slotCounts[displaySlot] = (slotCounts[displaySlot] || 0) + 1
       })
       
       const setResponse = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/sets')
