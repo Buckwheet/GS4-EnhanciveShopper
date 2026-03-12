@@ -2384,9 +2384,12 @@ app.get('/', (c) => {
           displayCost = displayCost + 25000000
           costLabel = '<div class="text-xs text-yellow-600">+NUGGET</div>'
         }
+        
+        // Add crumble icon for temporary items
+        const crumbleIcon = !item.is_permanent ? '<span title="Temporary - will crumble">⚠️</span> ' : ''
 
         tr.innerHTML = \`
-          <td class="px-4 py-3">\${item.name}</td>
+          <td class="px-4 py-3">\${crumbleIcon}\${item.name}</td>
           <td class="px-4 py-3">\${item.town}</td>
           <td class="px-4 py-3">\${item.shop}</td>
           <td class="px-4 py-3 text-right">\${displayCost ? displayCost.toLocaleString() : 'N/A'}\${costLabel}</td>
