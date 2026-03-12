@@ -1803,15 +1803,12 @@ app.get('/', (c) => {
             continue
           }
           
-          // Bonus stats count as 2x (they give both stat and bonus)
-          // Base stats count as 1x (only base)
-          if (ability.includes('bonus')) {
+          // Only "Bonus" stats count as 2x (they give both stat and bonus)
+          // Everything else is 1x: Base stats, Max Mana, Max Stamina, Max Health, Spirit Recovery, etc.
+          if (ability.includes('bonus') && !ability.includes('max') && !ability.includes('spirit recovery')) {
             sum += enh.boost * 2
-          } else if (ability.includes('base')) {
-            sum += enh.boost
           } else {
-            // If neither specified, assume it's a bonus (old format)
-            sum += enh.boost * 2
+            sum += enh.boost
           }
         }
         
@@ -1840,15 +1837,12 @@ app.get('/', (c) => {
             continue
           }
           
-          // Bonus stats count as 2x (they give both stat and bonus)
-          // Base stats count as 1x (only base)
-          if (ability.includes('bonus')) {
+          // Only "Bonus" stats count as 2x (they give both stat and bonus)
+          // Everything else is 1x: Base stats, Max Mana, Max Stamina, Max Health, Spirit Recovery, etc.
+          if (ability.includes('bonus') && !ability.includes('max') && !ability.includes('spirit recovery')) {
             sum += enh.boost * 2
-          } else if (ability.includes('base')) {
-            sum += enh.boost
           } else {
-            // If neither specified, assume it's a bonus (old format)
-            sum += enh.boost * 2
+            sum += enh.boost
           }
         }
         
