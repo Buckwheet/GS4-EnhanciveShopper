@@ -1352,16 +1352,20 @@ app.get('/', (c) => {
         document.getElementById('saveGoalBtn').textContent = 'Save Goal'
       } else {
         // Create new goal
-        await fetch(API_BASE + '/api/goals', {
+        const setId = await getCurrentSetId()
+        if (!setId) {
+          alert('No active set found')
+          return
+        }
+        
+        await fetch(API_BASE + '/api/character-sets/' + setId + '/goals', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            discord_id: currentUser.id,
             stat,
             min_boost: parseInt(boost),
             max_cost: maxCost ? parseInt(maxCost) : null,
-            preferred_slots: selectedSlots || null,
-            goal_set_name: currentGoalSet,
+            preferred_slots: selectedSlots || null
           }),
         })
       }
