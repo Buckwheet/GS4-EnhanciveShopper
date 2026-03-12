@@ -1165,6 +1165,9 @@ app.get('/', (c) => {
 
     document.getElementById('closeInvBtn').addEventListener('click', () => {
       document.getElementById('manageInvModal').classList.add('hidden')
+      // Refresh displays after closing inventory modal
+      loadSlotUsage()
+      loadSummary()
     })
 
     document.getElementById('addItemBtn').addEventListener('click', () => {
@@ -1565,7 +1568,8 @@ app.get('/', (c) => {
     }
 
     window.editInventoryItem = async function(id) {
-      alert('Edit functionality coming soon')
+      // Edit functionality - TODO: implement edit modal
+      console.log('Edit item:', id)
     }
 
     window.deleteInventoryItem = async function(id) {
