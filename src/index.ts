@@ -1929,7 +1929,16 @@ app.get('/', (c) => {
               // Check slot preference
               if (goal.preferred_slots) {
                 const slots = goal.preferred_slots.split(',').map(s => s.trim())
-                if (!slots.includes(item.worn)) continue
+                
+                // Determine actual slot (convert to nugget if needed)
+                let itemSlot = item.worn
+                if (item.name.toLowerCase().includes('crossbow')) {
+                  itemSlot = 'nugget'
+                } else if (!item.worn || item.worn.trim() === '' || item.worn === 'N/A') {
+                  itemSlot = 'nugget'
+                }
+                
+                if (!slots.includes(itemSlot)) continue
               }
               
               matchesAnyGoal = true
