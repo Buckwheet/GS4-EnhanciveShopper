@@ -1868,13 +1868,23 @@ app.post('/api/ai-chat', async (c) => {
     return c.json({ error: 'Rate limit: Maximum 50 messages per session. Please refresh to start a new session.' }, 429)
   }
   
-  const goalsResult = await c.env.DB.prepare('SELECT stat, min_boost, max_cost, preferred_slots FROM user_goals WHERE discord_id = ?').bind(discord_id).all()
+  const goalsResult = await c.env.DB.prepare(`
+    SELECT sg.stat, sg.min_boost, sg.max_cost, sg.preferred_slots 
+    FROM set_goals sg
+    JOIN character_sets cs ON sg.character_set_id = cs.id
+    WHERE cs.discord_id = ?
+  `).bind(discord_id).all()
   let goalsContext = ''
   if (goalsResult.results.length > 0) {
     goalsContext = ' User goals: ' + goalsResult.results.map(g => g.stat + ' +' + g.min_boost + ' under ' + g.max_cost + ' silvers' + (g.preferred_slots ? ' in slots ' + g.preferred_slots : '')).join(', ') + '.'
   }
   
-  const invResult = await c.env.DB.prepare('SELECT item_name, slot, enhancives_json FROM user_inventory WHERE discord_id = ?').bind(discord_id).all()
+  const invResult = await c.env.DB.prepare(`
+    SELECT si.item_name, si.slot, si.enhancives_json 
+    FROM set_inventory si
+    JOIN character_sets cs ON si.character_set_id = cs.id
+    WHERE cs.discord_id = ?
+  `).bind(discord_id).all()
   let invContext = ''
   if (invResult.results.length > 0) {
     invContext = ' User inventory: ' + invResult.results.map(i => i.item_name + ' (' + i.slot + ')').join(', ') + '.'
