@@ -155,6 +155,7 @@ app.get('/', (c) => {
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="shoulders" class="mr-1"> shoulders</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="socks" class="mr-1"> socks</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="wrist" class="mr-1"> wrist</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="nugget" class="mr-1"> nugget</label>
             </div>
           </div>
           <div class="flex gap-2">
@@ -1649,14 +1650,15 @@ app.get('/', (c) => {
     }
 
     function populateFilters() {
-      // Map towns, converting crossbows and N/A to Nugget
-      const towns = [...new Set(allItems.map(item => {
-        if (item.name.toLowerCase().includes('crossbow')) return 'Nugget'
-        if (!item.town || item.town === 'N/A') return 'Nugget'
-        return item.town
-      }))].sort()
+      const towns = [...new Set(allItems.map(item => item.town))].sort()
       
-      const worn = [...new Set(allItems.map(item => item.worn).filter(Boolean))].sort()
+      // Map slots, converting crossbows and N/A to nugget
+      const worn = [...new Set(allItems.map(item => {
+        if (item.name.toLowerCase().includes('crossbow')) return 'nugget'
+        if (!item.worn || item.worn === 'N/A') return 'nugget'
+        return item.worn
+      }).filter(Boolean))].sort()
+      
       const stats = [...new Set(allItems.flatMap(item => {
         try {
           return JSON.parse(item.enhancives_json).map(e => e.ability)
@@ -1821,17 +1823,17 @@ app.get('/', (c) => {
 
       filteredItems = allItems.filter(item => {
         if (searchName && !item.name.toLowerCase().includes(searchName)) return false
+        if (filterTown && item.town !== filterTown) return false
         
-        // Handle Nugget filter
-        if (filterTown) {
-          let itemTown = item.town
-          if (item.name.toLowerCase().includes('crossbow')) itemTown = 'Nugget'
-          else if (!itemTown || itemTown === 'N/A') itemTown = 'Nugget'
+        // Handle nugget slot filter
+        if (filterWorn) {
+          let itemSlot = item.worn
+          if (item.name.toLowerCase().includes('crossbow')) itemSlot = 'nugget'
+          else if (!itemSlot || itemSlot === 'N/A') itemSlot = 'nugget'
           
-          if (itemTown !== filterTown) return false
+          if (itemSlot !== filterWorn) return false
         }
         
-        if (filterWorn && item.worn !== filterWorn) return false
         if (filterStat) {
           try {
             const enhancives = JSON.parse(item.enhancives_json)
@@ -1926,20 +1928,20 @@ app.get('/', (c) => {
         const totalSum = calculateTotalSum(item)
         const totalSumDisplay = totalSum > 0 ? totalSum : '-'
         
-        // Override location for crossbows (Nugget items)
-        let displayTown = item.town
+        // Override slot for crossbows (Nugget items)
+        let displaySlot = item.worn || 'N/A'
         if (item.name.toLowerCase().includes('crossbow')) {
-          displayTown = 'Nugget'
-        } else if (!displayTown || displayTown === 'N/A') {
-          displayTown = 'Nugget'
+          displaySlot = 'nugget'
+        } else if (!item.worn || item.worn === 'N/A') {
+          displaySlot = 'nugget'
         }
 
         tr.innerHTML = \`
           <td class="px-4 py-3">\${item.name}</td>
-          <td class="px-4 py-3">\${displayTown}</td>
+          <td class="px-4 py-3">\${item.town}</td>
           <td class="px-4 py-3">\${item.shop}</td>
           <td class="px-4 py-3 text-right">\${item.cost ? item.cost.toLocaleString() : 'N/A'}</td>
-          <td class="px-4 py-3">\${item.worn || 'N/A'}</td>
+          <td class="px-4 py-3">\${displaySlot}</td>
           <td class="px-4 py-3 text-right font-semibold \${matchSum > 0 ? 'text-green-600' : 'text-gray-400'}">\${matchSumDisplay}</td>
           <td class="px-4 py-3 text-right font-semibold text-blue-600">\${totalSumDisplay}</td>
           <td class="px-4 py-3 text-sm">\${enhancivesText}</td>
