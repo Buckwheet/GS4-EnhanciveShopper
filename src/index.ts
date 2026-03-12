@@ -1682,6 +1682,45 @@ app.get('/', (c) => {
       })
     }
 
+    // Calculate match sum for an item based on user goals
+    function calculateMatchSum(item) {
+      if (!userGoals || userGoals.length === 0) return 0
+      
+      try {
+        const enhancives = JSON.parse(item.enhancives_json)
+        let sum = 0
+        
+        for (const enh of enhancives) {
+          const ability = enh.ability.toLowerCase()
+          
+          // Check if this enhancive matches any user goal
+          const matchesGoal = userGoals.some(goal => 
+            ability.includes(goal.stat.toLowerCase())
+          )
+          
+          if (!matchesGoal) continue
+          
+          // Skip skills for now (they require character data)
+          if (ability.includes('ranks')) continue
+          
+          // Bonus stats count as 2x (they give both stat and bonus)
+          // Base stats count as 1x (only base)
+          if (ability.includes('bonus')) {
+            sum += enh.boost * 2
+          } else if (ability.includes('base')) {
+            sum += enh.boost
+          } else {
+            // If neither specified, assume it's a bonus (old format)
+            sum += enh.boost * 2
+          }
+        }
+        
+        return sum
+      } catch {
+        return 0
+      }
+    }
+
     function filterItems() {
       const searchName = document.getElementById('searchName').value.toLowerCase()
       const filterTown = document.getElementById('filterTown').value
