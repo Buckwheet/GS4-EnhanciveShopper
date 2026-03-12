@@ -3411,6 +3411,22 @@ app.post('/api/scrape', async (c) => {
     // Only insert truly new items (not in DB at all)
     const newItems = items.filter(item => !existingIds.has(item.id))
     
+    // Update existing items that are still available
+    const existingAvailableItems = items.filter(item => existingIds.has(item.id))
+    
+    if (existingAvailableItems.length > 0) {
+      const updateStmt = c.env.DB.prepare(
+        `UPDATE shop_items SET last_seen = ?, is_permanent = ?, available = 1 WHERE id = ?`
+      )
+      
+      const updateBatch = existingAvailableItems.map(item =>
+        updateStmt.bind(now, item.is_permanent ? 1 : 0, item.id)
+      )
+      
+      await c.env.DB.batch(updateBatch)
+      console.log(`Updated ${existingAvailableItems.length} existing items`)
+    }
+    
     if (newItems.length > 0) {
       const stmt = c.env.DB.prepare(
         `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available, is_permanent)
@@ -3492,6 +3508,22 @@ export default {
         
         // Only insert truly new items
         const newItems = items.filter(item => !existingIds.has(item.id))
+        
+        // Update existing items that are still available
+        const existingAvailableItems = items.filter(item => existingIds.has(item.id))
+        
+        if (existingAvailableItems.length > 0) {
+          const updateStmt = env.DB.prepare(
+            `UPDATE shop_items SET last_seen = ?, is_permanent = ?, available = 1 WHERE id = ?`
+          )
+          
+          const updateBatch = existingAvailableItems.map(item =>
+            updateStmt.bind(now, item.is_permanent ? 1 : 0, item.id)
+          )
+          
+          await env.DB.batch(updateBatch)
+          console.log(`Updated ${existingAvailableItems.length} existing items`)
+        }
         
         if (newItems.length > 0) {
           const stmt = env.DB.prepare(
