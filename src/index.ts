@@ -501,22 +501,6 @@ app.get('/', (c) => {
       loadCharacters()
     }
 
-    function updateSetButtons() {
-      const hasSet = allKnownSets.size > 0 && currentGoalSet && currentGoalSet !== ''
-      
-      document.getElementById('manageCharBtn').disabled = !hasSet
-      document.getElementById('manageInvBtn').disabled = !hasSet
-      document.getElementById('addGoalBtn').disabled = !hasSet
-      document.getElementById('deleteSetBtn').disabled = !hasSet
-      
-      const warning = document.getElementById('noSetWarning')
-      if (hasSet) {
-        warning.classList.add('hidden')
-      } else {
-        warning.classList.remove('hidden')
-      }
-    }
-
     function hideUserInfo() {
       document.getElementById('loginBtn').classList.remove('hidden')
       document.getElementById('userInfo').classList.add('hidden')
