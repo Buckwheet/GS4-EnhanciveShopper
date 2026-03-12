@@ -2593,6 +2593,24 @@ app.get('/api/migrate-hierarchy', async (c) => {
   }
 })
 
+app.get('/api/fix-nullable-columns', async (c) => {
+  try {
+    await c.env.DB.batch([
+      c.env.DB.prepare(`CREATE TABLE set_inventory_new (id INTEGER PRIMARY KEY AUTOINCREMENT, character_set_id INTEGER, set_id INTEGER, item_name TEXT NOT NULL, slot TEXT NOT NULL, enhancives_json TEXT NOT NULL, is_permanent INTEGER DEFAULT 0, created_at TEXT NOT NULL, FOREIGN KEY (set_id) REFERENCES sets(id) ON DELETE CASCADE)`),
+      c.env.DB.prepare(`INSERT INTO set_inventory_new SELECT * FROM set_inventory`),
+      c.env.DB.prepare(`DROP TABLE set_inventory`),
+      c.env.DB.prepare(`ALTER TABLE set_inventory_new RENAME TO set_inventory`),
+      c.env.DB.prepare(`CREATE TABLE set_goals_new (id INTEGER PRIMARY KEY AUTOINCREMENT, character_set_id INTEGER, set_id INTEGER, stat TEXT NOT NULL, min_boost INTEGER NOT NULL, max_cost INTEGER, preferred_slots TEXT, created_at TEXT NOT NULL, FOREIGN KEY (set_id) REFERENCES sets(id) ON DELETE CASCADE)`),
+      c.env.DB.prepare(`INSERT INTO set_goals_new SELECT * FROM set_goals`),
+      c.env.DB.prepare(`DROP TABLE set_goals`),
+      c.env.DB.prepare(`ALTER TABLE set_goals_new RENAME TO set_goals`)
+    ])
+    return c.json({ success: true, message: 'Columns made nullable' })
+  } catch (error: any) {
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 app.get('/api/summary', async (c) => {
   const setId = c.req.query('set_id')
   
