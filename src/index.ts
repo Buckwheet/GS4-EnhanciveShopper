@@ -466,6 +466,52 @@ app.get('/', (c) => {
       </div>
     </div>
 
+    <!-- Edit Inventory Item Modal -->
+    <div id="editInvModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+        <h2 class="text-xl font-semibold mb-4">Edit Item</h2>
+        <div class="mb-3">
+          <label class="block font-medium mb-1">Item Name</label>
+          <input type="text" id="editItemName" class="border p-2 rounded w-full" readonly>
+        </div>
+        <div class="mb-3">
+          <label class="block font-medium mb-1">Slot</label>
+          <select id="editItemSlot" class="border p-2 rounded w-full">
+            <option value="pin">Pin</option>
+            <option value="head">Head</option>
+            <option value="hair">Hair</option>
+            <option value="ear">Ear</option>
+            <option value="ears">Ears</option>
+            <option value="neck">Neck</option>
+            <option value="front">Front</option>
+            <option value="chest">Chest</option>
+            <option value="undershirt">Undershirt</option>
+            <option value="arms">Arms</option>
+            <option value="wrist">Wrist</option>
+            <option value="hands">Hands</option>
+            <option value="finger">Finger</option>
+            <option value="waist">Waist</option>
+            <option value="belt">Belt</option>
+            <option value="leggings">Leggings</option>
+            <option value="legs">Legs</option>
+            <option value="ankle">Ankle</option>
+            <option value="feet">Feet</option>
+            <option value="elsewhere">Elsewhere</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="flex items-center">
+            <input type="checkbox" id="editItemPermanent" class="mr-2">
+            <span>Permanent (unchecked = temporary/crumbles)</span>
+          </label>
+        </div>
+        <div class="flex gap-2">
+          <button id="saveEditItem" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
+          <button id="cancelEditItem" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <div class="bg-white p-4 rounded-lg shadow-md mb-6">
       <div class="flex justify-between items-center">
         <div>
@@ -1163,6 +1209,31 @@ app.get('/', (c) => {
       await loadInventory()
     })
 
+    document.getElementById('cancelEditItem').addEventListener('click', () => {
+      document.getElementById('editInvModal').classList.add('hidden')
+    })
+    
+    document.getElementById('saveEditItem').addEventListener('click', async () => {
+      const itemId = document.getElementById('editInvModal').dataset.itemId
+      const slot = document.getElementById('editItemSlot').value
+      const isPermanent = document.getElementById('editItemPermanent').checked
+      
+      const response = await fetch(API_BASE + '/api/set-inventory/' + itemId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slot: slot, is_permanent: isPermanent })
+      })
+      
+      if (response.ok) {
+        document.getElementById('editInvModal').classList.add('hidden')
+        loadInventory()
+        loadSlotUsage()
+        loadSummary()
+      } else {
+        alert('Error updating item')
+      }
+    })
+
     document.getElementById('closeInvBtn').addEventListener('click', () => {
       document.getElementById('manageInvModal').classList.add('hidden')
       // Refresh displays after closing inventory modal
@@ -1568,8 +1639,18 @@ app.get('/', (c) => {
     }
 
     window.editInventoryItem = async function(id) {
-      // Edit functionality - TODO: implement edit modal
-      console.log('Edit item:', id)
+      const response = await fetch(API_BASE + '/api/set-inventory/' + id)
+      const data = await response.json()
+      const item = data.item
+      
+      if (!item) return
+      
+      document.getElementById('editItemName').value = item.item_name
+      document.getElementById('editItemSlot').value = item.slot
+      document.getElementById('editItemPermanent').checked = item.is_permanent
+      
+      document.getElementById('editInvModal').classList.remove('hidden')
+      document.getElementById('editInvModal').dataset.itemId = id
     }
 
     window.deleteInventoryItem = async function(id) {
@@ -3064,6 +3145,23 @@ app.put('/api/set-inventory/:id', async (c) => {
 })
 
 // New API: Delete inventory item
+app.get('/api/set-inventory/:id', async (c) => {
+  const id = c.req.param('id')
+  const item = await c.env.DB.prepare('SELECT * FROM set_inventory WHERE id = ?').bind(id).first()
+  return c.json({ item })
+})
+
+app.put('/api/set-inventory/:id', async (c) => {
+  const id = c.req.param('id')
+  const { slot, is_permanent } = await c.req.json()
+  
+  await c.env.DB.prepare('UPDATE set_inventory SET slot = ?, is_permanent = ? WHERE id = ?')
+    .bind(slot, is_permanent ? 1 : 0, id)
+    .run()
+  
+  return c.json({ success: true })
+})
+
 app.delete('/api/set-inventory/:id', async (c) => {
   const id = c.req.param('id')
   await c.env.DB.prepare('DELETE FROM set_inventory WHERE id = ?').bind(id).run()
