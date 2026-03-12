@@ -447,12 +447,12 @@ app.get('/', (c) => {
       <table class="min-w-full">
         <thead class="bg-gray-800 text-white">
           <tr>
-            <th class="px-4 py-3 text-left">Name</th>
-            <th class="px-4 py-3 text-left">Town</th>
+            <th class="px-4 py-3 text-left cursor-pointer hover:bg-gray-700" onclick="sortItems('name')">Name ↕</th>
+            <th class="px-4 py-3 text-left cursor-pointer hover:bg-gray-700" onclick="sortItems('town')">Town ↕</th>
             <th class="px-4 py-3 text-left">Shop</th>
-            <th class="px-4 py-3 text-right">Cost</th>
-            <th class="px-4 py-3 text-left">Slot</th>
-            <th class="px-4 py-3 text-right">Match Sum</th>
+            <th class="px-4 py-3 text-right cursor-pointer hover:bg-gray-700" onclick="sortItems('cost')">Cost ↕</th>
+            <th class="px-4 py-3 text-left cursor-pointer hover:bg-gray-700" onclick="sortItems('slot')">Slot ↕</th>
+            <th class="px-4 py-3 text-right cursor-pointer hover:bg-gray-700" onclick="sortItems('matchSum')">Match Sum ↕</th>
             <th class="px-4 py-3 text-left">Enhancives</th>
           </tr>
         </thead>
@@ -1681,6 +1681,55 @@ app.get('/', (c) => {
         option.textContent = stat
         statSelect.appendChild(option)
       })
+    }
+
+    // Sorting state
+    let currentSortColumn = null
+    let currentSortDirection = 'asc'
+
+    window.sortItems = function(column) {
+      // Toggle direction if clicking same column
+      if (currentSortColumn === column) {
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc'
+      } else {
+        currentSortColumn = column
+        currentSortDirection = column === 'matchSum' ? 'desc' : 'asc' // Default desc for matchSum
+      }
+      
+      filteredItems.sort((a, b) => {
+        let aVal, bVal
+        
+        switch(column) {
+          case 'name':
+            aVal = a.name.toLowerCase()
+            bVal = b.name.toLowerCase()
+            break
+          case 'town':
+            aVal = a.town.toLowerCase()
+            bVal = b.town.toLowerCase()
+            break
+          case 'cost':
+            aVal = a.cost || 0
+            bVal = b.cost || 0
+            break
+          case 'slot':
+            aVal = (a.worn || '').toLowerCase()
+            bVal = (b.worn || '').toLowerCase()
+            break
+          case 'matchSum':
+            aVal = calculateMatchSum(a)
+            bVal = calculateMatchSum(b)
+            break
+          default:
+            return 0
+        }
+        
+        if (aVal < bVal) return currentSortDirection === 'asc' ? -1 : 1
+        if (aVal > bVal) return currentSortDirection === 'asc' ? 1 : -1
+        return 0
+      })
+      
+      renderItems()
     }
 
     // Calculate match sum for an item based on user goals
