@@ -394,7 +394,28 @@ app.get('/', (c) => {
           <div id="slotUsageDisplay" class="mb-4 p-3 bg-blue-50 rounded text-sm"></div>
           
           <div class="mb-4">
-            <button id="addItemBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">+ Add Enhancive Item</button>
+            <button id="addItemBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mr-2">+ Add Enhancive Item</button>
+            <button id="bulkImportBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Bulk Import</button>
+          </div>
+          
+          <div id="bulkImportForm" class="hidden mb-6 p-4 border rounded bg-gray-50">
+            <h3 class="font-semibold mb-3">Bulk Import Inventory</h3>
+            <p class="text-sm text-gray-600 mb-3">Paste your inventory data below:</p>
+            
+            <div class="mb-4">
+              <label class="block font-medium mb-1">Inventory Enhancive Detail</label>
+              <textarea id="bulkEnhanciveDetail" rows="10" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste inventory enhancive detail here..."></textarea>
+            </div>
+            
+            <div class="mb-4">
+              <label class="block font-medium mb-1">Inventory Location</label>
+              <textarea id="bulkInventoryLocation" rows="10" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste inventory location here..."></textarea>
+            </div>
+            
+            <div class="flex gap-2">
+              <button id="processBulkImport" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Process Import</button>
+              <button id="cancelBulkImport" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+            </div>
           </div>
           
           <div id="addItemForm" class="hidden mb-6 p-4 border rounded bg-gray-50">
@@ -1138,6 +1159,31 @@ app.get('/', (c) => {
 
     document.getElementById('addItemBtn').addEventListener('click', () => {
       document.getElementById('addItemForm').classList.remove('hidden')
+      document.getElementById('bulkImportForm').classList.add('hidden')
+    })
+    
+    document.getElementById('bulkImportBtn').addEventListener('click', () => {
+      document.getElementById('bulkImportForm').classList.remove('hidden')
+      document.getElementById('addItemForm').classList.add('hidden')
+    })
+    
+    document.getElementById('cancelBulkImport').addEventListener('click', () => {
+      document.getElementById('bulkImportForm').classList.add('hidden')
+      document.getElementById('bulkEnhanciveDetail').value = ''
+      document.getElementById('bulkInventoryLocation').value = ''
+    })
+    
+    document.getElementById('processBulkImport').addEventListener('click', async () => {
+      const enhanciveDetail = document.getElementById('bulkEnhanciveDetail').value
+      const inventoryLocation = document.getElementById('bulkInventoryLocation').value
+      
+      if (!enhanciveDetail.trim() || !inventoryLocation.trim()) {
+        alert('Please provide both inventory enhancive detail and inventory location')
+        return
+      }
+      
+      // TODO: Parse and process bulk import
+      alert('Bulk import processing will be implemented once you provide the format example')
     })
 
     document.getElementById('cancelAddItem').addEventListener('click', () => {
