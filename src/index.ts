@@ -1588,6 +1588,7 @@ app.get('/', (c) => {
       const slotMapping = {
         'ear': 'single_ear',
         'ears': 'both_ears',
+        'finger': 'fingers',
         'undershirt': 'chest_slipped',
         'leggings': 'legs_pulled',
         'legs': 'legs_attached',
