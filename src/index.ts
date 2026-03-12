@@ -1801,9 +1801,15 @@ app.get('/', (c) => {
             continue
           }
           
-          // Only "Bonus" stats count as 2x (they give both stat and bonus)
+          // Only STAT Bonus counts as 2x (they give both stat and bonus)
+          // Skill Bonus is 1x flat
           // Everything else is 1x: Base stats, Max Mana, Max Stamina, Max Health, Spirit Recovery, etc.
-          if (ability.includes('bonus') && !ability.includes('max') && !ability.includes('spirit recovery')) {
+          const statBonuses = ['strength bonus', 'constitution bonus', 'dexterity bonus', 'agility bonus', 
+                               'discipline bonus', 'aura bonus', 'logic bonus', 'intuition bonus', 
+                               'wisdom bonus', 'influence bonus']
+          const isStatBonus = statBonuses.some(stat => ability.includes(stat))
+          
+          if (isStatBonus) {
             sum += enh.boost * 2
           } else {
             sum += enh.boost
@@ -1833,9 +1839,15 @@ app.get('/', (c) => {
             continue
           }
           
-          // Only "Bonus" stats count as 2x (they give both stat and bonus)
+          // Only STAT Bonus counts as 2x (they give both stat and bonus)
+          // Skill Bonus is 1x flat
           // Everything else is 1x: Base stats, Max Mana, Max Stamina, Max Health, Spirit Recovery, etc.
-          if (ability.includes('bonus') && !ability.includes('max') && !ability.includes('spirit recovery')) {
+          const statBonuses = ['strength bonus', 'constitution bonus', 'dexterity bonus', 'agility bonus', 
+                               'discipline bonus', 'aura bonus', 'logic bonus', 'intuition bonus', 
+                               'wisdom bonus', 'influence bonus']
+          const isStatBonus = statBonuses.some(stat => ability.includes(stat))
+          
+          if (isStatBonus) {
             sum += enh.boost * 2
           } else {
             sum += enh.boost
