@@ -65,6 +65,10 @@ app.get('/', (c) => {
           <input type="checkbox" id="filterByGoals" class="mr-2">
           <span class="text-sm text-gray-700">Filter search automatically based on my goals</span>
         </label>
+        <label class="flex items-center cursor-pointer">
+          <input type="checkbox" id="useAdvancedSkillCalc" class="mr-2">
+          <span class="text-sm text-gray-700">Use advanced skill rank calculation</span>
+        </label>
         <span id="goalFilterStatus" class="text-sm text-gray-500 hidden"></span>
       </div>
       </div>
@@ -483,6 +487,7 @@ app.get('/', (c) => {
     let userGoals = []
     let includeNuggetPrice = false
     let filterByGoalsEnabled = false
+    let useAdvancedSkillCalc = false
     let chatHistory = []
 
     function addChatMessage(text, isUser) {
@@ -1767,8 +1772,14 @@ app.get('/', (c) => {
     }
 
     // Calculate match sum for an item based on user goals
-    // Calculate bonus value for skill ranks based on diminishing returns
+    // Calculate bonus value for skill ranks based on diminishing returns (advanced mode)
     function calculateSkillRankBonus(currentRanks, additionalRanks) {
+      if (!useAdvancedSkillCalc) {
+        // Basic mode: 1 rank = 1 point
+        return additionalRanks
+      }
+      
+      // Advanced mode: diminishing returns formula
       let bonus = 0
       for (let i = 1; i <= additionalRanks; i++) {
         const rank = currentRanks + i
@@ -2040,6 +2051,12 @@ app.get('/', (c) => {
       renderItems()
     })
     
+    document.getElementById('useAdvancedSkillCalc').addEventListener('change', (e) => {
+      useAdvancedSkillCalc = e.target.checked
+      localStorage.setItem('useAdvancedSkillCalc', useAdvancedSkillCalc)
+      renderItems()
+    })
+    
     // Restore checkbox state
     const savedFilter = localStorage.getItem('filterByGoals')
     if (savedFilter === 'true') {
@@ -2051,6 +2068,12 @@ app.get('/', (c) => {
     if (savedNuggetPrice === 'true') {
       document.getElementById('includeNuggetPrice').checked = true
       includeNuggetPrice = true
+    }
+    
+    const savedAdvancedSkill = localStorage.getItem('useAdvancedSkillCalc')
+    if (savedAdvancedSkill === 'true') {
+      document.getElementById('useAdvancedSkillCalc').checked = true
+      useAdvancedSkillCalc = true
     }
 
     initAuth()
