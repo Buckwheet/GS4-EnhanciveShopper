@@ -452,6 +452,7 @@ app.get('/', (c) => {
             <th class="px-4 py-3 text-left">Shop</th>
             <th class="px-4 py-3 text-right">Cost</th>
             <th class="px-4 py-3 text-left">Slot</th>
+            <th class="px-4 py-3 text-right">Match Sum</th>
             <th class="px-4 py-3 text-left">Enhancives</th>
           </tr>
         </thead>
@@ -1807,6 +1808,9 @@ app.get('/', (c) => {
         } catch {
           enhancivesText = 'Error parsing'
         }
+        
+        const matchSum = calculateMatchSum(item)
+        const matchSumDisplay = matchSum > 0 ? matchSum : '-'
 
         tr.innerHTML = \`
           <td class="px-4 py-3">\${item.name}</td>
@@ -1814,6 +1818,7 @@ app.get('/', (c) => {
           <td class="px-4 py-3">\${item.shop}</td>
           <td class="px-4 py-3 text-right">\${item.cost ? item.cost.toLocaleString() : 'N/A'}</td>
           <td class="px-4 py-3">\${item.worn || 'N/A'}</td>
+          <td class="px-4 py-3 text-right font-semibold \${matchSum > 0 ? 'text-green-600' : 'text-gray-400'}">\${matchSumDisplay}</td>
           <td class="px-4 py-3 text-sm">\${enhancivesText}</td>
         \`
         tbody.appendChild(tr)
@@ -1821,7 +1826,7 @@ app.get('/', (c) => {
 
       if (filteredItems.length > 500) {
         const tr = document.createElement('tr')
-        tr.innerHTML = \`<td colspan="6" class="px-4 py-3 text-center text-gray-500">Showing first 500 of \${filteredItems.length} items</td>\`
+        tr.innerHTML = \`<td colspan="7" class="px-4 py-3 text-center text-gray-500">Showing first 500 of \${filteredItems.length} items</td>\`
         tbody.appendChild(tr)
       }
     }
