@@ -31,10 +31,17 @@ export function parseItemText(text: string) {
       enhancives.push({ boost, ability, level })
     }
     
-    // Detect slot from "You could wear/put/attach..."
+    // Detect slot from "You could wear/put/attach..." or "can be worn"
     const slotMatch = line.match(/You could (wear|put|attach|slip|hang|drape|sling).+?(around your neck|on your head|on your fingers?|on your wrists?|around your waist|on your back|over your shoulders?|on your feet|on your hands|on your arms|on your legs|on your ankle|in your hair|from.+?ears?|over your chest|over your front|on your belt|as a pin)/i)
     if (slotMatch) {
       const location = slotMatch[2].toLowerCase()
+      detectedSlot = mapSlotLocation(location)
+    }
+    
+    // Also check for "can be worn on the X"
+    const canBeWornMatch = line.match(/can be worn (on|in|around|from|over|as) (?:the |your )?(head|neck|hair|ears?|shoulders?|back|chest|front|arms?|wrists?|hands?|fingers?|waist|belt|legs|ankle|feet)/i)
+    if (canBeWornMatch) {
+      const location = 'on your ' + canBeWornMatch[2].toLowerCase()
       detectedSlot = mapSlotLocation(location)
     }
   }
