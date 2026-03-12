@@ -453,6 +453,7 @@ app.get('/', (c) => {
             <th class="px-4 py-3 text-right cursor-pointer hover:bg-gray-700" onclick="sortItems('cost')">Cost ↕</th>
             <th class="px-4 py-3 text-left cursor-pointer hover:bg-gray-700" onclick="sortItems('slot')">Slot ↕</th>
             <th class="px-4 py-3 text-right cursor-pointer hover:bg-gray-700" onclick="sortItems('matchSum')">Match Sum ↕</th>
+            <th class="px-4 py-3 text-right cursor-pointer hover:bg-gray-700" onclick="sortItems('totalSum')">Total Sum ↕</th>
             <th class="px-4 py-3 text-left">Enhancives</th>
           </tr>
         </thead>
@@ -1693,7 +1694,8 @@ app.get('/', (c) => {
         currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc'
       } else {
         currentSortColumn = column
-        currentSortDirection = column === 'matchSum' ? 'desc' : 'asc' // Default desc for matchSum
+        // Default desc for sum columns, asc for others
+        currentSortDirection = (column === 'matchSum' || column === 'totalSum') ? 'desc' : 'asc'
       }
       
       filteredItems.sort((a, b) => {
@@ -1719,6 +1721,10 @@ app.get('/', (c) => {
           case 'matchSum':
             aVal = calculateMatchSum(a)
             bVal = calculateMatchSum(b)
+            break
+          case 'totalSum':
+            aVal = calculateTotalSum(a)
+            bVal = calculateTotalSum(b)
             break
           default:
             return 0
@@ -1749,6 +1755,36 @@ app.get('/', (c) => {
           )
           
           if (!matchesGoal) continue
+          
+          // Skip skills for now (they require character data)
+          if (ability.includes('ranks')) continue
+          
+          // Bonus stats count as 2x (they give both stat and bonus)
+          // Base stats count as 1x (only base)
+          if (ability.includes('bonus')) {
+            sum += enh.boost * 2
+          } else if (ability.includes('base')) {
+            sum += enh.boost
+          } else {
+            // If neither specified, assume it's a bonus (old format)
+            sum += enh.boost * 2
+          }
+        }
+        
+        return sum
+      } catch {
+        return 0
+      }
+    }
+    
+    // Calculate total sum of ALL enhancives on an item
+    function calculateTotalSum(item) {
+      try {
+        const enhancives = JSON.parse(item.enhancives_json)
+        let sum = 0
+        
+        for (const enh of enhancives) {
+          const ability = enh.ability.toLowerCase()
           
           // Skip skills for now (they require character data)
           if (ability.includes('ranks')) continue
@@ -1871,6 +1907,9 @@ app.get('/', (c) => {
         
         const matchSum = calculateMatchSum(item)
         const matchSumDisplay = matchSum > 0 ? matchSum : '-'
+        
+        const totalSum = calculateTotalSum(item)
+        const totalSumDisplay = totalSum > 0 ? totalSum : '-'
 
         tr.innerHTML = \`
           <td class="px-4 py-3">\${item.name}</td>
@@ -1879,6 +1918,7 @@ app.get('/', (c) => {
           <td class="px-4 py-3 text-right">\${item.cost ? item.cost.toLocaleString() : 'N/A'}</td>
           <td class="px-4 py-3">\${item.worn || 'N/A'}</td>
           <td class="px-4 py-3 text-right font-semibold \${matchSum > 0 ? 'text-green-600' : 'text-gray-400'}">\${matchSumDisplay}</td>
+          <td class="px-4 py-3 text-right font-semibold text-blue-600">\${totalSumDisplay}</td>
           <td class="px-4 py-3 text-sm">\${enhancivesText}</td>
         \`
         tbody.appendChild(tr)
@@ -1886,7 +1926,7 @@ app.get('/', (c) => {
 
       if (filteredItems.length > 500) {
         const tr = document.createElement('tr')
-        tr.innerHTML = \`<td colspan="7" class="px-4 py-3 text-center text-gray-500">Showing first 500 of \${filteredItems.length} items</td>\`
+        tr.innerHTML = \`<td colspan="8" class="px-4 py-3 text-center text-gray-500">Showing first 500 of \${filteredItems.length} items</td>\`
         tbody.appendChild(tr)
       }
     }
