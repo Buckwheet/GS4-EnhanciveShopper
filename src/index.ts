@@ -557,11 +557,17 @@ app.get('/', (c) => {
       const currentSet = setsData.sets.find(s => s.set_name === currentGoalSet)
       
       const setSelector = document.getElementById('goalSetSelector')
+      if (setsData.sets.length === 0) {
+        setSelector.innerHTML = '<option value="">No sets - create one to get started</option>'
+        document.getElementById('goalsList').innerHTML = '<p class="text-gray-500">No sets yet. Create one to get started!</p>'
+        return
+      }
+      
       setSelector.innerHTML = setsData.sets.map(s => \`<option value="\${s.set_name}" data-set-id="\${s.id}" data-account-type="\${s.account_type}" \${s.set_name === currentGoalSet ? 'selected' : ''}>\${s.set_name} (\${s.account_type})</option>\`).join('')
       
       // Load goals for current set
       if (!currentSet) {
-        document.getElementById('goalsList').innerHTML = '<p class="text-gray-500">No goals in this set. Add one to get started!</p>'
+        document.getElementById('goalsList').innerHTML = '<p class="text-gray-500">Set not found. Please select another set.</p>'
         return
       }
       
