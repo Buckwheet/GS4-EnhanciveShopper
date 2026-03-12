@@ -1346,15 +1346,9 @@ app.get('/', (c) => {
     }
 
     async function loadSummary() {
-      if (!currentUser || !currentGoalSet) return
+      if (!currentSetId) return
       
-      const setsResponse = await fetch(API_BASE + '/api/character-sets?discord_id=' + currentUser.id)
-      const setsData = await setsResponse.json()
-      const currentSet = setsData.sets.find(s => s.set_name === currentGoalSet)
-      
-      if (!currentSet) return
-      
-      const response = await fetch(API_BASE + '/api/summary?set_id=' + currentSet.id)
+      const response = await fetch(API_BASE + '/api/summary?set_id=' + currentSetId)
       const data = await response.json()
       
       const summarySection = document.getElementById('summarySection')
