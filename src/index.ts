@@ -489,13 +489,6 @@ app.get('/', (c) => {
       const stored = localStorage.getItem('discord_user')
       if (stored) {
         currentUser = JSON.parse(stored)
-        
-        // Restore known sets from localStorage
-        const savedSets = localStorage.getItem('knownSets_' + currentUser.id)
-        if (savedSets) {
-          allKnownSets = new Set(JSON.parse(savedSets))
-        }
-        
         showUserInfo()
       }
     }
@@ -505,10 +498,7 @@ app.get('/', (c) => {
       document.getElementById('userInfo').classList.remove('hidden')
       document.getElementById('username').textContent = currentUser.username
       document.getElementById('goalsSection').classList.remove('hidden')
-      updateSetButtons()
-      loadGoals()
-      loadSlotUsage()
-      loadSummary()
+      loadCharacters()
     }
 
     function updateSetButtons() {
