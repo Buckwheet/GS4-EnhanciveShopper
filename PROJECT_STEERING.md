@@ -10,15 +10,29 @@
 - Be easy to rollback if needed
 - Take < 30 minutes to implement
 
-**Example: Adding a new feature**
-1. Backend endpoint only → test with curl
-2. Minimal UI (empty container) → verify visibility
-3. Wire up one piece of data → test with real data
-4. Add styling/formatting → verify appearance
-5. Add interactions/triggers → test each trigger
-6. Commit and deploy after EACH step
+**When user says "do them all" for chunked work:**
+- Execute each chunk individually
+- Commit after EACH chunk with descriptive message
+- Push after each commit
+- This keeps changes small and traceable
+- Prevents token/context overflow
+- Makes rollback easy if something breaks
 
-**Anti-pattern**: Making large changes that touch backend + frontend + multiple features at once
+**Example: Adding a new feature**
+1. Backend endpoint only → test with curl → commit
+2. Minimal UI (empty container) → verify visibility → commit
+3. Wire up one piece of data → test with real data → commit
+4. Add styling/formatting → verify appearance → commit
+5. Add interactions/triggers → test each trigger → commit
+6. Deploy after all chunks complete
+
+**Anti-pattern**: Making large changes that touch backend + frontend + multiple features in one commit
+
+**Chunking Strategy:**
+- 1 chunk = 1 small change (add 1 function, update 1 endpoint, add 1 UI element)
+- Commit message: "Chunk N: Brief description"
+- If migration has 50 chunks, execute all 50 with individual commits
+- Keeps git history clean and changes traceable
 
 ## Project Overview
 GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV player shop listings and alerts users via Discord when enhancive items matching their build requirements become available.
