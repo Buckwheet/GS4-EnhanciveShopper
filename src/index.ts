@@ -1305,15 +1305,9 @@ app.get('/', (c) => {
     }
 
     async function loadSlotUsage() {
-      if (!currentUser || !currentGoalSet) return
+      if (!currentSetId) return
       
-      const setsResponse = await fetch(API_BASE + '/api/character-sets?discord_id=' + currentUser.id)
-      const setsData = await setsResponse.json()
-      const currentSet = setsData.sets.find(s => s.set_name === currentGoalSet)
-      
-      if (!currentSet) return
-      
-      const response = await fetch(API_BASE + '/api/character-sets/' + currentSet.id + '/inventory')
+      const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/inventory')
       const data = await response.json()
       
       const slotCounts = {}
@@ -1321,7 +1315,10 @@ app.get('/', (c) => {
         slotCounts[item.slot] = (slotCounts[item.slot] || 0) + 1
       })
       
-      const accountType = currentSet.account_type || 'F2P'
+      const setResponse = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/sets')
+      const setData = await setResponse.json()
+      const currentSet = setData.sets.find(s => s.id == currentSetId)
+      const accountType = currentSet?.account_type || 'F2P'
       
       const slotLimits = {
         'F2P': { 'pin': 8, 'head': 1, 'hair': 1, 'single_ear': 1, 'both_ears': 1, 'neck': 3, 'shoulder_slung': 2, 'shoulders_draped': 1, 'chest': 1, 'front': 1, 'chest_slipped': 1, 'back': 1, 'arms': 1, 'wrist': 2, 'hands': 1, 'fingers': 2, 'waist': 1, 'belt': 3, 'legs_pulled': 1, 'legs_attached': 1, 'legs_slipped': 1, 'ankle': 1, 'feet_slipped': 1, 'feet_on': 1 },
