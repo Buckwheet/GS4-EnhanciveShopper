@@ -1,6 +1,6 @@
 # Schema Migration Progress
 
-## ✅ Completed
+## ✅ Completed (19/50 chunks)
 1. Migration endpoint created and run successfully
 2. New tables created: character_sets, set_inventory, set_goals
 3. Data migrated from old tables
@@ -11,33 +11,52 @@
    - DELETE /api/character-sets/:id
    - GET /api/character-sets/:id/goals
    - POST /api/character-sets/:id/goals
+   - GET /api/set-goals/:id
+   - PUT /api/set-goals/:id
+   - DELETE /api/set-goals/:id
+   - GET /api/character-sets/:id/inventory
+   - POST /api/character-sets/:id/inventory
+   - PUT /api/set-inventory/:id
+   - DELETE /api/set-inventory/:id
+   - GET /api/summary (updated to use set_id)
 
 5. Frontend updated:
-   - loadGoals() now uses character-sets API
+   - ✅ loadGoals() - uses character-sets API
+   - ✅ createSetConfirm - uses POST /api/character-sets
+   - ✅ deleteSetBtn - uses DELETE /api/character-sets/:id
+   - ✅ editSetBtn - uses character-sets API
+   - ✅ editSetConfirm - uses PUT /api/character-sets/:id
+   - ✅ loadInventory() - uses character-sets/:id/inventory
+   - ✅ loadSlotUsage() - uses character-sets/:id/inventory
+   - ✅ loadSummary() - uses set_id
+   - ✅ manageCharBtn - uses character-sets API
+   - ✅ saveCharDataBtn - uses PUT /api/character-sets/:id
+   - ✅ confirmAddItem - uses POST /api/character-sets/:id/inventory
+   - ✅ deleteInventoryItem - uses DELETE /api/set-inventory/:id
+   - ✅ addGoal - uses POST /api/character-sets/:id/goals
+   - ✅ editGoal - uses GET /api/set-goals/:id
+   - ✅ deleteGoal - uses DELETE /api/set-goals/:id
+   - ✅ saveGoal (update) - uses PUT /api/set-goals/:id
+   - ✅ getCurrentSetId() helper added
 
-## 🚧 In Progress - Need to Update
+## 🚧 Remaining Work
 
-### Frontend Functions
-- [ ] createSetConfirm handler - use POST /api/character-sets
-- [ ] editSetConfirm handler - use PUT /api/character-sets/:id
-- [ ] deleteSetBtn handler - use DELETE /api/character-sets/:id
-- [ ] loadInventory() - needs character_set_id
-- [ ] loadSlotUsage() - needs character_set_id
-- [ ] loadSummary() - needs character_set_id
-- [ ] manageCharBtn handler - needs character_set_id
-- [ ] saveCharDataBtn handler - update character_sets table
-- [ ] Add goal form - use POST /api/character-sets/:id/goals
-
-### API Endpoints to Add
-- [ ] GET /api/character-sets/:id/inventory
-- [ ] POST /api/character-sets/:id/inventory
-- [ ] PUT /api/set-inventory/:id
-- [ ] DELETE /api/set-inventory/:id
-
-### Matcher/Cron
-- [ ] Update matcher to use new schema
+### Matcher/Cron (Critical)
+- [ ] Update matcher.ts to query set_goals instead of user_goals
 - [ ] Update cron job to use new schema
+
+### AI Chat
+- [ ] Update AI chat context to use character_sets
+- [ ] Update keyword detection to query set_inventory
+
+### My Matches Modal
+- [ ] Update to use character_sets for filtering
+
+### Nice to Have
+- [ ] Drop old tables after testing
+- [ ] Update any remaining legacy endpoints
 
 ## 📝 Notes
 - Old tables (user_goals, user_inventory) still exist for rollback
-- Can drop them after everything is working
+- Legacy endpoints kept for backwards compatibility
+- Site should be functional for basic operations now
