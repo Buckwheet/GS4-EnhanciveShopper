@@ -866,11 +866,16 @@ app.get('/', (c) => {
         return
       }
       
-      await fetch(API_BASE + '/api/goal-set/' + currentUser.id + '/' + currentGoalSet, {
+      const setId = await getCurrentSetId()
+      if (!setId) {
+        alert('No active set found')
+        return
+      }
+      
+      await fetch(API_BASE + '/api/character-sets/' + setId, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          account_type: null,
           base_stats: parsedStatsData ? JSON.stringify(parsedStatsData) : null,
           skill_ranks: parsedSkillsData ? JSON.stringify(parsedSkillsData) : null
         })
