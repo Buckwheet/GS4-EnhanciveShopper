@@ -745,7 +745,7 @@ app.get('/', (c) => {
 
     window.deleteGoal = async function(id) {
       if (!confirm('Delete this goal?')) return
-      await fetch(API_BASE + '/api/goals/' + id, { method: 'DELETE' })
+      await fetch(API_BASE + '/api/set-goals/' + id, { method: 'DELETE' })
       loadGoals()
     }
 
@@ -1822,6 +1822,14 @@ app.put('/api/goal-set/:discord_id/:set_name', async (c) => {
   return c.json({ success: true })
 })
 
+// New API: Delete goal from set
+app.delete('/api/set-goals/:id', async (c) => {
+  const id = c.req.param('id')
+  await c.env.DB.prepare('DELETE FROM set_goals WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+// Legacy: Keep for backwards compatibility
 app.delete('/api/goals/:id', async (c) => {
   const id = c.req.param('id')
   await c.env.DB.prepare('DELETE FROM user_goals WHERE id = ?').bind(id).run()
