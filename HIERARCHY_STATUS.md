@@ -1,85 +1,92 @@
 # Hierarchy Migration Status
 
-## Completed (Chunks 1-30)
+## Completed (Chunks 1-40)
 
-### Backend (Complete)
-- ✅ Created `characters` table
-- ✅ Created `sets` table  
+### Backend (Complete) ✅
+- ✅ Created `characters` and `sets` tables
 - ✅ Migration endpoint `/api/migrate-hierarchy`
-- ✅ Character CRUD endpoints (GET/POST/PUT/DELETE `/api/characters`)
-- ✅ Set CRUD endpoints (GET/POST/PUT/DELETE `/api/sets`, `/api/characters/:id/sets`)
-- ✅ Goal endpoints for sets (GET/POST `/api/sets/:id/goals`)
-- ✅ Inventory endpoints for sets (GET/POST `/api/sets/:id/inventory`)
+- ✅ All CRUD endpoints for characters, sets, goals, inventory
+- ✅ Updated `/api/summary` to use new hierarchy
+- ✅ Updated matcher to use new hierarchy
+- ✅ Updated AI chat to use new hierarchy
 
-### Frontend (Partial)
-- ✅ Added character state variables (currentCharacterId, currentCharacterName, currentSetId, currentSetName)
-- ✅ Added character selector UI
-- ✅ Added character modals (create, edit)
-- ✅ Added character management functions (loadCharacters, create, edit, delete)
-- ✅ Added set management functions (updated to use character context)
-- ⚠️ **INCOMPLETE**: Need to update all remaining functions to use new hierarchy
+### Frontend (Complete) ✅
+- ✅ Character selector and management UI
+- ✅ Set selector updated to filter by character
+- ✅ All goal operations use new API
+- ✅ All inventory operations use new API
+- ✅ Summary/slot usage use new API
+- ✅ Init auth calls loadCharacters()
 
-## Next Steps
+## Ready to Deploy
 
-### 1. Run Migration
+### Step 1: Deploy Code
+```powershell
+xcopy \\wsl.localhost\Ubuntu\home\rpgfilms\enhancive-alert C:\Users\rpgfi\enhancive-alert\ /E /I /Y
+cd C:\Users\rpgfi\enhancive-alert
+npm install
+npx wrangler deploy
+```
+
+### Step 2: Run Migration
 Visit: `https://gs4-enhancive-shopper.rpgfilms.workers.dev/api/migrate-hierarchy`
 
 This will:
 - Create `characters` and `sets` tables
-- Migrate data from `character_sets` 
+- Migrate data from `character_sets` (each set becomes a character with a "Default" set)
 - Add `set_id` columns to `set_goals` and `set_inventory`
+- Populate `set_id` from the mapping
 
-### 2. Update Remaining Frontend Functions (Chunks 31-45)
-Need to update these to use `currentSetId` instead of old logic:
+### Step 3: Test
+1. Login
+2. Should see characters in dropdown (migrated from old sets)
+3. Each character should have a "Default" set
+4. Goals and inventory should be preserved
+5. Test creating new character
+6. Test creating new set for character
+7. Test adding goals/inventory
 
-- `loadGoalsForSet()` - Already added, needs testing
-- `saveGoalBtn` - Update to use `/api/sets/:id/goals`
-- `editGoal` - Update to use new endpoints
-- `deleteGoal` - Update to use new endpoints
-- `loadInventory()` - Update to use `/api/sets/:id/inventory`
-- `confirmAddItem` - Update to use `/api/sets/:id/inventory`
-- `deleteInventoryItem` - Already uses `/api/set-inventory/:id`
-- `loadSlotUsage()` - Update to query by set_id
-- `loadSummary()` - Update to use set_id
-- `manageCharBtn` - Update to edit character stats (not set)
-- `saveCharDataBtn` - Update to save to characters table
-- Initialize on login - Call `loadCharacters()` instead of `loadGoals()`
+## What Changed
 
-### 3. Update Matcher (Chunk 46)
-- Update to query `set_goals` with `set_id` column
-- Join through `sets` → `characters` to get discord_id
+**Old Structure:**
+```
+User → "Goal Sets" (mixed concept)
+  - Set had: name, account_type, base_stats, skill_ranks
+  - Goals/inventory belonged to set
+```
 
-### 4. Update AI Chat (Chunk 47)
-- Update queries to use new hierarchy
+**New Structure:**
+```
+User → Characters (has: name, base_stats, skill_ranks)
+  → Sets (has: name, account_type)
+    → Goals
+    → Inventory
+```
 
-### 5. Test Everything (Chunks 48-49)
-- Test character creation
-- Test set creation
-- Test goal/inventory CRUD
-- Test matcher
-- Test AI chat
-
-### 6. Cleanup (Chunk 50)
-- Drop `character_sets` table
-- Remove `character_set_id` columns
-- Remove legacy endpoints
-
-## Current Issue
-The frontend is partially migrated. Need to:
-1. Deploy current code
-2. Run migration endpoint
-3. Complete frontend updates
-4. Test end-to-end
-
-## Key Changes from Old System
-**Old**: User → "Goal Sets" (confusing, mixed stats with sets)
-**New**: User → Characters → Sets → Goals/Inventory
-
-**Example**:
-- Character: "Mejora" (has base stats/skills)
-  - Set: "Default" (F2P account type)
-    - Goals: +5 Strength, +3 Dodging
+**Example:**
+- Character: "Mejora" (base stats/skills)
+  - Set: "Default" (F2P)
+    - Goals: +5 Strength
     - Inventory: Items
-  - Set: "Premium Build" (Premium account type)
+  - Set: "Premium Build" (Premium)
     - Goals: Different goals
     - Inventory: Different items
+
+## Remaining Work (Optional Cleanup)
+
+After testing confirms everything works:
+- Drop `character_sets` table
+- Remove `character_set_id` columns from `set_goals` and `set_inventory`
+- Remove legacy API endpoints
+- Update documentation
+
+## Migration Notes
+
+The migration treats each old "set" as a character with a "Default" set. This means:
+- "Mejora" set → "Mejora" character with "Default" set
+- "Shollindal" set → "Shollindal" character with "Default" set
+
+Users can then:
+- Rename characters if needed
+- Create additional sets per character
+- Add proper base stats/skills to characters
