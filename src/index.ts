@@ -988,13 +988,19 @@ app.get('/', (c) => {
     document.getElementById('manageCharBtn').addEventListener('click', async () => {
       const summaryDiv = document.getElementById('currentCharSummary')
       
-      const response = await fetch(API_BASE + '/api/character-sets?discord_id=' + currentUser.id)
-      const data = await response.json()
-      const activeSet = data.sets.find(s => s.set_name === currentGoalSet)
+      if (!currentCharacterId) {
+        summaryDiv.innerHTML = '<p class="text-gray-500">No character selected</p>'
+        document.getElementById('manageCharModal').classList.remove('hidden')
+        return
+      }
       
-      if (activeSet && (activeSet.base_stats || activeSet.skill_ranks)) {
-        const baseStats = activeSet.base_stats ? JSON.parse(activeSet.base_stats) : {}
-        const skillRanks = activeSet.skill_ranks ? JSON.parse(activeSet.skill_ranks) : {}
+      const response = await fetch(API_BASE + '/api/characters?discord_id=' + currentUser.id)
+      const data = await response.json()
+      const activeChar = data.characters.find(c => c.id == currentCharacterId)
+      
+      if (activeChar && (activeChar.base_stats || activeChar.skill_ranks)) {
+        const baseStats = activeChar.base_stats ? JSON.parse(activeChar.base_stats) : {}
+        const skillRanks = activeChar.skill_ranks ? JSON.parse(activeChar.skill_ranks) : {}
         
         let html = '<div class="p-4 bg-blue-50 border border-blue-200 rounded"><h3 class="font-semibold mb-2">Current Character Data</h3>'
         
@@ -1071,13 +1077,12 @@ app.get('/', (c) => {
         return
       }
       
-      const setId = await getCurrentSetId()
-      if (!setId) {
-        alert('No active set found')
+      if (!currentCharacterId) {
+        alert('No character selected')
         return
       }
       
-      await fetch(API_BASE + '/api/character-sets/' + setId, {
+      await fetch(API_BASE + '/api/characters/' + currentCharacterId, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1787,10 +1792,10 @@ app.get('/', (c) => {
       filterByGoalsEnabled = e.target.checked
       localStorage.setItem('filterByGoals', filterByGoalsEnabled)
       
-      if (filterByGoalsEnabled && currentUser) {
-        const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+      if (filterByGoalsEnabled && currentUser && currentSetId) {
+        const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/goals')
         const data = await response.json()
-        userGoals = data.goals.filter(g => g.goal_set_name === currentGoalSet)
+        userGoals = data.goals || []
       }
       
       filterItems()
