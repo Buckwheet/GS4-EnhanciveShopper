@@ -15,7 +15,9 @@ CREATE TABLE set_inventory_new (
   created_at TEXT NOT NULL
 );
 
-INSERT INTO set_inventory_new SELECT * FROM set_inventory;
+INSERT INTO set_inventory_new (id, character_set_id, item_name, slot, enhancives_json, is_permanent, created_at, set_id)
+SELECT id, character_set_id, item_name, slot, enhancives_json, is_permanent, created_at, set_id FROM set_inventory;
+
 DROP TABLE set_inventory;
 ALTER TABLE set_inventory_new RENAME TO set_inventory;
 
@@ -31,7 +33,9 @@ CREATE TABLE set_goals_new (
   created_at TEXT NOT NULL
 );
 
-INSERT INTO set_goals_new SELECT * FROM set_goals;
+INSERT INTO set_goals_new (id, character_set_id, stat, min_boost, max_cost, preferred_slots, created_at, set_id)
+SELECT id, character_set_id, stat, min_boost, max_cost, preferred_slots, created_at, set_id FROM set_goals;
+
 DROP TABLE set_goals;
 ALTER TABLE set_goals_new RENAME TO set_goals;
 
