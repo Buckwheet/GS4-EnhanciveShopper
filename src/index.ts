@@ -1246,8 +1246,10 @@ app.get('/', (c) => {
       const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/inventory')
       const data = await response.json()
       
+      const items = data.inventory || []
+      
       const slotCounts = {}
-      data.items.forEach(item => {
+      items.forEach(item => {
         slotCounts[item.slot] = (slotCounts[item.slot] || 0) + 1
       })
       
@@ -1311,8 +1313,10 @@ app.get('/', (c) => {
       const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/inventory')
       const data = await response.json()
       
+      const items = data.inventory || []
+      
       const slotCounts = {}
-      data.items.forEach(item => {
+      items.forEach(item => {
         slotCounts[item.slot] = (slotCounts[item.slot] || 0) + 1
       })
       
