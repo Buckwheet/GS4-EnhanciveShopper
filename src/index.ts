@@ -1160,6 +1160,29 @@ app.get('/', (c) => {
           else if (location.includes('feet')) detectedSlot = 'feet_on'
           else if (location.includes('pin')) detectedSlot = 'pin'
         }
+        
+        // Also check for "can be worn on the X"
+        const canBeWornMatch = line.match(/can be worn (on|in|around|from|over|as) (?:the |your )?(head|neck|hair|ears?|shoulders?|back|chest|front|arms?|wrists?|hands?|fingers?|waist|belt|legs|ankle|feet)/i)
+        if (canBeWornMatch && !detectedSlot) {
+          const bodyPart = canBeWornMatch[2].toLowerCase()
+          if (bodyPart === 'head') detectedSlot = 'head'
+          else if (bodyPart === 'neck') detectedSlot = 'neck'
+          else if (bodyPart === 'hair') detectedSlot = 'hair'
+          else if (bodyPart.includes('ear')) detectedSlot = 'both_ears'
+          else if (bodyPart.includes('shoulder')) detectedSlot = 'shoulders_draped'
+          else if (bodyPart === 'back') detectedSlot = 'back'
+          else if (bodyPart === 'chest') detectedSlot = 'chest'
+          else if (bodyPart === 'front') detectedSlot = 'front'
+          else if (bodyPart.includes('arm')) detectedSlot = 'arms'
+          else if (bodyPart.includes('wrist')) detectedSlot = 'wrist'
+          else if (bodyPart.includes('hand')) detectedSlot = 'hands'
+          else if (bodyPart.includes('finger')) detectedSlot = 'fingers'
+          else if (bodyPart === 'waist') detectedSlot = 'waist'
+          else if (bodyPart === 'belt') detectedSlot = 'belt'
+          else if (bodyPart === 'legs') detectedSlot = 'legs_attached'
+          else if (bodyPart === 'ankle') detectedSlot = 'ankle'
+          else if (bodyPart === 'feet') detectedSlot = 'feet_on'
+        }
       }
       
       parsedItemData = { enhancives, isPermanent, detectedSlot }
