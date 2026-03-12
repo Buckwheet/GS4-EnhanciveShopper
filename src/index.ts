@@ -1553,7 +1553,6 @@ app.get('/', (c) => {
       }
 
       if (editingGoalId) {
-        // Update existing goal
         await fetch(API_BASE + '/api/set-goals/' + editingGoalId, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -1567,14 +1566,12 @@ app.get('/', (c) => {
         editingGoalId = null
         document.getElementById('saveGoalBtn').textContent = 'Save Goal'
       } else {
-        // Create new goal
-        const setId = await getCurrentSetId()
-        if (!setId) {
+        if (!currentSetId) {
           alert('No active set found')
           return
         }
         
-        await fetch(API_BASE + '/api/character-sets/' + setId + '/goals', {
+        await fetch(API_BASE + '/api/sets/' + currentSetId + '/goals', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1592,11 +1589,10 @@ app.get('/', (c) => {
       document.querySelectorAll('input[name="goalSlot"]').forEach(cb => cb.checked = false)
       document.getElementById('addGoalForm').classList.add('hidden')
       
-      await loadGoals()
+      await loadGoalsForSet()
       
-      // Re-fetch goals and re-apply filter if enabled
       if (filterByGoalsEnabled && currentUser) {
-        const response = await fetch(API_BASE + '/api/goals?discord_id=' + currentUser.id)
+        const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/goals')
         const data = await response.json()
         userGoals = data.goals.filter(g => g.goal_set_name === currentGoalSet)
         filterItems()
