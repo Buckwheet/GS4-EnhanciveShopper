@@ -288,18 +288,32 @@ GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV p
 ### Deploy Command (Windows)
 **Note**: npx doesn't work with UNC paths (\\wsl.localhost). Must deploy from Windows filesystem.
 
+**Deployment Workflow:**
+1. Commit and push all changes from WSL first
+2. Copy to Windows (complete overwrite)
+3. Deploy from Windows
+4. Continue development in WSL
+
 From Windows PowerShell:
 ```powershell
-# Copy WSL project to Windows (if not already there)
+# Step 1: Ensure WSL changes are committed (run in WSL first)
+# cd /home/rpgfilms/enhancive-alert && git add -A && git commit -m "..." && git push
+
+# Step 2: Complete overwrite - copy WSL to Windows
 xcopy \\wsl.localhost\Ubuntu\home\rpgfilms\enhancive-alert C:\Users\rpgfi\enhancive-alert\ /E /I /Y
 
-# Deploy from Windows path
+# Step 3: Deploy from Windows path
 cd C:\Users\rpgfi\enhancive-alert
 npm install
 npx wrangler deploy
 ```
 
-After deployment, continue development in WSL. Copy back to Windows only when deploying.
+**Flags explained:**
+- `/E` - Copies all subdirectories (including empty ones)
+- `/I` - Assumes destination is a directory
+- `/Y` - Overwrites without prompting (complete overwrite)
+
+**Important:** Always commit from WSL before copying to Windows. The Windows copy is temporary for deployment only.
 
 ### Cloudflare Secrets (set in dashboard)
 - `DISCORD_CLIENT_ID` - Discord app client ID
