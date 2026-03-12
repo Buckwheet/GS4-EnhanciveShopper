@@ -150,6 +150,7 @@ app.get('/', (c) => {
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="feet" class="mr-1"> feet</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="finger" class="mr-1"> finger</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="front" class="mr-1"> front</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="hair" class="mr-1"> hair</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="hands" class="mr-1"> hands</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="head" class="mr-1"> head</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="legs" class="mr-1"> legs</label>
@@ -1229,7 +1230,7 @@ app.get('/', (c) => {
             const slotMap = {
               'As a pin': 'pin',
               'On your head': 'head',
-              'Placed in your hair': 'head',
+              'Placed in your hair': 'hair',
               'Hung from a single ear': 'ear',
               'Hung around your neck': 'neck',
               'Draped over your shoulders': 'shoulders',
