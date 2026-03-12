@@ -1795,11 +1795,9 @@ app.get('/', (c) => {
           
           // Handle skill ranks
           if (ability.includes('ranks')) {
-            if (currentCharacterSkills) {
-              const skillName = enh.ability.replace(/\s+ranks$/i, '').trim()
-              const currentRanks = currentCharacterSkills[skillName] || 0
-              sum += calculateSkillRankBonus(currentRanks, enh.boost)
-            }
+            const skillName = enh.ability.replace(/\s+ranks$/i, '').trim()
+            const currentRanks = currentCharacterSkills ? (currentCharacterSkills[skillName] || 0) : 0
+            sum += calculateSkillRankBonus(currentRanks, enh.boost)
             continue
           }
           
@@ -1829,11 +1827,9 @@ app.get('/', (c) => {
           
           // Handle skill ranks
           if (ability.includes('ranks')) {
-            if (currentCharacterSkills) {
-              const skillName = enh.ability.replace(/\s+ranks$/i, '').trim()
-              const currentRanks = currentCharacterSkills[skillName] || 0
-              sum += calculateSkillRankBonus(currentRanks, enh.boost)
-            }
+            const skillName = enh.ability.replace(/\s+ranks$/i, '').trim()
+            const currentRanks = currentCharacterSkills ? (currentCharacterSkills[skillName] || 0) : 0
+            sum += calculateSkillRankBonus(currentRanks, enh.boost)
             continue
           }
           
