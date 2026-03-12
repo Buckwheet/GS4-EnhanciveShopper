@@ -1275,12 +1275,12 @@ app.get('/', (c) => {
       slotUsageDiv.innerHTML = '<strong>Slot Usage:</strong> ' + usageText
       
       const invList = document.getElementById('inventoryList')
-      if (data.items.length === 0) {
+      if (items.length === 0) {
         invList.innerHTML = '<p class="text-gray-500">No items in inventory. Add one to get started!</p>'
         return
       }
       
-      invList.innerHTML = data.items.map(item => {
+      invList.innerHTML = items.map(item => {
         const enhs = JSON.parse(item.enhancives_json)
         const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
         return \`
