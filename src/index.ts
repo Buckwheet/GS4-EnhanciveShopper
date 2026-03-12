@@ -156,13 +156,11 @@ app.get('/', (c) => {
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="socks" class="mr-1"> socks</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="wrist" class="mr-1"> wrist</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="nugget" class="mr-1"> nugget</label>
+              <label class="flex items-center ml-4">
+                <input type="checkbox" id="includeNuggetPrice" class="mr-1">
+                <span class="text-sm text-gray-600">+25M price</span>
+              </label>
             </div>
-          </div>
-          <div class="mb-3">
-            <label class="flex items-center">
-              <input type="checkbox" id="includeNuggetPrice" class="mr-2">
-              <span>Add nugget price (25M silvers) to item costs</span>
-            </label>
           </div>
           <div class="flex gap-2">
             <button id="saveGoalBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
@@ -1879,9 +1877,12 @@ app.get('/', (c) => {
         
         // Handle nugget slot filter
         if (filterWorn) {
-          let itemSlot = item.worn
-          if (item.name.toLowerCase().includes('crossbow')) itemSlot = 'nugget'
-          else if (!itemSlot || itemSlot === 'N/A') itemSlot = 'nugget'
+          let itemSlot = item.worn || ''
+          if (item.name.toLowerCase().includes('crossbow')) {
+            itemSlot = 'nugget'
+          } else if (!item.worn || item.worn.trim() === '' || item.worn === 'N/A') {
+            itemSlot = 'nugget'
+          }
           
           if (itemSlot !== filterWorn) return false
         }
@@ -1992,7 +1993,7 @@ app.get('/', (c) => {
         let costLabel = ''
         if (isNugget && includeNuggetPrice) {
           displayCost = displayCost + 25000000
-          costLabel = '<div class="text-xs text-gray-500">+NUGGET</div>'
+          costLabel = '<div class="text-xs text-yellow-600">+NUGGET</div>'
         }
 
         tr.innerHTML = \`
