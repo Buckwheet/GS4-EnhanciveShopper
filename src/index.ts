@@ -471,6 +471,7 @@ app.get('/', (c) => {
     let currentUser = null
     let currentCharacterId = null
     let currentCharacterName = ''
+    let currentCharacterSkills = null
     let currentSetId = null
     let currentSetName = 'Default'
     let currentGoalSet = 'Default'
@@ -652,6 +653,7 @@ app.get('/', (c) => {
         document.getElementById('noCharacterWarning').classList.remove('hidden')
         currentCharacterId = null
         currentCharacterName = ''
+        currentCharacterSkills = null
       } else {
         document.getElementById('noCharacterWarning').classList.add('hidden')
         data.characters.forEach(char => {
@@ -664,6 +666,8 @@ app.get('/', (c) => {
         if (!currentCharacterId && data.characters.length > 0) {
           currentCharacterId = data.characters[0].id
           currentCharacterName = data.characters[0].character_name
+          const char = data.characters[0]
+          currentCharacterSkills = char && char.skill_ranks ? JSON.parse(char.skill_ranks) : null
         }
         
         selector.value = currentCharacterId
@@ -740,6 +744,17 @@ app.get('/', (c) => {
       currentCharacterId = e.target.value
       const opt = e.target.selectedOptions[0]
       currentCharacterName = opt ? opt.textContent : ''
+      
+      // Load character skills
+      if (currentCharacterId) {
+        const res = await fetch(API_BASE + '/api/characters?discord_id=' + currentUser.id)
+        const data = await res.json()
+        const char = data.characters.find(c => c.id == currentCharacterId)
+        currentCharacterSkills = char && char.skill_ranks ? JSON.parse(char.skill_ranks) : null
+      } else {
+        currentCharacterSkills = null
+      }
+      
       await loadSets()
     })
 
@@ -1747,6 +1762,20 @@ app.get('/', (c) => {
     }
 
     // Calculate match sum for an item based on user goals
+    // Calculate bonus value for skill ranks based on diminishing returns
+    function calculateSkillRankBonus(currentRanks, additionalRanks) {
+      let bonus = 0
+      for (let i = 1; i <= additionalRanks; i++) {
+        const rank = currentRanks + i
+        if (rank <= 10) bonus += 5
+        else if (rank <= 20) bonus += 4
+        else if (rank <= 30) bonus += 3
+        else if (rank <= 40) bonus += 2
+        else bonus += 1
+      }
+      return bonus
+    }
+
     function calculateMatchSum(item) {
       if (!userGoals || userGoals.length === 0) return 0
       
@@ -1764,8 +1793,15 @@ app.get('/', (c) => {
           
           if (!matchesGoal) continue
           
-          // Skip skills for now (they require character data)
-          if (ability.includes('ranks')) continue
+          // Handle skill ranks
+          if (ability.includes('ranks')) {
+            if (currentCharacterSkills) {
+              const skillName = enh.ability.replace(/\s+ranks$/i, '').trim()
+              const currentRanks = currentCharacterSkills[skillName] || 0
+              sum += calculateSkillRankBonus(currentRanks, enh.boost)
+            }
+            continue
+          }
           
           // Bonus stats count as 2x (they give both stat and bonus)
           // Base stats count as 1x (only base)
@@ -1794,8 +1830,15 @@ app.get('/', (c) => {
         for (const enh of enhancives) {
           const ability = enh.ability.toLowerCase()
           
-          // Skip skills for now (they require character data)
-          if (ability.includes('ranks')) continue
+          // Handle skill ranks
+          if (ability.includes('ranks')) {
+            if (currentCharacterSkills) {
+              const skillName = enh.ability.replace(/\s+ranks$/i, '').trim()
+              const currentRanks = currentCharacterSkills[skillName] || 0
+              sum += calculateSkillRankBonus(currentRanks, enh.boost)
+            }
+            continue
+          }
           
           // Bonus stats count as 2x (they give both stat and bonus)
           // Base stats count as 1x (only base)
