@@ -687,8 +687,12 @@ app.get('/', (c) => {
         document.getElementById('noSetWarning').classList.remove('hidden')
         currentSetId = null
         currentSetName = ''
+        document.getElementById('addGoalBtn').disabled = true
+        document.getElementById('addItemBtn').disabled = true
       } else {
         document.getElementById('noSetWarning').classList.add('hidden')
+        document.getElementById('addGoalBtn').disabled = false
+        document.getElementById('addItemBtn').disabled = false
         data.sets.forEach(set => {
           const opt = document.createElement('option')
           opt.value = set.id
