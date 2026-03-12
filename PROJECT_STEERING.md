@@ -286,16 +286,20 @@ GS4 Enhancive Shopper - A multi-user web application that monitors GemStone IV p
 ## Deployment & Secrets
 
 ### Deploy Command (Windows)
-From Windows Command Prompt or PowerShell, navigate to the project directory and run:
-```
-cd \\wsl.localhost\Ubuntu\home\rpgfilms\enhancive-alert
+**Note**: npx doesn't work with UNC paths (\\wsl.localhost). Must deploy from Windows filesystem.
+
+From Windows PowerShell:
+```powershell
+# Copy WSL project to Windows (if not already there)
+xcopy \\wsl.localhost\Ubuntu\home\rpgfilms\enhancive-alert C:\Users\rpgfi\enhancive-alert\ /E /I /Y
+
+# Deploy from Windows path
+cd C:\Users\rpgfi\enhancive-alert
+npm install
 npx wrangler deploy
 ```
 
-Or if using WSL path directly:
-```
-wsl cd /home/rpgfilms/enhancive-alert && npx wrangler deploy
-```
+After deployment, continue development in WSL. Copy back to Windows only when deploying.
 
 ### Cloudflare Secrets (set in dashboard)
 - `DISCORD_CLIENT_ID` - Discord app client ID
