@@ -142,11 +142,14 @@ app.get('/', (c) => {
             <div class="grid grid-cols-3 md:grid-cols-5 gap-2">
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ankle" class="mr-1"> ankle</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="arms" class="mr-1"> arms</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ankle" class="mr-1"> ankle</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="arms" class="mr-1"> arms</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="belt" class="mr-1"> belt</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="chest" class="mr-1"> chest</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="cloak" class="mr-1"> cloak</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ear" class="mr-1"> ear</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ears" class="mr-1"> ears</label>
+              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="elsewhere" class="mr-1"> elsewhere</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="feet" class="mr-1"> feet</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="finger" class="mr-1"> finger</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="front" class="mr-1"> front</label>
@@ -1236,20 +1239,24 @@ app.get('/', (c) => {
               'On your head': 'head',
               'Placed in your hair': 'hair',
               'Hung from a single ear': 'ear',
+              'Hung from both ears': 'ears',
               'Hung around your neck': 'neck',
               'Draped over your shoulders': 'shoulders',
               'Over your chest': 'chest',
               'Put over your front': 'front',
+              'Slipped into, on your chest': 'chest',
               'Attached to your arms': 'arms',
               'Attached to your wrist': 'wrist',
               'Slipped over your hands': 'hands',
               'On your fingers': 'finger',
               'Around your waist': 'belt',
               'Attached to your belt': 'belt',
+              'Pulled over your legs': 'legs',
               'Attached to your legs': 'legs',
+              'Attached to your ankle': 'ankle',
               'On your feet': 'feet',
               'As a battle standard': 'nugget',
-              'Elsewhere': 'nugget'
+              'Elsewhere': 'elsewhere'
             }
             const slotDesc = trimmed.slice(0, -1)
             currentSlot = slotMap[slotDesc] || 'nugget'
