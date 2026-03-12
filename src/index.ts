@@ -158,6 +158,12 @@ app.get('/', (c) => {
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="nugget" class="mr-1"> nugget</label>
             </div>
           </div>
+          <div class="mb-3">
+            <label class="flex items-center">
+              <input type="checkbox" id="includeNuggetPrice" class="mr-2">
+              <span>Add nugget price (25M silvers) to item costs</span>
+            </label>
+          </div>
           <div class="flex gap-2">
             <button id="saveGoalBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Save</button>
             <button id="cancelGoalBtn" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
@@ -477,6 +483,7 @@ app.get('/', (c) => {
     let currentGoalSet = 'Default'
     let allKnownSets = new Set(['Default'])
     let userGoals = []
+    let includeNuggetPrice = false
     let filterByGoalsEnabled = false
     let chatHistory = []
 
@@ -1975,17 +1982,24 @@ app.get('/', (c) => {
         
         // Override slot for crossbows (Nugget items)
         let displaySlot = item.worn || 'N/A'
-        if (item.name.toLowerCase().includes('crossbow')) {
+        const isNugget = item.name.toLowerCase().includes('crossbow') || !item.worn || item.worn === 'N/A'
+        if (isNugget) {
           displaySlot = 'nugget'
-        } else if (!item.worn || item.worn === 'N/A') {
-          displaySlot = 'nugget'
+        }
+        
+        // Calculate display cost (add 25M if nugget and option enabled)
+        let displayCost = item.cost || 0
+        let costLabel = ''
+        if (isNugget && includeNuggetPrice) {
+          displayCost = displayCost + 25000000
+          costLabel = '<div class="text-xs text-gray-500">+NUGGET</div>'
         }
 
         tr.innerHTML = \`
           <td class="px-4 py-3">\${item.name}</td>
           <td class="px-4 py-3">\${item.town}</td>
           <td class="px-4 py-3">\${item.shop}</td>
-          <td class="px-4 py-3 text-right">\${item.cost ? item.cost.toLocaleString() : 'N/A'}</td>
+          <td class="px-4 py-3 text-right">\${displayCost ? displayCost.toLocaleString() : 'N/A'}\${costLabel}</td>
           <td class="px-4 py-3">\${displaySlot}</td>
           <td class="px-4 py-3 text-right font-semibold \${matchSum > 0 ? 'text-green-600' : 'text-gray-400'}">\${matchSumDisplay}</td>
           <td class="px-4 py-3 text-right font-semibold text-blue-600">\${totalSumDisplay}</td>
@@ -2019,11 +2033,23 @@ app.get('/', (c) => {
       filterItems()
     })
     
+    document.getElementById('includeNuggetPrice').addEventListener('change', (e) => {
+      includeNuggetPrice = e.target.checked
+      localStorage.setItem('includeNuggetPrice', includeNuggetPrice)
+      renderItems()
+    })
+    
     // Restore checkbox state
     const savedFilter = localStorage.getItem('filterByGoals')
     if (savedFilter === 'true') {
       document.getElementById('filterByGoals').checked = true
       filterByGoalsEnabled = true
+    }
+    
+    const savedNuggetPrice = localStorage.getItem('includeNuggetPrice')
+    if (savedNuggetPrice === 'true') {
+      document.getElementById('includeNuggetPrice').checked = true
+      includeNuggetPrice = true
     }
 
     initAuth()
