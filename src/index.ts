@@ -1231,7 +1231,7 @@ app.get('/', (c) => {
               trimmed.startsWith('Self Knowledge Spells:')) continue
           
           // Check if it's a stat/skill/resource header (e.g., "Discipline (DIS): 40/40")
-          if (trimmed.match(/^[A-Za-z ]+(?:\\([A-Z]+\\))?:\\s*\\d+\\/\\d+/)) {
+          if (trimmed.match(/^[A-Za-z -]+(?:\\([A-Z]+\\))?:\\s*\\d+\\/\\d+/)) {
             const match = trimmed.match(/^([^:]+?)(?:\\s*\\([A-Z]+\\))?:/)
             if (match) currentStat = match[1].trim()
             continue
