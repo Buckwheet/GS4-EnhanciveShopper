@@ -532,6 +532,15 @@ app.get('/', (c) => {
       }
     })
 
+    // Helper: Get current set ID
+    async function getCurrentSetId() {
+      if (!currentUser || !currentGoalSet) return null
+      const response = await fetch(API_BASE + '/api/character-sets?discord_id=' + currentUser.id)
+      const data = await response.json()
+      const currentSet = data.sets.find(s => s.set_name === currentGoalSet)
+      return currentSet?.id || null
+    }
+
     // Goals management
     async function loadGoals() {
       if (!currentUser) return
