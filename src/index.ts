@@ -1922,6 +1922,7 @@ app.get('/', (c) => {
       const setData = await setResponse.json()
       const currentSet = setData.sets.find(s => s.id == currentSetId)
       const accountType = currentSet?.account_type || 'F2P'
+      console.log('Account type:', accountType, 'Limits keys:', Object.keys(slotLimits[accountType] || slotLimits['F2P']))
       
       const slotLimits = {
         'F2P': { 'pin': 8, 'head': 1, 'hair': 1, 'single_ear': 1, 'both_ears': 1, 'neck': 3, 'shoulder_slung': 2, 'shoulders_draped': 1, 'chest': 1, 'front': 1, 'chest_slipped': 1, 'back': 1, 'arms': 1, 'wrist': 2, 'hands': 1, 'fingers': 2, 'waist': 1, 'belt': 3, 'legs_pulled': 1, 'legs_attached': 1, 'legs_slipped': 1, 'ankle': 1, 'feet_slipped': 1, 'feet_on': 1, 'locus': 1 },
