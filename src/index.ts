@@ -1962,7 +1962,7 @@ app.get('/', (c) => {
     // Match tab switching
     document.querySelectorAll('.match-tab').forEach(tab => {
       tab.addEventListener('click', async (e) => {
-        const target = e.target as HTMLElement
+        const target = e.currentTarget
         const tabName = target.dataset.tab
         
         document.querySelectorAll('.match-tab').forEach(t => {
