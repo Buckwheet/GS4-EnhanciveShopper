@@ -3017,8 +3017,10 @@ app.post('/api/ai-chat', async (c) => {
           if (queryResult.results.length > 0) {
             let results = queryResult.results
             
-            // If user asked for "highest" or "best", sort by total boost of the stat they're searching for
+            // Get user message once
             const userMessage = (messages[messages.length - 1]?.content || '').toLowerCase()
+            
+            // If user asked for "highest" or "best", sort by total boost of the stat they're searching for
             if (userMessage.includes('highest') || userMessage.includes('best') || userMessage.includes('most')) {
               // Try to detect which stat they want
               const stats = ['wisdom', 'strength', 'constitution', 'dexterity', 'agility', 'discipline', 'aura', 'logic', 'intuition', 'influence']
@@ -3036,7 +3038,6 @@ app.post('/api/ai-chat', async (c) => {
             }
             
             // Try to detect how many items user wants
-            const userMessage = (messages[messages.length - 1]?.content || '').toLowerCase()
             const numberMatch = userMessage.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\b/)
             let displayLimit = 5
             if (numberMatch) {
