@@ -3768,21 +3768,29 @@ app.get('/api/migrate-old-to-new', async (c) => {
 
 // Debug endpoint - check database schema and data
 app.get('/api/debug/schema', async (c) => {
-  const tables = await c.env.DB.prepare(`
-    SELECT name FROM sqlite_master WHERE type='table' ORDER BY name
-  `).all()
-  
-  const counts: any = {}
-  for (const table of tables.results) {
-    const tableName = (table as any).name
-    const count = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM ${tableName}`).first()
-    counts[tableName] = (count as any).count
+  try {
+    const tables = await c.env.DB.prepare(`
+      SELECT name FROM sqlite_master WHERE type='table' ORDER BY name
+    `).all()
+    
+    const counts: any = {}
+    for (const table of tables.results) {
+      const tableName = (table as any).name
+      try {
+        const count = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM "${tableName}"`).first()
+        counts[tableName] = (count as any)?.count || 0
+      } catch (e: any) {
+        counts[tableName] = `Error: ${e.message}`
+      }
+    }
+    
+    return c.json({
+      tables: tables.results.map((t: any) => t.name),
+      rowCounts: counts
+    })
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500)
   }
-  
-  return c.json({
-    tables: tables.results.map((t: any) => t.name),
-    rowCounts: counts
-  })
 })
 
 // Migration endpoint - visit once to migrate to new schema
