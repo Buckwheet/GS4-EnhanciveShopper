@@ -286,9 +286,12 @@ app.get('/', (c) => {
             <div class="mb-4">
               <button id="addItemBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mr-2">+ Add Enhancive Item</button>
               <button id="bulkImportBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mr-2">Bulk Import</button>
+              <button id="yamlImportBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded mr-2">YAML Import File</button>
               <button id="copyInventoryBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded mr-2">Copy from Set</button>
               <button id="deleteAllInventoryBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete All</button>
             </div>
+            
+            <input type="file" id="yamlFileInput" accept=".yaml,.yml" class="hidden">
             
             <div id="copyInventoryForm" class="hidden mb-6 p-4 border rounded bg-purple-50">
               <h3 class="font-semibold mb-3">Copy Inventory from Another Set</h3>
@@ -1371,6 +1374,19 @@ app.get('/', (c) => {
     document.getElementById('addItemBtn').addEventListener('click', () => {
       document.getElementById('addItemForm').classList.remove('hidden')
       document.getElementById('bulkImportForm').classList.add('hidden')
+    })
+    
+    document.getElementById('yamlImportBtn').addEventListener('click', () => {
+      document.getElementById('yamlFileInput').click()
+    })
+    
+    document.getElementById('yamlFileInput').addEventListener('change', async (e) => {
+      const file = e.target.files[0]
+      if (!file) return
+      
+      const text = await file.text()
+      await processYamlImport(text)
+      e.target.value = ''
     })
     
     document.getElementById('bulkImportBtn').addEventListener('click', () => {
