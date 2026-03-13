@@ -24,6 +24,33 @@ Create a web application that monitors GemStone IV player shop listings and aler
 - **DEFERRED**: Priority system (price vs. stats vs. exact match)
 - **DEFERRED**: Multi-item optimization (best combination to reach goal)
 
+#### Future: Intelligent Goal Optimization & Decision Matrix
+**See: `FUTURE_ENHANCEMENT_DECISION_MATRIX.md` for full details**
+
+**Key Concept**: When users say "Strength 20", they mean "build me a set that provides 20 total Strength", not "find one item with +20 Strength"
+
+**Current State (March 2026)**:
+- Goals are min_boost filters (e.g., "find items with 10+ Strength")
+- User manually evaluates recommendations
+- No automatic set building or total calculation
+
+**Future Vision**:
+1. **Total Target Goals**: User sets "I want 20 total Strength"
+2. **Gap Calculation**: System calculates current total from inventory, determines gap
+3. **Set Builder**: Generates optimal combinations to reach target
+4. **Smart Optimization**: Considers cost, Base vs Bonus, slot value, permanence
+5. **Complete Recommendations**: "Buy these 3 items for 250k to reach your goal"
+
+**Implementation Phases**:
+- Phase 1: Total target goals (vs min_boost filters)
+- Phase 2: Set builder with combinations
+- Phase 3: Base vs Bonus intelligence (prefer Base)
+- Phase 4: Slot optimization (use cheap slots first)
+- Phase 5: Multi-goal optimization (items with multiple stats)
+
+**Priority**: High (transforms tool from search engine to optimization engine)
+**Complexity**: High (combinatorial optimization, knapsack problem variant)
+
 ### 4. Notification System
 - **DEFERRED**: Choose notification method (email, Discord, Telegram, SMS, push)
 - Include item details: name, stats, price, location, shop
