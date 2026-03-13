@@ -276,6 +276,9 @@ app.get('/', (c) => {
           
           <!-- Tab Content: Inventory -->
           <div id="tabContentInventory" class="hidden space-y-4">
+            <div class="flex justify-end mb-2">
+              <button onclick="document.getElementById('manageCharacterModal').classList.add('hidden')" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Close</button>
+            </div>
             <div id="slotUsageDisplay" class="mb-4 p-3 bg-blue-50 rounded text-sm"></div>
             
             <div class="mb-4">
