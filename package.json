@@ -5,13 +5,17 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "lint": "echo 'Linting skipped'"
+    "lint": "biome lint ./src",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
   },
   "dependencies": {
     "hono": "^4.12.5"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
     "@cloudflare/workers-types": "^4.20240208.0",
+    "husky": "^9.1.7",
     "typescript": "^5.3.3",
     "wrangler": "^3.28.0"
   }

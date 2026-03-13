@@ -1,0 +1,3 @@
+#!/bin/sh
+npx tsc --noEmit || exit 1
+npx biome lint ./src || exit 1
