@@ -286,7 +286,20 @@ app.get('/', (c) => {
             <div class="mb-4">
               <button id="addItemBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mr-2">+ Add Enhancive Item</button>
               <button id="bulkImportBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mr-2">Bulk Import</button>
+              <button id="copyInventoryBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded mr-2">Copy from Set</button>
               <button id="deleteAllInventoryBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete All</button>
+            </div>
+            
+            <div id="copyInventoryForm" class="hidden mb-6 p-4 border rounded bg-purple-50">
+              <h3 class="font-semibold mb-3">Copy Inventory from Another Set</h3>
+              <p class="text-sm text-gray-600 mb-3">Select a set to copy inventory from:</p>
+              <select id="copySourceSet" class="border p-2 rounded w-full mb-3">
+                <option value="">Select a set...</option>
+              </select>
+              <div class="flex gap-2">
+                <button id="confirmCopyInventory" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">Copy Items</button>
+                <button id="cancelCopyInventory" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+              </div>
             </div>
             
             <div id="bulkImportForm" class="hidden mb-6 p-4 border rounded bg-gray-50">
@@ -1360,6 +1373,66 @@ app.get('/', (c) => {
     document.getElementById('bulkImportBtn').addEventListener('click', () => {
       document.getElementById('bulkImportForm').classList.remove('hidden')
       document.getElementById('addItemForm').classList.add('hidden')
+      document.getElementById('copyInventoryForm').classList.add('hidden')
+    })
+    
+    document.getElementById('copyInventoryBtn').addEventListener('click', async () => {
+      if (!currentCharacterId) {
+        alert('Please select a character first')
+        return
+      }
+      
+      const response = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/sets')
+      const data = await response.json()
+      const select = document.getElementById('copySourceSet')
+      select.innerHTML = '<option value="">Select a set...</option>' + data.sets.map(s => 
+        '<option value="' + s.id + '">' + s.set_name + ' (' + s.account_type + ')</option>'
+      ).join('')
+      
+      document.getElementById('copyInventoryForm').classList.remove('hidden')
+      document.getElementById('addItemForm').classList.add('hidden')
+      document.getElementById('bulkImportForm').classList.add('hidden')
+    })
+    
+    document.getElementById('cancelCopyInventory').addEventListener('click', () => {
+      document.getElementById('copyInventoryForm').classList.add('hidden')
+    })
+    
+    document.getElementById('confirmCopyInventory').addEventListener('click', async () => {
+      const sourceSetId = document.getElementById('copySourceSet').value
+      if (!sourceSetId) {
+        alert('Please select a source set')
+        return
+      }
+      
+      if (sourceSetId === currentSetId) {
+        alert('Cannot copy from the same set')
+        return
+      }
+      
+      if (!confirm('Copy all items from selected set? This will add to existing inventory.')) return
+      
+      try {
+        const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/inventory/copy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source_set_id: sourceSetId })
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          alert('Copied ' + result.count + ' items successfully')
+          document.getElementById('copyInventoryForm').classList.add('hidden')
+          loadInventory()
+          loadSlotUsage()
+          loadSummary()
+        } else {
+          alert('Error copying inventory')
+        }
+      } catch (error) {
+        console.error('Copy error:', error)
+        alert('Error copying inventory')
+      }
     })
     
     document.getElementById('deleteAllInventoryBtn').addEventListener('click', async () => {
@@ -2908,6 +2981,33 @@ app.post('/api/sets/:id/inventory', async (c) => {
   } catch (error) {
     console.error('Error adding inventory:', error)
     return c.json({ error: (error as Error).message || 'Failed to add item' }, 500)
+  }
+})
+
+// Copy inventory from another set
+app.post('/api/sets/:id/inventory/copy', async (c) => {
+  try {
+    const targetSetId = c.req.param('id')
+    const { source_set_id } = await c.req.json()
+    
+    if (!source_set_id) {
+      return c.json({ error: 'source_set_id required' }, 400)
+    }
+
+    const { results: items } = await c.env.DB.prepare('SELECT item_name, slot, enhancives_json, is_permanent FROM set_inventory WHERE set_id = ?')
+      .bind(source_set_id).all()
+
+    let count = 0
+    for (const item of items) {
+      await c.env.DB.prepare('INSERT INTO set_inventory (set_id, item_name, slot, enhancives_json, is_permanent, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+        .bind(targetSetId, item.item_name, item.slot, item.enhancives_json, item.is_permanent, new Date().toISOString()).run()
+      count++
+    }
+
+    return c.json({ success: true, count })
+  } catch (error) {
+    console.error('Error copying inventory:', error)
+    return c.json({ error: (error as Error).message || 'Failed to copy inventory' }, 500)
   }
 })
 
