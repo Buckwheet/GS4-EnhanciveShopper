@@ -3638,8 +3638,12 @@ app.get('/api/recommendations/:discord_id/:goal_set', async (c) => {
       return c.json(JSON.parse(cacheResult.recommendations_json as string))
     }
     
-    const setResult = await c.env.DB.prepare('SELECT id, account_type FROM sets WHERE discord_id = ? AND set_name = ?')
-      .bind(discordId, goalSetName).first()
+    const setResult = await c.env.DB.prepare(`
+      SELECT s.id, s.account_type 
+      FROM sets s
+      JOIN characters ch ON s.character_id = ch.id
+      WHERE ch.discord_id = ? AND s.set_name = ?
+    `).bind(discordId, goalSetName).first()
     
     if (!setResult) {
       return c.json({ error: 'Set not found' }, 404)
