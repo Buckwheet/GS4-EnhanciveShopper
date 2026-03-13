@@ -1884,20 +1884,31 @@ app.get('/', (c) => {
       
       // Map database slot names to display slot names
       const slotMapping = {
+        'pin': 'pin',
+        'head': 'head',
+        'hair': 'hair',
         'ear': 'single_ear',
         'ears': 'both_ears',
-        'finger': 'fingers',
-        'undershirt': 'chest_slipped',
-        'leggings': 'legs_pulled',
-        'legs': 'legs_attached',
-        'feet': 'feet_on',
-        'socks': 'feet_slipped',
+        'neck': 'neck',
         'shoulder': 'shoulder_slung',
         'shoulders': 'shoulders_draped',
         'torso': 'chest',
+        'front': 'front',
+        'undershirt': 'chest_slipped',
+        'back': 'back',
+        'arms': 'arms',
+        'wrist': 'wrist',
+        'hands': 'hands',
+        'finger': 'fingers',
+        'waist': 'waist',
         'belt': 'belt',
+        'leggings': 'legs_pulled',
+        'legs': 'legs_attached',
+        'ankle': 'ankle',
+        'socks': 'feet_slipped',
+        'feet': 'feet_on',
         'elsewhere': 'locus',
-        'waist': 'waist'
+        'nugget': 'locus'
       }
       
       const slotCounts = {}

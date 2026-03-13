@@ -1,0 +1,114 @@
+You are currently wearing:
+
+As a pin:
+    a pale wing-shaped pin (functional)
+    a brass widget pin (nonfunctional)
+    a shimmering trinket (nonfunctional)
+    a sparkling small crystal skull (functional)
+    a white ora pin (functional)
+    a blackened vultite pin (functional)
+    an intricate wyrm-crested opal pin (nonfunctional)
+    an engraved imflass pin (functional)
+    an alum-bound spidersilk badge (functional)
+    a snowy white kittiwake charm with deep blue wings (nonfunctional)
+    an imflass pin (functional)
+    a small bone periapt (nonfunctional)
+
+On your head:
+    a vultite crown (functional)
+
+Placed in your hair:
+    a rune-etched steel hairpin (functional)
+
+Hung from a single ear:
+    a kelyn earring (functional)
+    a mossbark earring (functional)
+    a steel earring (functional)
+
+Hung from both ears:
+    some imflass earrings (functional)
+    a pair of oval bloodstone earrings (functional)
+    a pair of black earrings (functional)
+
+Hung around your neck:
+    a mossbark necklace (functional)
+    a glaes-tipped steel necklace (functional)
+    a ruby-strung chain sporting a Liabo white moon pendant (nonfunctional)
+    a carmiln necklace (functional)
+    a silver-bladed dagger medallion (nonfunctional)
+    a bronze coiled snake talisman (nonfunctional)
+    a bleached bone white oak amulet (functional)
+
+Slung over your shoulder:
+    a vaalin pauldron (functional)
+    a tightly woven dark shadowsilk harness (functional)
+
+Draped over your shoulders:
+    a hooded black shadowsilk cloak with a star iron clasp (functional)
+
+Over your chest:
+    a dark rusalkoren cuirass chased with faintly glowing azure swirls (functional)
+
+Put over your front:
+    an imflass pectoral (functional)
+
+Slipped into, on your chest:
+    a hooded charcoal long-sleeve shirt crafted from lightweight elesine (functional)
+
+On your back:
+    a purple-veined black leather backpack (functional)
+
+Attached to your arms:
+    a pair of fireleaf armbands (functional)
+
+Attached to your wrist:
+    an imflass bracelet (functional)
+    a thick mithglin bracer (functional)
+    a leather bracelet (functional)
+    a ruic bracelet (functional)
+
+Slipped over your hands:
+    a pair of steel handflowers (functional)
+
+On your fingers:
+    a mossbark ring (functional)
+    a ruddy red mithril ring (functional)
+    a mossbark ring (functional)
+    some articulated urglaes thumb-armor (functional)
+
+Around your waist:
+    an imflass belt (functional)
+    a fitted black leather bandolier (nonfunctional)
+
+Attached to your belt:
+    a shadowsilk treasure sack fastened by a blood crystal (functional)
+    a crimson and black camouflaged master locksmith's kit (functional)
+    a leather herb case (functional)
+    a braided silver keyring (nonfunctional)
+    a mosaic-inlaid copper key strung from braided rawhide cords (nonfunctional)
+
+Pulled over your legs:
+    some simple black canvas pants with a thick spidersilk drawstring (functional)
+
+Attached to your legs:
+    a leather thigh-band (functional)
+
+Slipped into, on your legs:
+    some cloth leggings (functional)
+
+Attached to your ankle:
+    a golvern anklet (functional)
+
+Slipped on your feet:
+    some steel footflowers (functional)
+
+On your feet:
+    some soft-soled black stalking boots fastened with carefully blacked steel buckles (functional)
+
+As a battle standard:
+    a sacrosanct night black battle standard with a rippling silver sheen (functional)
+
+Elsewhere:
+    a gilded locus (functional)
+
+(57 items displayed)

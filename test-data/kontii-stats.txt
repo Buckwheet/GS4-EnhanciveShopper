@@ -1,0 +1,227 @@
+Stats:
+  Strength (STR): 45/40
+    +7: an imflass bracelet
+    +8: a golvern anklet
+    +5: a pale wing-shaped pin
+    +8: a rune-etched steel hairpin
+    +8: a kelyn earring
+    +9: a gilded locus
+
+  Constitution (CON): 40/40
+    +7: a mossbark ring
+    +10: an engraved imflass pin
+    +7: an imflass belt
+    +1: a gilded locus
+    +10: some simple black canvas pants with a thick spidersilk drawstring
+    +5: some soft-soled black stalking boots fastened with carefully blacked steel buckles
+
+  Dexterity (DEX): 41/40
+    +6: an imflass bracelet
+    +5: a white ora pin
+    +1: a rune-etched steel hairpin
+    +2: some cloth leggings
+    +3: a pair of black earrings
+    +14: some simple black canvas pants with a thick spidersilk drawstring
+    +10: a wolf paw tattoo
+
+  Agility (AGI): 48/40
+    +8: a mossbark necklace
+    +8: a ruddy red mithril ring
+    +5: a carmiln necklace
+    +14: a steel earring
+    +13: a kelyn earring
+
+  Discipline (DIS): 41/40
+    +5: a vaalin pauldron
+    +1: a sparkling small crystal skull
+    +12: some cloth leggings
+    +6: a mossbark necklace
+    +4: a ruddy red mithril ring
+    +8: some imflass earrings
+    +5: some soft-soled black stalking boots fastened with carefully blacked steel buckles
+
+  Aura (AUR): 40/40
+    +5: some articulated urglaes thumb-armor
+    +4: a glaes-tipped steel necklace
+    +6: a leather thigh-band
+    +7: a carmiln necklace
+    +10: an alum-bound spidersilk badge
+    +6: a mossbark ring
+    +2: a gilded locus
+
+  Logic (LOG): 42/40
+    +18: a thick mithglin bracer
+    +12: a blackened vultite pin
+    +12: a glaes-tipped steel necklace
+
+  Intuition (INT): 40/40
+    +12: a pair of fireleaf armbands
+    +4: a pair of fireleaf armbands
+    +1: a gilded locus
+    +5: some imflass earrings
+    +18: a mossbark ring
+
+  Wisdom (WIS): 36/40
+    +10: a pair of fireleaf armbands
+    +7: a blackened vultite pin
+    +10: some articulated urglaes thumb-armor
+    +5: a pale wing-shaped pin
+    +4: some imflass earrings
+
+  Influence (INF): 43/40
+    +14: some steel footflowers
+    +14: a pair of steel handflowers
+    +9: a leather thigh-band
+    +6: some cloth leggings
+
+
+Skills:
+  Ambush Ranks: 5/50
+    +5: a carmiln necklace
+
+  Dodging Ranks: 1/50
+    +1: a glaes-tipped steel necklace
+
+  Spell Aiming Ranks: 2/50
+    +2: a pair of fireleaf armbands
+
+  Mental Lore - Manipulation Ranks: 2/50
+    +2: a kelyn earring
+
+  Stalking and Hiding Ranks: 5/50
+    +5: a white ora pin
+
+  Perception Ranks: 7/50
+    +7: a carmiln necklace
+
+  First Aid Ranks: 6/50
+    +6: some imflass earrings
+
+  Shield Use Bonus: 53/50
+    +12: a sparkling small crystal skull
+    +8: a hooded charcoal long-sleeve shirt crafted from lightweight elesine
+    +11: a pair of black earrings
+    +7: a vultite crown
+    +8: a thick mithglin bracer
+    +7: a mossbark ring
+
+  Combat Maneuvers Bonus: 43/50
+    +5: an imflass pectoral
+    +14: an imflass belt
+    +6: a mossbark necklace
+    +8: an imflass pin
+    +10: a mossbark ring
+
+  Edged Weapons Bonus: 73/50
+    +12: some steel footflowers
+    +13: a vaalin pauldron
+    +13: a pair of black earrings
+    +9: an imflass bracelet
+    +14: a golvern anklet
+    +7: a hooded charcoal long-sleeve shirt crafted from lightweight elesine
+    +5: a tightly woven dark shadowsilk harness
+
+  Ambush Bonus: 32/50
+    +9: a hooded charcoal long-sleeve shirt crafted from lightweight elesine
+    +6: a rune-etched steel hairpin
+    +4: a steel earring
+    +10: a pair of steel handflowers
+    +3: a mossbark earring
+
+  Physical Fitness Bonus: 6/50
+    +6: some steel footflowers
+
+  Dodging Bonus: 49/50
+    +2: a pair of black earrings
+    +13: an imflass belt
+    +11: a ruic bracelet
+    +8: an imflass bracelet
+    +4: a gilded locus
+    +8: an imflass pin
+    +3: an engraved imflass pin
+
+  Magic Item Use Bonus: 10/50
+    +10: a thick mithglin bracer
+
+  Spell Aiming Bonus: 5/50
+    +5: a leather bracelet
+
+  Harness Power Bonus: 22/50
+    +7: a blackened vultite pin
+    +11: a sparkling small crystal skull
+    +4: a tightly woven dark shadowsilk harness
+
+  Mental Mana Control Bonus: 8/50
+    +8: a mossbark ring
+
+  Spiritual Lore - Blessings Bonus: 51/50
+    +6: a leather thigh-band
+    +14: a gilded locus
+    +8: a mossbark earring
+    +10: a leather bracelet
+    +3: a leather thigh-band
+    +10: an alum-bound spidersilk badge
+
+  Spiritual Lore - Summoning Bonus: 2/50
+    +2: an engraved imflass pin
+
+  Mental Lore - Telepathy Bonus: 6/50
+    +6: a mossbark ring
+
+  Stalking and Hiding Bonus: 46/50
+    +5: a ruic bracelet
+    +11: an imflass pin
+    +3: a mossbark necklace
+    +12: an imflass pectoral
+    +11: a rune-etched steel hairpin
+    +4: a mossbark earring
+
+  Perception Bonus: 53/50
+    +10: a leather bracelet
+    +18: a vultite crown
+    +15: a ruic bracelet
+    +1: a gilded locus
+    +9: a vaalin pauldron
+
+
+Resources:
+  Max Health: 27/300
+    +11: a vaalin pauldron
+    +6: a tightly woven dark shadowsilk harness
+    +10: some soft-soled black stalking boots fastened with carefully blacked steel buckles
+
+  Max Stamina: 51/300
+    +5: a tightly woven dark shadowsilk harness
+    +8: a glaes-tipped steel necklace
+    +7: some steel footflowers
+    +5: an engraved imflass pin
+    +18: a gilded locus
+    +8: some simple black canvas pants with a thick spidersilk drawstring
+
+  Health Recovery: 18/50
+    +6: an imflass pectoral
+    +12: a ruddy red mithril ring
+
+  Stamina Recovery: 49/50
+    +8: a golvern anklet
+    +10: a sparkling small crystal skull
+    +11: a white ora pin
+    +9: an alum-bound spidersilk badge
+    +10: a steel earring
+    +1: a gilded locus
+
+
+Self Knowledge Spells:
+  215: an inked dark obsidian band
+  506: an inked dark obsidian band
+  613: a willow tree tattoo
+  712: a stalking wolf tattoo
+  1109: a willow tree tattoo
+  1601: a lushly inked canopied willow tree in vibrant shades of green and brown
+  1605: a stalking wolf tattoo
+
+
+Statistics:
+  Enhancive Items: 44
+  Enhancive Properties: 142
+  Total Enhancive Amount: 1048
