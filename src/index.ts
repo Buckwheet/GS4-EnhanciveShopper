@@ -2396,6 +2396,8 @@ app.get('/', (c) => {
                   itemSlot = 'nugget'
                 }
                 
+                console.log(`Checking item ${item.name}: slot=${itemSlot}, allowed=${slots.join(',')}, match=${slots.includes(itemSlot)}`)
+                
                 if (!slots.includes(itemSlot)) continue
               }
               
