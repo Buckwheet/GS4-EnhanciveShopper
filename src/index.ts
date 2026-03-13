@@ -418,7 +418,10 @@ app.get('/', (c) => {
         <div class="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-2xl font-semibold">My Matches</h2>
-            <button id="closeMatchesBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
+            <div class="flex gap-2 items-center">
+              <button id="recalculateBtn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm hidden">Recalculate</button>
+              <button id="closeMatchesBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
+            </div>
           </div>
           
           <!-- Match Type Tabs -->
@@ -2049,11 +2052,42 @@ app.get('/', (c) => {
         document.querySelectorAll('.match-panel').forEach(p => p.classList.add('hidden'))
         document.getElementById(tabName).classList.remove('hidden')
         
+        // Show Recalculate button only on recommendation tabs
+        const recalcBtn = document.getElementById('recalculateBtn')
+        if (tabName.startsWith('rec')) {
+          recalcBtn.classList.remove('hidden')
+        } else {
+          recalcBtn.classList.add('hidden')
+        }
+        
         if (tabName.startsWith('rec') && !document.getElementById(tabName).dataset.loaded) {
           await loadRecommendations()
           document.getElementById(tabName).dataset.loaded = 'true'
         }
       })
+    })
+
+    document.getElementById('recalculateBtn').addEventListener('click', async () => {
+      if (!currentUser || !currentSetName) return
+      
+      const btn = document.getElementById('recalculateBtn')
+      btn.disabled = true
+      btn.textContent = 'Calculating...'
+      
+      await fetch(API_BASE + '/api/recommendations/' + currentUser.id + '/' + encodeURIComponent(currentSetName), { method: 'DELETE' })
+      
+      // Clear loaded flags
+      document.querySelectorAll('.match-panel[id^="rec"]').forEach(p => p.dataset.loaded = '')
+      
+      // Reload current tab
+      await loadRecommendations()
+      const activeTab = document.querySelector('.match-tab.border-blue-600')
+      if (activeTab) {
+        document.getElementById(activeTab.dataset.tab).dataset.loaded = 'true'
+      }
+      
+      btn.disabled = false
+      btn.textContent = 'Recalculate'
     })
 
     async function loadRecommendations() {
@@ -3662,6 +3696,16 @@ app.get('/api/recommendations/:discord_id/:goal_set', async (c) => {
     .bind(discordId, goalSetName, JSON.stringify(recommendations)).run()
   
   return c.json(recommendations)
+})
+
+app.delete('/api/recommendations/:discord_id/:goal_set', async (c) => {
+  const discordId = c.req.param('discord_id')
+  const goalSetName = c.req.param('goal_set')
+  
+  await c.env.DB.prepare('DELETE FROM recommendation_cache WHERE discord_id = ? AND goal_set_name = ?')
+    .bind(discordId, goalSetName).run()
+  
+  return c.json({ success: true })
 })
 
 // Migration endpoint - visit once to migrate to new schema
