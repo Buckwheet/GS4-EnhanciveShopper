@@ -3032,8 +3032,12 @@ app.post('/api/ai-chat', async (c) => {
             // Get user message once
             const userMessage = (messages[messages.length - 1]?.content || '').toLowerCase()
             
+            // Detect if user wants minimum total (e.g., "at least 20 wisdom")
+            const minTotalMatch = userMessage.match(/(?:at least|minimum|min|total of)\s+(\d+)/i)
+            const minTotal = minTotalMatch ? parseInt(minTotalMatch[1]) : 0
+            
             // If user asked for "highest" or "best", sort by total boost of the stat they're searching for
-            if (userMessage.includes('highest') || userMessage.includes('best') || userMessage.includes('most')) {
+            if (userMessage.includes('highest') || userMessage.includes('best') || userMessage.includes('most') || minTotal > 0) {
               // Try to detect which stat they want
               const stats = ['wisdom', 'strength', 'constitution', 'dexterity', 'agility', 'discipline', 'aura', 'logic', 'intuition', 'influence']
               const targetStat = stats.find(s => userMessage.includes(s))
@@ -3045,7 +3049,15 @@ app.post('/api/ai-chat', async (c) => {
                     .filter((e: any) => e.ability.toLowerCase().includes(targetStat))
                     .reduce((sum: number, e: any) => sum + e.boost, 0)
                   return { ...item, _sortValue: total }
-                }).sort((a: any, b: any) => b._sortValue - a._sortValue)
+                })
+                
+                // Filter by minimum total if specified
+                if (minTotal > 0) {
+                  results = results.filter((item: any) => item._sortValue >= minTotal)
+                }
+                
+                // Sort by highest total
+                results = results.sort((a: any, b: any) => b._sortValue - a._sortValue)
               }
             }
             
@@ -3057,15 +3069,21 @@ app.post('/api/ai-chat', async (c) => {
               displayLimit = numMap[numberMatch[1]] || parseInt(numberMatch[1]) || 5
             }
             
+            if (results.length === 0) {
+              responseText = 'No items found matching your criteria.'
+              return c.json({ response: responseText, sql: sql })
+            }
+            
             const itemList = results.slice(0, displayLimit).map((item: any) => {
               const enhs = JSON.parse(item.enhancives_json || '[]')
               const enhText = enhs.map((e: any) => '+' + e.boost + ' ' + e.ability).join(', ')
-              return item.name + ' - ' + (item.cost ? item.cost.toLocaleString() + ' silvers' : 'unknown cost') + ' - ' + item.town + ' - ' + enhText
+              const totalBadge = item._sortValue ? ' [Total: +' + item._sortValue + ']' : ''
+              return item.name + ' - ' + (item.cost ? item.cost.toLocaleString() + ' silvers' : 'unknown cost') + ' - ' + item.town + ' - ' + enhText + totalBadge
             }).join('\n')
             
             // Don't show the SQL query in the response, but include it for debugging
-            responseText = 'Found ' + queryResult.results.length + ' items:\n' + itemList
-            if (queryResult.results.length > displayLimit) responseText += '\n... and ' + (queryResult.results.length - displayLimit) + ' more'
+            responseText = 'Found ' + results.length + ' items:\n' + itemList
+            if (results.length > displayLimit) responseText += '\n... and ' + (results.length - displayLimit) + ' more'
             
             // Return SQL query separately so it can be logged on client side
             return c.json({ response: responseText, sql: sql })
