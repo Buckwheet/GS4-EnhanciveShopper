@@ -2199,6 +2199,24 @@ app.get('/', (c) => {
       return bonus
     }
 
+    function shouldShowNuggetPrice(item) {
+      if (!userGoals || userGoals.length === 0) return false
+      const isNugget = !item.worn || item.worn === 'N/A'
+      if (!isNugget) return false
+      
+      try {
+        const enhancives = JSON.parse(item.enhancives_json)
+        return enhancives.some(enh => {
+          const ability = enh.ability.toLowerCase()
+          return userGoals.some(goal => 
+            ability.includes(goal.stat.toLowerCase()) && goal.include_nugget_price === 1
+          )
+        })
+      } catch {
+        return false
+      }
+    }
+
     function calculateMatchSum(item) {
       if (!userGoals || userGoals.length === 0) return 0
       
@@ -2235,24 +2253,6 @@ app.get('/', (c) => {
           if (isStatBonus) {
             sum += enh.boost * 2
           } else {
-
-    function shouldShowNuggetPrice(item) {
-      if (!userGoals || userGoals.length === 0) return false
-      const isNugget = !item.worn || item.worn === 'N/A'
-      if (!isNugget) return false
-      
-      try {
-        const enhancives = JSON.parse(item.enhancives_json)
-        return enhancives.some(enh => {
-          const ability = enh.ability.toLowerCase()
-          return userGoals.some(goal => 
-            ability.includes(goal.stat.toLowerCase()) && goal.include_nugget_price === 1
-          )
-        })
-      } catch {
-        return false
-      }
-    }
             sum += enh.boost
           }
         }
