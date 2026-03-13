@@ -1690,23 +1690,28 @@ app.get('/', (c) => {
       
       invList.innerHTML = items.map(item => {
         const enhs = JSON.parse(item.enhancives_json)
-        const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
-        return \`
-          <div class="p-3 border rounded \${item.is_permanent ? 'bg-white' : 'bg-yellow-50'}">
+        const enhText = enhs.map(e => `+${e.boost} ${e.ability}`).join(', ')
+        const lockIcon = item.is_irreplaceable ? '🔒 ' : ''
+        return `
+          <div class="p-3 border rounded ${item.is_permanent ? 'bg-white' : 'bg-yellow-50'} ${item.is_irreplaceable ? 'border-blue-500 border-2' : ''}">
             <div class="flex justify-between items-start">
               <div class="flex-1">
-                <div class="font-semibold">\${item.item_name}</div>
-                <div class="text-sm text-gray-600">Slot: \${item.slot.replace(/_/g, ' ')}</div>
-                <div class="text-sm text-gray-700">\${enhText}</div>
-                \${!item.is_permanent ? '<div class="text-xs text-orange-600 mt-1">⚠ Temporary (will crumble)</div>' : ''}
+                <div class="font-semibold">${lockIcon}${item.item_name}</div>
+                <div class="text-sm text-gray-600">Slot: ${item.slot.replace(/_/g, ' ')}</div>
+                <div class="text-sm text-gray-700">${enhText}</div>
+                ${!item.is_permanent ? '<div class="text-xs text-orange-600 mt-1">⚠ Temporary (will crumble)</div>' : ''}
+                <label class="flex items-center gap-1 text-xs text-gray-600 mt-2 cursor-pointer">
+                  <input type="checkbox" ${item.is_irreplaceable ? 'checked' : ''} onchange="toggleIrreplaceable(${item.id}, this.checked)" class="cursor-pointer">
+                  <span>Mark as irreplaceable</span>
+                </label>
               </div>
               <div class="flex gap-2">
-                <button onclick="editInventoryItem(\${item.id})" class="text-blue-600 hover:text-blue-800 text-sm">Edit</button>
-                <button onclick="deleteInventoryItem(\${item.id})" class="text-red-600 hover:text-red-800 text-sm">Delete</button>
+                <button onclick="editInventoryItem(${item.id})" class="text-blue-600 hover:text-blue-800 text-sm">Edit</button>
+                <button onclick="deleteInventoryItem(${item.id})" class="text-red-600 hover:text-red-800 text-sm">Delete</button>
               </div>
             </div>
           </div>
-        \`
+        `
       }).join('')
     }
 
@@ -1731,6 +1736,20 @@ app.get('/', (c) => {
       await loadInventory()
       await loadSlotUsage()
       await loadSummary()
+    }
+
+    window.toggleIrreplaceable = async function(id, isIrreplaceable) {
+      try {
+        await fetch(API_BASE + '/api/inventory/' + id + '/irreplaceable', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_irreplaceable: isIrreplaceable })
+        })
+        await loadInventory()
+      } catch (error) {
+        console.error('Error toggling irreplaceable:', error)
+        alert('Failed to update item')
+      }
     }
 
     async function loadSlotUsage() {
