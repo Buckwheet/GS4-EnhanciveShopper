@@ -173,11 +173,17 @@ app.get('/', (c) => {
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="torso" class="mr-1"> torso</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="undershirt" class="mr-1"> undershirt</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="wrist" class="mr-1"> wrist</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="nugget" class="mr-1"> nugget</label>
-              <label class="flex items-center ml-4">
-                <input type="checkbox" id="goalNuggetPrice" class="mr-1">
-                <span class="text-sm text-gray-600">+25M price</span>
+            </div>
+            <div class="mt-2">
+              <label class="flex items-center">
+                <input type="checkbox" name="goalSlot" value="nugget" id="goalNuggetCheckbox" class="mr-1"> nugget
               </label>
+              <div id="nuggetPriceOption" class="ml-6 mt-1 hidden">
+                <label class="flex items-center">
+                  <input type="checkbox" id="goalNuggetPrice" class="mr-1">
+                  <span class="text-sm text-gray-600">+25M price</span>
+                </label>
+              </div>
             </div>
           </div>
           <div class="flex gap-2">
@@ -1160,8 +1166,14 @@ app.get('/', (c) => {
         document.querySelectorAll('input[name="goalSlot"]').forEach(cb => {
           cb.checked = slots.includes(cb.value)
         })
+        if (slots.includes('nugget')) {
+          document.getElementById('nuggetPriceOption').classList.remove('hidden')
+        } else {
+          document.getElementById('nuggetPriceOption').classList.add('hidden')
+        }
       } else {
         document.querySelectorAll('input[name="goalSlot"]').forEach(cb => cb.checked = false)
+        document.getElementById('nuggetPriceOption').classList.add('hidden')
       }
       
       document.getElementById('addGoalForm').classList.remove('hidden')
@@ -1977,6 +1989,8 @@ app.get('/', (c) => {
       document.getElementById('goalBoost').value = ''
       document.getElementById('goalMaxCost').value = ''
       document.querySelectorAll('input[name="goalSlot"]').forEach(cb => cb.checked = false)
+      document.getElementById('nuggetPriceOption').classList.add('hidden')
+      document.getElementById('goalNuggetPrice').checked = false
       editingGoalId = null
       document.getElementById('saveGoalBtn').textContent = 'Save Goal'
       document.getElementById('addGoalForm').classList.remove('hidden')
@@ -1986,6 +2000,16 @@ app.get('/', (c) => {
       document.getElementById('addGoalForm').classList.add('hidden')
       editingGoalId = null
       document.getElementById('saveGoalBtn').textContent = 'Save Goal'
+    })
+
+    document.getElementById('goalNuggetCheckbox').addEventListener('change', (e) => {
+      const priceOption = document.getElementById('nuggetPriceOption')
+      if ((e.target as HTMLInputElement).checked) {
+        priceOption.classList.remove('hidden')
+      } else {
+        priceOption.classList.add('hidden')
+        document.getElementById('goalNuggetPrice').checked = false
+      }
     })
 
     document.getElementById('saveGoalBtn').addEventListener('click', async () => {
