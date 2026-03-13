@@ -2629,8 +2629,8 @@ app.get('/api/goal-sets', async (c) => {
   const invQuery = await c.env.DB.prepare('SELECT DISTINCT goal_set_name FROM user_inventory WHERE discord_id = ?').bind(discordId).all()
   
   const sets = new Set()
-  goalsQuery.results.forEach(r => sets.add(r.goal_set_name || 'Default'))
-  invQuery.results.forEach(r => sets.add(r.goal_set_name || 'Default'))
+  goalsQuery.results.forEach(r => { sets.add(r.goal_set_name || 'Default') })
+  invQuery.results.forEach(r => { sets.add(r.goal_set_name || 'Default') })
   
   return c.json({ sets: [...sets] })
 })
