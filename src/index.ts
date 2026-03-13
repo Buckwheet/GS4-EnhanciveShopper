@@ -3646,7 +3646,7 @@ app.get('/api/recommendations/:discord_id/:goal_set', async (c) => {
   
   const { results: goals } = await c.env.DB.prepare('SELECT * FROM set_goals WHERE set_id = ?').bind(setResult.id).all()
   const { results: inventory } = await c.env.DB.prepare('SELECT * FROM set_inventory WHERE set_id = ?').bind(setResult.id).all()
-  const { results: items } = await c.env.DB.prepare('SELECT * FROM items').all()
+  const { results: items } = await c.env.DB.prepare('SELECT * FROM shop_items').all()
   
   const slotUsage = {}
   const direct = findDirectMatches(items as any, goals as any, slotUsage, setResult.account_type as string)
