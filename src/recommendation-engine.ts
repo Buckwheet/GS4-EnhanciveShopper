@@ -136,3 +136,49 @@ export function findDirectMatches(
   return recommendations.sort((a, b) => a.totalCost - b.totalCost).slice(0, 10)
 }
 
+// Find nugget conversion opportunities (non-wearable items)
+export function findNuggetOpportunities(
+  items: ShopItem[],
+  goals: Goal[],
+  slotUsage: SlotUsage,
+  accountType: string = 'F2P'
+): Recommendation[] {
+  const recommendations: Recommendation[] = []
+  
+  for (const item of items) {
+    if (!item.available || item.slot) continue // Only non-wearable items
+    
+    const goalsMatched = calculateGoalCoverage(item, goals)
+    if (goalsMatched.length === 0) continue
+    
+    const totalCost = calculateTotalCost(item, 'nugget')
+    
+    // Check if total cost is within any goal's max cost
+    let withinBudget = false
+    for (const goal of goals) {
+      if (goalsMatched.includes(goal.stat)) {
+        if (!goal.max_cost || totalCost <= goal.max_cost) {
+          withinBudget = true
+          break
+        }
+      }
+    }
+    
+    if (!withinBudget) continue
+    
+    recommendations.push({
+      type: 'nugget',
+      item,
+      totalCost,
+      goalsMatched,
+      explanation: `Convert with nugget (+25M) for ${goalsMatched.join(', ')}`
+    })
+  }
+  
+  // Sort by value/cost ratio and return top 10
+  return recommendations
+    .sort((a, b) => (b.goalsMatched.length / b.totalCost) - (a.goalsMatched.length / a.totalCost))
+    .slice(0, 10)
+}
+
+
