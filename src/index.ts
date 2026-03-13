@@ -2067,15 +2067,21 @@ app.get('/', (c) => {
       document.getElementById('goalBoost').value = ''
       document.getElementById('goalMaxCost').value = ''
       document.querySelectorAll('input[name="goalSlot"]').forEach(cb => cb.checked = false)
+      document.getElementById('nuggetPriceOption').classList.add('hidden')
+      document.getElementById('goalNuggetPrice').checked = false
       document.getElementById('addGoalForm').classList.add('hidden')
       
       await loadGoalsForSet()
       
-      if (filterByGoalsEnabled && currentUser) {
+      // Reload user goals and re-apply filter if enabled
+      if (currentUser && currentSetId) {
         const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/goals')
         const data = await response.json()
         userGoals = data.goals.filter(g => g.goal_set_name === currentGoalSet)
-        filterItems()
+        
+        if (filterByGoalsEnabled) {
+          filterItems()
+        }
       }
     })
 
