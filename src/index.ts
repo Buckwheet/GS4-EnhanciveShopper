@@ -2004,7 +2004,7 @@ app.get('/', (c) => {
 
     document.getElementById('goalNuggetCheckbox').addEventListener('change', (e) => {
       const priceOption = document.getElementById('nuggetPriceOption')
-      if ((e.target as HTMLInputElement).checked) {
+      if (e.target.checked) {
         priceOption.classList.remove('hidden')
       } else {
         priceOption.classList.add('hidden')
