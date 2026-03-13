@@ -109,7 +109,7 @@ export function parseSkills(text: string) {
   
   for (const line of lines) {
     // Match skill lines with ranks
-    const match = line.match(/^  (.+?)\.*\|\s+\d+\s+(\d+)/)
+    const match = line.match(/^ {2}(.+?)\.*\|\s+\d+\s+(\d+)/)
     if (match) {
       const skillName = match[1].trim()
       const ranks = parseInt(match[2])

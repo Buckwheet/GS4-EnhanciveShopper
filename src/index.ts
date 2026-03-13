@@ -1683,7 +1683,7 @@ app.get('/', (c) => {
         const count = slotCounts[slot] || 0
         const limit = limits[slot]
         const color = count >= limit ? 'text-red-600' : count >= limit * 0.8 ? 'text-yellow-600' : 'text-green-600'
-        return '<span class="' + color + '">' + slot.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + ': ' + count + '/' + limit + '</span>'
+        return '<span class="' + color + '">' + slot.replace(/_/g, ' ').replace(/\bw/g, l => l.toUpperCase()) + ': ' + count + '/' + limit + '</span>'
       }).join(' | ')
       slotUsageDiv.innerHTML = '<strong>Slot Usage:</strong> ' + usageText
       
@@ -1789,7 +1789,7 @@ app.get('/', (c) => {
         const count = slotCounts[slot] || 0
         const limit = limits[slot]
         const color = count >= limit ? 'text-red-600' : count >= limit * 0.8 ? 'text-yellow-600' : 'text-green-600'
-        return '<span class="' + color + ' font-medium">' + slot.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) + ': ' + count + '/' + limit + '</span>'
+        return '<span class="' + color + ' font-medium">' + slot.replace(/_/g, ' ').replace(/\bw/g, l => l.toUpperCase()) + ': ' + count + '/' + limit + '</span>'
       }).join(' | ')
       
       if (usageText) {
@@ -2236,7 +2236,7 @@ app.get('/', (c) => {
           
           // Handle skill ranks
           if (ability.includes('ranks')) {
-            const skillName = enh.ability.replace(/\s+ranks$/i, '').trim()
+            const skillName = enh.ability.replace(/s+ranks$/i, '').trim()
             const currentRanks = currentCharacterSkills ? (currentCharacterSkills[skillName] || 0) : 0
             sum += calculateSkillRankBonus(currentRanks, enh.boost)
             continue
@@ -2274,7 +2274,7 @@ app.get('/', (c) => {
           
           // Handle skill ranks
           if (ability.includes('ranks')) {
-            const skillName = enh.ability.replace(/\s+ranks$/i, '').trim()
+            const skillName = enh.ability.replace(/s+ranks$/i, '').trim()
             const currentRanks = currentCharacterSkills ? (currentCharacterSkills[skillName] || 0) : 0
             sum += calculateSkillRankBonus(currentRanks, enh.boost)
             continue
