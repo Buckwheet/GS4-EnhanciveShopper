@@ -3168,7 +3168,7 @@ app.post('/api/test-dm', async (c) => {
       body: JSON.stringify({ recipient_id: discord_id }),
     })
 
-    const channel = await sent.json()
+    const channel = await sent.json() as { id?: string }
     console.log('Channel response:', channel)
 
     if (!channel.id) {
