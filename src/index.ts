@@ -3407,6 +3407,20 @@ app.delete('/api/inventory/:id', async (c) => {
   return c.json({ success: true })
 })
 
+app.put('/api/inventory/:id/irreplaceable', async (c) => {
+  const id = c.req.param('id')
+  const { is_irreplaceable } = await c.req.json()
+  
+  if (typeof is_irreplaceable !== 'boolean') {
+    return c.json({ error: 'is_irreplaceable must be a boolean' }, 400)
+  }
+  
+  await c.env.DB.prepare('UPDATE user_inventory SET is_irreplaceable = ? WHERE id = ?')
+    .bind(is_irreplaceable ? 1 : 0, id).run()
+  
+  return c.json({ success: true })
+})
+
 // Migration endpoint - visit once to migrate to new schema
 app.get('/api/migrate-schema', async (c) => {
   try {
