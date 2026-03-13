@@ -2078,9 +2078,17 @@ app.get('/', (c) => {
         const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/goals')
         const data = await response.json()
         console.log('All goals from API:', data.goals)
+        console.log('Goal set names:', data.goals.map(g => g.goal_set_name))
         console.log('Current goal set:', currentGoalSet)
         userGoals = data.goals.filter(g => g.goal_set_name === currentGoalSet)
         console.log('Filtered goals:', userGoals)
+        
+        // If no goals match, use all goals from this set
+        if (userGoals.length === 0 && data.goals.length > 0) {
+          console.log('No goals matched filter, using all goals from set')
+          userGoals = data.goals
+        }
+        
         console.log('Filter enabled:', filterByGoalsEnabled)
         
         if (filterByGoalsEnabled) {
