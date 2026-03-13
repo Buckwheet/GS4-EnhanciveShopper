@@ -3019,7 +3019,7 @@ app.post('/api/ai-chat', async (c) => {
   const summaryResponse = await fetch(`${c.req.url.replace('/api/ai-chat', '/api/summary')}?discord_id=${discord_id}&goal_set_name=Default`)
   let statsContext = ''
   if (summaryResponse.ok) {
-    const summaryData = await summaryResponse.json()
+    const summaryData = await summaryResponse.json() as { stats?: Record<string, any>; skills?: Record<string, any> }
     const needs = []
     for (const stat in summaryData.stats) {
       const s = summaryData.stats[stat]
