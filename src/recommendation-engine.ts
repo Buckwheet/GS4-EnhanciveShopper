@@ -175,6 +175,19 @@ export function findNuggetOpportunities(
     const goalsMatched = calculateGoalCoverage(item, goals)
     if (goalsMatched.length === 0) continue
     
+    // Check if any matched goal allows nuggets
+    let allowsNugget = false
+    for (const goal of goals) {
+      if (goalsMatched.includes(goal.stat)) {
+        if (!goal.preferred_slots || goal.preferred_slots.includes('nugget')) {
+          allowsNugget = true
+          break
+        }
+      }
+    }
+    
+    if (!allowsNugget) continue
+    
     const totalCost = calculateTotalCost(item, 'nugget')
     
     // Check if total cost is within any goal's max cost

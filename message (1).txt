@@ -1,0 +1,586 @@
+---
+character: Tijay
+generated: '2026-03-13 12:32:07'
+worn_items:
+- name: a gilded locus
+  id: '185391909'
+  charge_info:
+    type: timed
+    expiry: 8/19/2029 19:15:37 CDT
+  location: Elsewhere
+- name: an ornate vultite helm
+  id: '185391910'
+  charge_info:
+    type: timed
+    expiry: 2/11/2027 15:03:44 CST
+  location: On your head
+- name: an etched imflass barrette
+  id: '185391911'
+  charge_info:
+    type: counter
+    current: 2
+    max: 18
+  location: Placed in your hair
+- name: a turquoise-set gold earcuff
+  id: '185391912'
+  charge_info:
+    type: timed
+    expiry: 1/30/2027 11:21:24 CST
+  location: Hung from a single ear
+- name: a vultite bracelet
+  id: '185391913'
+  charge_info:
+    type: timed
+    expiry: 2/11/2027 15:03:06 CST
+  location: Attached to your wrist
+- name: a thick mithril wristchain
+  id: '185391914'
+  charge_info:
+    type: counter
+    current: 0
+    max: 17
+  location: Attached to your wrist
+- name: a bone and gornar-linked chain
+  id: '185391915'
+  charge_info:
+    type: timed
+    expiry: 1/26/2027 20:38:22 CST
+  location: Around your waist
+- name: some cotton socks
+  id: '185391916'
+  charge_info:
+    type: counter
+    current: 0
+    max: 11
+  location: Slipped on your feet
+- name: a pair of carmiln earrings
+  id: '185391917'
+  charge_info:
+    type: counter
+    current: 2
+    max: 20
+  location: Hung from both ears
+- name: a rolaren ring
+  id: '185391918'
+  charge_info:
+    type: counter
+    current: 0
+    max: 20
+  location: On your fingers
+- name: some steel handflowers
+  id: '185391919'
+  charge_info:
+    type: timed
+    expiry: 3/1/2027 15:50:17 CST
+  location: Slipped over your hands
+- name: a villswood anklet
+  id: '185391920'
+  charge_info:
+    type: timed
+    expiry: 2/11/2027 14:54:54 CST
+  location: Attached to your ankle
+- name: some steel-riveted pants
+  id: '185391921'
+  charge_info:
+    type: timed
+    expiry: 1/27/2027 19:11:49 CST
+  location: Pulled over your legs
+- name: an oval bloodstone pendant
+  id: '185391922'
+  charge_info:
+  location: Hung around your neck
+- name: an enruned copper necklace
+  id: '185391924'
+  charge_info:
+    type: timed
+    expiry: 4/12/2026 11:18:42 CDT
+  location: Hung around your neck
+- name: a black ora pectoral
+  id: '185392045'
+  charge_info:
+    type: timed
+    expiry: 3/1/2027 15:49:37 CST
+  location: Put over your front
+- name: an imflass-threaded undershirt
+  id: '185392051'
+  charge_info:
+    type: timed
+    expiry: 2/11/2027 14:59:09 CST
+  location: Slipped into, on your chest
+- name: a pair of villswood armbands
+  id: '185392053'
+  charge_info:
+    type: timed
+    expiry: 2/11/2027 15:02:10 CST
+  location: Attached to your arms
+- name: a step-cut blue sapphire earcuff
+  id: '185392055'
+  charge_info:
+    type: timed
+    expiry: 1/30/2027 11:22:01 CST
+  location: Hung from a single ear
+- name: an ora aventail
+  id: '185392070'
+  charge_info:
+    type: counter
+    current: 5
+    max: 41
+  location: Hung around your neck
+- name: a ruby-inset gold clasp
+  id: '185392071'
+  charge_info:
+    type: counter
+    current: 5
+    max: 20
+  location: As a pin
+- name: a vultite ring
+  id: '185392074'
+  charge_info:
+    type: timed
+    expiry: 2/11/2027 14:53:58 CST
+  location: On your fingers
+- name: a pair of hoarbeam earrings
+  id: '185392075'
+  charge_info:
+    type: timed
+    expiry: 2/11/2027 14:52:34 CST
+  location: Hung from both ears
+- name: a gleaming golden charm
+  id: '185392079'
+  charge_info:
+    type: timed
+    expiry: 3/8/2027 07:22:05 CST
+  location: As a pin
+- name: a veniom-bound vruul skin badge
+  id: '185392083'
+  charge_info:
+    type: timed
+    expiry: 3/20/2027 15:35:25 CDT
+  location: As a pin
+- name: a mossbark pin
+  id: '185392085'
+  charge_info:
+    type: timed
+    expiry: 2/11/2027 14:53:34 CST
+  location: As a pin
+- name: some gleaming glaes leg greaves
+  id: '185392151'
+  charge_info:
+    type: counter
+    current: 15
+    max: 43
+  location: Attached to your legs
+- name: an open magical tome tattoo
+  id: '185392152'
+  charge_info:
+    type: timed
+    expiry: 2/14/2027 10:44:43 CST
+- name: a clenched fist tattoo
+  id: '185392153'
+  charge_info:
+    type: counter
+    current: 7
+    max: 100
+    hidden: true
+enhancives_by_location:
+  Elsewhere:
+  - id: '185391909'
+    name: a gilded locus
+  On your head:
+  - id: '185391910'
+    name: an ornate vultite helm
+  Placed in your hair:
+  - id: '185391911'
+    name: an etched imflass barrette
+  Hung from a single ear:
+  - id: '185391912'
+    name: a turquoise-set gold earcuff
+  - id: '185392055'
+    name: a step-cut blue sapphire earcuff
+  Attached to your wrist:
+  - id: '185391913'
+    name: a vultite bracelet
+  - id: '185391914'
+    name: a thick mithril wristchain
+  Around your waist:
+  - id: '185391915'
+    name: a bone and gornar-linked chain
+  Slipped on your feet:
+  - id: '185391916'
+    name: some cotton socks
+  Hung from both ears:
+  - id: '185391917'
+    name: a pair of carmiln earrings
+  - id: '185392075'
+    name: a pair of hoarbeam earrings
+  On your fingers:
+  - id: '185391918'
+    name: a rolaren ring
+  - id: '185392074'
+    name: a vultite ring
+  Slipped over your hands:
+  - id: '185391919'
+    name: some steel handflowers
+  Attached to your ankle:
+  - id: '185391920'
+    name: a villswood anklet
+  Pulled over your legs:
+  - id: '185391921'
+    name: some steel-riveted pants
+  Hung around your neck:
+  - id: '185391922'
+    name: an oval bloodstone pendant
+  - id: '185391924'
+    name: an enruned copper necklace
+  - id: '185392070'
+    name: an ora aventail
+  Put over your front:
+  - id: '185392045'
+    name: a black ora pectoral
+  Slipped into, on your chest:
+  - id: '185392051'
+    name: an imflass-threaded undershirt
+  Attached to your arms:
+  - id: '185392053'
+    name: a pair of villswood armbands
+  As a pin:
+  - id: '185392071'
+    name: a ruby-inset gold clasp
+  - id: '185392079'
+    name: a gleaming golden charm
+  - id: '185392083'
+    name: a veniom-bound vruul skin badge
+  - id: '185392085'
+    name: a mossbark pin
+  Attached to your legs:
+  - id: '185392151'
+    name: some gleaming glaes leg greaves
+totals:
+  stats:
+    Strength (STR):
+      current: 6
+      cap: 40
+      sources:
+      - amount: 2
+        item_id: '185391915'
+        item_name: a bone and gornar-linked chain
+      - amount: 4
+        item_id: '185391912'
+        item_name: a turquoise-set gold earcuff
+    Dexterity (DEX):
+      current: 16
+      cap: 40
+      sources:
+      - amount: 14
+        item_id: '185391913'
+        item_name: a vultite bracelet
+      - amount: 2
+        item_id: '185391910'
+        item_name: an ornate vultite helm
+    Agility (AGI):
+      current: 14
+      cap: 40
+      sources:
+      - amount: 14
+        item_id: '185392051'
+        item_name: an imflass-threaded undershirt
+    Discipline (DIS):
+      current: 10
+      cap: 40
+      sources:
+      - amount: 3
+        item_id: '185391920'
+        item_name: a villswood anklet
+      - amount: 7
+        item_id: '185392045'
+        item_name: a black ora pectoral
+    Aura (AUR):
+      current: 2
+      cap: 40
+      sources:
+      - amount: 2
+        item_id: '185391911'
+        item_name: an etched imflass barrette
+    Logic (LOG):
+      current: 51
+      cap: 50
+      sources:
+      - amount: 8
+        item_id: '185391921'
+        item_name: some steel-riveted pants
+      - amount: 12
+        item_id: '185392045'
+        item_name: a black ora pectoral
+      - amount: 11
+        item_id: '185392053'
+        item_name: a pair of villswood armbands
+      - amount: 8
+        item_id: '185392055'
+        item_name: a step-cut blue sapphire earcuff
+      - amount: 2
+        item_id: '185392071'
+        item_name: a ruby-inset gold clasp
+      - amount: 10
+        item_id: '185392151'
+        item_name: some gleaming glaes leg greaves
+    Intuition (INT):
+      current: 11
+      cap: 40
+      sources:
+      - amount: 11
+        item_id: '185391915'
+        item_name: a bone and gornar-linked chain
+    Wisdom (WIS):
+      current: 41
+      cap: 40
+      sources:
+      - amount: 8
+        item_id: '185391911'
+        item_name: an etched imflass barrette
+      - amount: 3
+        item_id: '185391912'
+        item_name: a turquoise-set gold earcuff
+      - amount: 6
+        item_id: '185391911'
+        item_name: an etched imflass barrette
+      - amount: 5
+        item_id: '185392079'
+        item_name: a gleaming golden charm
+      - amount: 9
+        item_id: '185391913'
+        item_name: a vultite bracelet
+      - amount: 10
+        item_id: '185392153'
+        item_name: a clenched fist tattoo
+    Influence (INF):
+      current: 40
+      cap: 40
+      sources:
+      - amount: 12
+        item_id: '185391919'
+        item_name: some steel handflowers
+      - amount: 12
+        item_id: '185391915'
+        item_name: a bone and gornar-linked chain
+      - amount: 5
+        item_id: '185392079'
+        item_name: a gleaming golden charm
+      - amount: 8
+        item_id: '185391921'
+        item_name: some steel-riveted pants
+      - amount: 3
+        item_id: '185391919'
+        item_name: some steel handflowers
+  skills:
+    Elemental Mana Control Ranks:
+      current: 4
+      cap: 50
+      sources:
+      - amount: 4
+        item_id: '185391919'
+        item_name: some steel handflowers
+    Sorcerous Lore - Demonology Ranks:
+      current: 2
+      cap: 50
+      sources:
+      - amount: 2
+        item_id: '185391919'
+        item_name: some steel handflowers
+    Shield Use Bonus:
+      current: 2
+      cap: 50
+      sources:
+      - amount: 2
+        item_id: '185392055'
+        item_name: a step-cut blue sapphire earcuff
+    Arcane Symbols Bonus:
+      current: 15
+      cap: 50
+      sources:
+      - amount: 5
+        item_id: '185392051'
+        item_name: an imflass-threaded undershirt
+      - amount: 4
+        item_id: '185392055'
+        item_name: a step-cut blue sapphire earcuff
+      - amount: 6
+        item_id: '185392070'
+        item_name: an ora aventail
+    Spell Aiming Bonus:
+      current: 48
+      cap: 50
+      sources:
+      - amount: 11
+        item_id: '185392051'
+        item_name: an imflass-threaded undershirt
+      - amount: 3
+        item_id: '185392071'
+        item_name: a ruby-inset gold clasp
+      - amount: 5
+        item_id: '185392075'
+        item_name: a pair of hoarbeam earrings
+      - amount: 5
+        item_id: '185391924'
+        item_name: an enruned copper necklace
+      - amount: 10
+        item_id: '185392083'
+        item_name: a veniom-bound vruul skin badge
+      - amount: 10
+        item_id: '185391920'
+        item_name: a villswood anklet
+      - amount: 4
+        item_id: '185391911'
+        item_name: an etched imflass barrette
+    Elemental Mana Control Bonus:
+      current: 12
+      cap: 50
+      sources:
+      - amount: 12
+        item_id: '185391917'
+        item_name: a pair of carmiln earrings
+    Spirit Mana Control Bonus:
+      current: 7
+      cap: 50
+      sources:
+      - amount: 7
+        item_id: '185391920'
+        item_name: a villswood anklet
+    Elemental Lore - Air Bonus:
+      current: 1
+      cap: 50
+      sources:
+      - amount: 1
+        item_id: '185391909'
+        item_name: a gilded locus
+    Spiritual Lore - Blessings Bonus:
+      current: 50
+      cap: 50
+      sources:
+      - amount: 1
+        item_id: '185391924'
+        item_name: an enruned copper necklace
+      - amount: 6
+        item_id: '185392075'
+        item_name: a pair of hoarbeam earrings
+      - amount: 10
+        item_id: '185392074'
+        item_name: a vultite ring
+      - amount: 9
+        item_id: '185392053'
+        item_name: a pair of villswood armbands
+      - amount: 10
+        item_id: '185392083'
+        item_name: a veniom-bound vruul skin badge
+      - amount: 10
+        item_id: '185392085'
+        item_name: a mossbark pin
+      - amount: 4
+        item_id: '185392070'
+        item_name: an ora aventail
+    Spiritual Lore - Religion Bonus:
+      current: 42
+      cap: 50
+      sources:
+      - amount: 10
+        item_id: '185392083'
+        item_name: a veniom-bound vruul skin badge
+      - amount: 9
+        item_id: '185391909'
+        item_name: a gilded locus
+      - amount: 11
+        item_id: '185391910'
+        item_name: an ornate vultite helm
+      - amount: 6
+        item_id: '185392075'
+        item_name: a pair of hoarbeam earrings
+      - amount: 6
+        item_id: '185392070'
+        item_name: an ora aventail
+    First Aid Bonus:
+      current: 4
+      cap: 50
+      sources:
+      - amount: 4
+        item_id: '185391924'
+        item_name: an enruned copper necklace
+  resources:
+    Max Mana:
+      current: 78
+      cap: 600
+      sources:
+      - amount: 20
+        item_id: '185391909'
+        item_name: a gilded locus
+      - amount: 4
+        item_id: '185391910'
+        item_name: an ornate vultite helm
+      - amount: 50
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 4
+        item_id: '185392079'
+        item_name: a gleaming golden charm
+    Max Health:
+      current: 108
+      cap: 300
+      sources:
+      - amount: 100
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 6
+        item_id: '185392045'
+        item_name: a black ora pectoral
+      - amount: 2
+        item_id: '185392079'
+        item_name: a gleaming golden charm
+    Max Stamina:
+      current: 25
+      cap: 300
+      sources:
+      - amount: 25
+        item_id:
+        item_name: an unknown source (needs loresong)
+    Mana Recovery:
+      current: 37
+      cap: 50
+      sources:
+      - amount: 5
+        item_id: '185391920'
+        item_name: a villswood anklet
+      - amount: 10
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 20
+        item_id: '185391909'
+        item_name: a gilded locus
+      - amount: 2
+        item_id: '185392055'
+        item_name: a step-cut blue sapphire earcuff
+    Health Recovery:
+      current: 20
+      cap: 50
+      sources:
+      - amount: 20
+        item_id:
+        item_name: an unknown source (needs loresong)
+    Stamina Recovery:
+      current: 15
+      cap: 50
+      sources:
+      - amount: 10
+        item_id: '185391917'
+        item_name: a pair of carmiln earrings
+      - amount: 5
+        item_id:
+        item_name: an unknown source (needs loresong)
+  self_knowledge:
+    '515':
+    - id: '185392152'
+      name: an open magical tome tattoo
+    '605':
+    - id: '185392152'
+      name: an open magical tome tattoo
+  summary:
+    Enhancive Items: '26'
+    Enhancive Properties: '72'
+    Total Enhancive Amount: '661'
