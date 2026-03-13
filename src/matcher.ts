@@ -63,7 +63,7 @@ export async function checkMatches(env: Env, newItems: any[]) {
         if (notificationsEnabled) {
           console.log(`Sending alert for item ${item.id} to ${character.discord_id}`)
           const message = formatItemAlert(item)
-          sent = await sendDiscordDM(env.DISCORD_BOT_TOKEN, character.discord_id, message)
+          sent = await sendDiscordDM(env.DISCORD_BOT_TOKEN, character.discord_id as string, message)
           console.log(`Alert sent: ${sent}`)
         } else {
           console.log(`Skipping Discord DM for ${character.discord_id} - notifications disabled`)

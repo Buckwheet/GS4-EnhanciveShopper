@@ -31,7 +31,7 @@ export async function scrapeEnhancives(): Promise<EnhanciveItem[]> {
               items.push({
                 id: item.id,
                 name: item.name,
-                town: data.town,
+                town: data.town || 'Unknown',
                 shop: shop.shop_owner || 'Unknown',
                 cost: details.cost || null,
                 enchant: details.enchant || null,
