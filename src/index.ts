@@ -407,14 +407,48 @@ app.get('/', (c) => {
             <button id="closeMatchesBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
           </div>
           
-          <div class="mb-6">
+          <!-- Match Type Tabs -->
+          <div class="flex border-b mb-4">
+            <button class="match-tab px-4 py-2 font-medium border-b-2 border-blue-600 text-blue-600" data-tab="matchesAvailable">Available</button>
+            <button class="match-tab px-4 py-2 font-medium text-gray-500 hover:text-gray-700" data-tab="matchesSold">Sold</button>
+            <button class="match-tab px-4 py-2 font-medium text-gray-500 hover:text-gray-700" data-tab="recDirect">Direct</button>
+            <button class="match-tab px-4 py-2 font-medium text-gray-500 hover:text-gray-700" data-tab="recNuggets">Nuggets</button>
+            <button class="match-tab px-4 py-2 font-medium text-gray-500 hover:text-gray-700" data-tab="recSwatches">Swatches</button>
+            <button class="match-tab px-4 py-2 font-medium text-gray-500 hover:text-gray-700" data-tab="recSwaps">Swaps</button>
+          </div>
+          
+          <div id="matchesAvailable" class="match-panel">
             <h3 class="text-lg font-semibold mb-2 text-green-700">Available Now</h3>
             <div id="availableMatches" class="space-y-2"></div>
           </div>
           
-          <div>
+          <div id="matchesSold" class="match-panel hidden">
             <h3 class="text-lg font-semibold mb-2 text-gray-600">Recently Sold (Last 72 Hours)</h3>
             <div id="soldMatches" class="space-y-2"></div>
+          </div>
+          
+          <div id="recDirect" class="match-panel hidden">
+            <h3 class="text-lg font-semibold mb-2 text-blue-700">Direct Matches</h3>
+            <p class="text-sm text-gray-500 mb-2">Items that fit your goals and available slots</p>
+            <div id="directRecList" class="space-y-2"></div>
+          </div>
+          
+          <div id="recNuggets" class="match-panel hidden">
+            <h3 class="text-lg font-semibold mb-2 text-purple-700">Nugget Opportunities</h3>
+            <p class="text-sm text-gray-500 mb-2">Non-wearable items worth converting (+25M silver)</p>
+            <div id="nuggetRecList" class="space-y-2"></div>
+          </div>
+          
+          <div id="recSwatches" class="match-panel hidden">
+            <h3 class="text-lg font-semibold mb-2 text-orange-700">Swatch Opportunities</h3>
+            <p class="text-sm text-gray-500 mb-2">Wrong-slot items worth moving (+25M silver)</p>
+            <div id="swatchRecList" class="space-y-2"></div>
+          </div>
+          
+          <div id="recSwaps" class="match-panel hidden">
+            <h3 class="text-lg font-semibold mb-2 text-red-700">Inventory Swaps</h3>
+            <p class="text-sm text-gray-500 mb-2">Replace existing items with better alternatives</p>
+            <div id="swapRecList" class="space-y-2"></div>
           </div>
         </div>
       </div>
@@ -1924,6 +1958,47 @@ app.get('/', (c) => {
     document.getElementById('closeMatchesBtn').addEventListener('click', () => {
       document.getElementById('myMatchesModal').classList.add('hidden')
     })
+
+    // Match tab switching
+    document.querySelectorAll('.match-tab').forEach(tab => {
+      tab.addEventListener('click', async (e) => {
+        const target = e.target as HTMLElement
+        const tabName = target.dataset.tab
+        
+        document.querySelectorAll('.match-tab').forEach(t => {
+          t.classList.remove('border-blue-600', 'text-blue-600')
+          t.classList.add('text-gray-500')
+        })
+        target.classList.add('border-blue-600', 'text-blue-600')
+        target.classList.remove('text-gray-500')
+        
+        document.querySelectorAll('.match-panel').forEach(p => p.classList.add('hidden'))
+        document.getElementById(tabName).classList.remove('hidden')
+        
+        if (tabName.startsWith('rec') && !document.getElementById(tabName).dataset.loaded) {
+          await loadRecommendations()
+          document.getElementById(tabName).dataset.loaded = 'true'
+        }
+      })
+    })
+
+    async function loadRecommendations() {
+      if (!currentUser || !currentSetName) return
+      
+      const response = await fetch(API_BASE + '/api/recommendations/' + currentUser.id + '/' + encodeURIComponent(currentSetName))
+      const data = await response.json()
+      
+      const renderRec = (rec) => {
+        const enhs = JSON.parse(rec.item.enhancives_json)
+        const enhText = enhs.map(e => '+' + e.boost + ' ' + e.ability).join(', ')
+        return '<div class="p-3 border rounded bg-white"><div class="font-semibold">' + rec.item.item_name + '<\/div><div class="text-sm text-gray-600">Cost: ' + rec.totalCost.toLocaleString() + ' silvers<\/div><div class="text-sm text-gray-700">' + enhText + '<\/div><div class="text-xs text-blue-600 mt-1">' + rec.explanation + '<\/div><\/div>'
+      }
+      
+      document.getElementById('directRecList').innerHTML = data.direct?.length ? data.direct.map(renderRec).join('') : '<p class="text-gray-500">No direct matches found<\/p>'
+      document.getElementById('nuggetRecList').innerHTML = data.nuggets?.length ? data.nuggets.map(renderRec).join('') : '<p class="text-gray-500">No nugget opportunities<\/p>'
+      document.getElementById('swatchRecList').innerHTML = data.swatches?.length ? data.swatches.map(renderRec).join('') : '<p class="text-gray-500">No swatch opportunities<\/p>'
+      document.getElementById('swapRecList').innerHTML = data.swaps?.length ? data.swaps.map(renderRec).join('') : '<p class="text-gray-500">No swap recommendations<\/p>'
+    }
 
     document.getElementById('aiChatBtn').addEventListener('click', () => {
       const saved = localStorage.getItem('chatHistory_' + currentUser.id)
