@@ -1837,6 +1837,10 @@ app.get('/', (c) => {
     }
 
     document.getElementById('myMatchesBtn').addEventListener('click', async () => {
+      if (!currentUser) {
+        alert('Please log in first')
+        return
+      }
       const response = await fetch(API_BASE + '/api/my-matches?discord_id=' + currentUser.id)
       const data = await response.json()
       
