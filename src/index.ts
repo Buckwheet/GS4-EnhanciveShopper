@@ -1499,6 +1499,37 @@ app.get('/', (c) => {
       }
       if (currentItem) items.push(currentItem)
       
+      const enhMap = {}
+      let inTotals = false
+      let currentStat = null
+      let pendingAmount = null
+      
+      for (const line of lines) {
+        if (line.includes('totals:')) { inTotals = true; continue }
+        if (!inTotals) continue
+        
+        if (line.match(/^    [A-Z]/)) {
+          currentStat = line.split(':')[0].trim()
+          continue
+        }
+        
+        if (line.includes('amount:') && currentStat) {
+          const amountMatch = line.match(/amount:\s*(\d+)/)
+          if (amountMatch) pendingAmount = parseInt(amountMatch[1])
+        }
+        
+        if (line.includes('item_name:') && pendingAmount && currentStat) {
+          const nameMatch = line.match(/item_name:\s*(.+)/)
+          if (nameMatch) {
+            const fullName = nameMatch[1].trim()
+            const cleanName = fullName.replace(/<[^>]+>/g, '').trim()
+            if (!enhMap[cleanName]) enhMap[cleanName] = []
+            enhMap[cleanName].push({ ability: currentStat, boost: pendingAmount })
+            pendingAmount = null
+          }
+        }
+      }
+      
       const slotMap = {
         'locus': 'elsewhere', 'helm': 'head', 'barrette': 'pin', 'earcuff': 'ear',
         'bracelet': 'wrist', 'wristchain': 'wrist', 'chain': 'neck', 'socks': 'socks',
@@ -1518,13 +1549,15 @@ app.get('/', (c) => {
           continue
         }
         
+        const enhancives = enhMap[item.name] || []
+        
         const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/inventory', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             item_name: item.name,
             slot: slot,
-            enhancives_json: '[]',
+            enhancives_json: JSON.stringify(enhancives),
             is_permanent: true
           })
         })
