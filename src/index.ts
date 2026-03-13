@@ -2570,7 +2570,7 @@ app.get('/api/auth/discord/callback', async (c) => {
       }),
     })
 
-    const tokens = await tokenResponse.json()
+    const tokens = await tokenResponse.json() as { access_token?: string }
     console.log('Token response:', tokens)
     
     if (!tokens.access_token) {
@@ -2581,12 +2581,12 @@ app.get('/api/auth/discord/callback', async (c) => {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
     })
 
-    const discordUser = await userResponse.json()
+    const discordUser = await userResponse.json() as { id?: string; username?: string }
     console.log('Discord user:', discordUser)
 
     await c.env.DB.prepare(
       'INSERT INTO users (discord_id, discord_username, created_at) VALUES (?, ?, ?) ON CONFLICT(discord_id) DO UPDATE SET discord_username = ?, last_login = ?'
-    ).bind(discordUser.id, discordUser.username, new Date().toISOString(), discordUser.username, new Date().toISOString()).run()
+    ).bind(discordUser.id as string, discordUser.username as string, new Date().toISOString(), discordUser.username as string, new Date().toISOString()).run()
 
     return c.html(`
       <html>
