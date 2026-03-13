@@ -573,6 +573,13 @@ app.get('/', (c) => {
     let useAdvancedSkillCalc = false
     let chatHistory = []
 
+    // Helper to safely add event listeners
+    function addListener(id, event, handler) {
+      const el = document.getElementById(id)
+      if (el) el.addEventListener(event, handler)
+      else console.warn('Element not found:', id)
+    }
+
     // Location swatch slot change data
     // Source: https://gswiki.play.net/Item_worn_location_change
     const SWATCH_SLOTS = {
@@ -2476,12 +2483,6 @@ app.get('/', (c) => {
       filterItems()
     })
     
-    document.getElementById('includeNuggetPrice').addEventListener('change', (e) => {
-      includeNuggetPrice = e.target.checked
-      localStorage.setItem('includeNuggetPrice', includeNuggetPrice)
-      renderItems()
-    })
-    
     document.getElementById('useAdvancedSkillCalc').addEventListener('change', (e) => {
       useAdvancedSkillCalc = e.target.checked
       localStorage.setItem('useAdvancedSkillCalc', useAdvancedSkillCalc)
@@ -2507,11 +2508,6 @@ app.get('/', (c) => {
       filterPermanentOnly = true
     }
     
-    const savedNuggetPrice = localStorage.getItem('includeNuggetPrice')
-    if (savedNuggetPrice === 'true') {
-      document.getElementById('includeNuggetPrice').checked = true
-      includeNuggetPrice = true
-    }
     
     const savedAdvancedSkill = localStorage.getItem('useAdvancedSkillCalc')
     if (savedAdvancedSkill === 'true') {
