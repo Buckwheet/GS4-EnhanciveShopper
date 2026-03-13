@@ -1985,7 +1985,11 @@ app.get('/', (c) => {
         alert('Please log in first')
         return
       }
-      const response = await fetch(API_BASE + '/api/my-matches?discord_id=' + currentUser.id)
+      if (!currentSetName) {
+        alert('Please select a character set first')
+        return
+      }
+      const response = await fetch(API_BASE + '/api/my-matches?discord_id=' + currentUser.id + '&set_name=' + encodeURIComponent(currentSetName))
       const data = await response.json()
       
       const availableDiv = document.getElementById('availableMatches')
@@ -2072,12 +2076,27 @@ app.get('/', (c) => {
       
       const btn = document.getElementById('recalculateBtn')
       btn.disabled = true
-      btn.textContent = 'Calculating...'
+      
+      const steps = ['Clearing cache...', 'Loading goals...', 'Analyzing items...', 'Done!']
+      let stepIndex = 0
+      
+      const updateProgress = () => {
+        btn.textContent = steps[stepIndex]
+        stepIndex++
+      }
+      
+      updateProgress()
+      await new Promise(r => setTimeout(r, 300))
       
       await fetch(API_BASE + '/api/recommendations/' + currentUser.id + '/' + encodeURIComponent(currentSetName), { method: 'DELETE' })
       
+      updateProgress()
+      await new Promise(r => setTimeout(r, 300))
+      
       // Clear loaded flags
       document.querySelectorAll('.match-panel[id^="rec"]').forEach(p => p.dataset.loaded = '')
+      
+      updateProgress()
       
       // Reload current tab
       await loadRecommendations()
@@ -2085,6 +2104,9 @@ app.get('/', (c) => {
       if (activeTab) {
         document.getElementById(activeTab.dataset.tab).dataset.loaded = 'true'
       }
+      
+      updateProgress()
+      await new Promise(r => setTimeout(r, 500))
       
       btn.disabled = false
       btn.textContent = 'Recalculate'
@@ -3208,9 +3230,11 @@ app.delete('/api/goals/:id', async (c) => {
 
 app.get('/api/my-matches', async (c) => {
   const discordId = c.req.query('discord_id')
+  const setName = c.req.query('set_name')
   if (!discordId) return c.json({ error: 'discord_id required' }, 400)
 
-  const { results } = await c.env.DB.prepare(`
+  // If set_name provided, filter by goals in that set
+  let query = `
     SELECT 
       a.id as alert_id,
       a.sent_at,
@@ -3219,8 +3243,17 @@ app.get('/api/my-matches', async (c) => {
     FROM alerts a
     JOIN shop_items i ON a.item_id = i.id
     WHERE a.discord_id = ?
-    ORDER BY a.sent_at DESC
-  `).bind(discordId).all()
+  `
+  const params = [discordId]
+  
+  if (setName) {
+    query += ` AND a.goal_set_name = ?`
+    params.push(setName)
+  }
+  
+  query += ` ORDER BY a.sent_at DESC`
+
+  const { results } = await c.env.DB.prepare(query).bind(...params).all()
 
   const available = results.filter((r: any) => r.available === 1)
   const recentlySold = results.filter((r: any) => r.available === 0)
