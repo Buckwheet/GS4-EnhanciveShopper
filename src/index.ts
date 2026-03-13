@@ -11,7 +11,8 @@ const app = new Hono<{ Bindings: Env }>()
 app.use('/*', cors())
 
 function countSlotUsage(items: any[], slot: string, accountType: string): number {
-  const _limit = SLOT_LIMITS[accountType as keyof typeof SLOT_LIMITS]?.[slot] || 1
+  const limits = SLOT_LIMITS[accountType as keyof typeof SLOT_LIMITS]
+  const _limit = limits ? (limits as Record<string, number>)[slot] || 1 : 1
   const count = items.filter(i => i.slot === slot).length
   return count
 }
@@ -3288,7 +3289,8 @@ app.post('/api/inventory', async (c) => {
 
   const accountType = goalData?.account_type || 'F2P'
   const slotCount = countSlotUsage(existingItems.results, slot, accountType)
-  const slotLimit = SLOT_LIMITS[accountType as keyof typeof SLOT_LIMITS]?.[slot] || 1
+  const limits = SLOT_LIMITS[accountType as keyof typeof SLOT_LIMITS]
+  const slotLimit = limits ? (limits as Record<string, number>)[slot] || 1 : 1
 
   if (slotCount >= slotLimit) {
     return c.json({ error: `Slot limit exceeded: ${slot} is ${slotCount}/${slotLimit}` }, 400)
