@@ -1853,10 +1853,12 @@ app.get('/', (c) => {
         availableDiv.innerHTML = data.available.map(item => {
           const enhs = JSON.parse(item.enhancives_json)
           const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
+          const isNugget = !item.worn || item.worn === 'N/A'
+          const displayCost = (isNugget && includeNuggetPrice) ? (item.cost || 0) + 25000000 : item.cost
           return \`
             <div class="p-3 border rounded bg-green-50">
               <div class="font-semibold">\${item.name}</div>
-              <div class="text-sm text-gray-600">\${item.town} - \${item.shop} - \${item.cost?.toLocaleString()} silvers</div>
+              <div class="text-sm text-gray-600">\${item.town} - \${item.shop} - \${displayCost?.toLocaleString()} silvers</div>
               <div class="text-sm text-gray-700">\${enhText}</div>
             </div>
           \`
@@ -1870,10 +1872,12 @@ app.get('/', (c) => {
           const enhs = JSON.parse(item.enhancives_json)
           const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
           const soldDate = new Date(item.unavailable_since).toLocaleString()
+          const isNugget = !item.worn || item.worn === 'N/A'
+          const displayCost = (isNugget && includeNuggetPrice) ? (item.cost || 0) + 25000000 : item.cost
           return \`
             <div class="p-3 border rounded bg-gray-100">
               <div class="font-semibold text-gray-600">\${item.name}</div>
-              <div class="text-sm text-gray-500">\${item.town} - \${item.shop} - \${item.cost?.toLocaleString()} silvers</div>
+              <div class="text-sm text-gray-500">\${item.town} - \${item.shop} - \${displayCost?.toLocaleString()} silvers</div>
               <div class="text-sm text-gray-600">\${enhText}</div>
               <div class="text-xs text-gray-500 mt-1">Sold: \${soldDate}</div>
             </div>
