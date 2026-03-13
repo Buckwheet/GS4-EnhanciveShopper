@@ -3746,6 +3746,13 @@ app.delete('/api/recommendations/:discord_id/:goal_set', async (c) => {
   return c.json({ success: true })
 })
 
+// Migration endpoint - run once to migrate old schema to new
+app.get('/api/migrate-old-to-new', async (c) => {
+  const { migrateToNewSchema } = await import('./migrate-to-new-schema')
+  const result = await migrateToNewSchema(c.env.DB)
+  return c.json(result)
+})
+
 // Migration endpoint - visit once to migrate to new schema
 app.get('/api/migrate-schema', async (c) => {
   try {
