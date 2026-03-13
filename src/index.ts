@@ -2757,7 +2757,7 @@ app.post('/api/sets/:id/goals', async (c) => {
     return c.json({ success: true, id: result.meta.last_row_id })
   } catch (error) {
     console.error('Error adding goal:', error)
-    return c.json({ error: error.message || 'Failed to add goal' }, 500)
+    return c.json({ error: (error as Error).message || 'Failed to add goal' }, 500)
   }
 })
 
@@ -2789,7 +2789,7 @@ app.post('/api/sets/:id/inventory', async (c) => {
     return c.json({ success: true, id: result.meta.last_row_id })
   } catch (error) {
     console.error('Error adding inventory:', error)
-    return c.json({ error: error.message || 'Failed to add item' }, 500)
+    return c.json({ error: (error as Error).message || 'Failed to add item' }, 500)
   }
 })
 
