@@ -8,7 +8,7 @@ export async function migrateToNewSchema(DB: any): Promise<{ success: boolean; m
     setsCreated: 0,
     goalsMigrated: 0,
     inventoryMigrated: 0,
-    errors: []
+    errors: [] as string[]
   }
 
   try {

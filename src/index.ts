@@ -3748,9 +3748,41 @@ app.delete('/api/recommendations/:discord_id/:goal_set', async (c) => {
 
 // Migration endpoint - run once to migrate old schema to new
 app.get('/api/migrate-old-to-new', async (c) => {
+  // First check if old tables exist
+  const tableCheck = await c.env.DB.prepare(`
+    SELECT name FROM sqlite_master WHERE type='table' AND name IN ('user_goals', 'user_inventory', 'character_sets')
+  `).all()
+  
+  if (tableCheck.results.length === 0) {
+    return c.json({
+      success: true,
+      message: 'Old tables do not exist - migration not needed or already completed',
+      oldTablesFound: []
+    })
+  }
+  
   const { migrateToNewSchema } = await import('./migrate-to-new-schema')
   const result = await migrateToNewSchema(c.env.DB)
   return c.json(result)
+})
+
+// Debug endpoint - check database schema and data
+app.get('/api/debug/schema', async (c) => {
+  const tables = await c.env.DB.prepare(`
+    SELECT name FROM sqlite_master WHERE type='table' ORDER BY name
+  `).all()
+  
+  const counts: any = {}
+  for (const table of tables.results) {
+    const tableName = (table as any).name
+    const count = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM ${tableName}`).first()
+    counts[tableName] = (count as any).count
+  }
+  
+  return c.json({
+    tables: tables.results.map((t: any) => t.name),
+    rowCounts: counts
+  })
 })
 
 // Migration endpoint - visit once to migrate to new schema
