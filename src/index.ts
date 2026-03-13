@@ -3008,7 +3008,27 @@ app.post('/api/ai-chat', async (c) => {
         try {
           const queryResult = await c.env.DB.prepare(sql).all()
           if (queryResult.results.length > 0) {
-            const itemList = queryResult.results.slice(0, 5).map((item: any) => {
+            let results = queryResult.results
+            
+            // If user asked for "highest" or "best", sort by total boost of the stat they're searching for
+            const userMessage = (messages[messages.length - 1]?.content || '').toLowerCase()
+            if (userMessage.includes('highest') || userMessage.includes('best') || userMessage.includes('most')) {
+              // Try to detect which stat they want
+              const stats = ['wisdom', 'strength', 'constitution', 'dexterity', 'agility', 'discipline', 'aura', 'logic', 'intuition', 'influence']
+              const targetStat = stats.find(s => userMessage.includes(s))
+              
+              if (targetStat) {
+                results = results.map((item: any) => {
+                  const enhs = JSON.parse(item.enhancives_json || '[]')
+                  const total = enhs
+                    .filter((e: any) => e.ability.toLowerCase().includes(targetStat))
+                    .reduce((sum: number, e: any) => sum + e.boost, 0)
+                  return { ...item, _sortValue: total }
+                }).sort((a: any, b: any) => b._sortValue - a._sortValue)
+              }
+            }
+            
+            const itemList = results.slice(0, 5).map((item: any) => {
               const enhs = JSON.parse(item.enhancives_json || '[]')
               const enhText = enhs.map((e: any) => '+' + e.boost + ' ' + e.ability).join(', ')
               return item.name + ' - ' + (item.cost ? item.cost.toLocaleString() + ' silvers' : 'unknown cost') + ' - ' + item.town + ' - ' + enhText
