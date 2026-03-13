@@ -71,7 +71,7 @@ export function calculateGoalCoverage(item: ShopItem, goals: Goal[]): string[] {
   
   for (const goal of goals) {
     for (const enh of enhancives) {
-      if (enh.ability === goal.stat && enh.boost >= goal.min_boost) {
+      if (enh.ability.toLowerCase().includes(goal.stat.toLowerCase()) && enh.boost >= goal.min_boost) {
         matched.push(goal.stat)
         break
       }
