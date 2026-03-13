@@ -2931,6 +2931,28 @@ app.delete('/api/goals/:id', async (c) => {
   return c.json({ success: true })
 })
 
+app.get('/api/my-matches', async (c) => {
+  const discordId = c.req.query('discord_id')
+  if (!discordId) return c.json({ error: 'discord_id required' }, 400)
+
+  const { results } = await c.env.DB.prepare(`
+    SELECT 
+      a.id as alert_id,
+      a.sent_at,
+      a.delivered,
+      i.*
+    FROM alerts a
+    JOIN shop_items i ON a.item_id = i.id
+    WHERE a.discord_id = ?
+    ORDER BY a.sent_at DESC
+  `).bind(discordId).all()
+
+  const available = results.filter((r: any) => r.available === 1)
+  const recentlySold = results.filter((r: any) => r.available === 0)
+
+  return c.json({ available, recentlySold })
+})
+
 app.post('/api/ai-chat', async (c) => {
   const { message, discord_id, history } = await c.req.json()
   if (!message || !discord_id) return c.json({ error: 'message and discord_id required' }, 400)
