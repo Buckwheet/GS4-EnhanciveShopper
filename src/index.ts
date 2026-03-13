@@ -1918,17 +1918,17 @@ app.get('/', (c) => {
       })
       console.log('Slot counts:', slotCounts)
       
-      const setResponse = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/sets')
-      const setData = await setResponse.json()
-      const currentSet = setData.sets.find(s => s.id == currentSetId)
-      const accountType = currentSet?.account_type || 'F2P'
-      console.log('Account type:', accountType, 'Limits keys:', Object.keys(slotLimits[accountType] || slotLimits['F2P']))
-      
       const slotLimits = {
         'F2P': { 'pin': 8, 'head': 1, 'hair': 1, 'single_ear': 1, 'both_ears': 1, 'neck': 3, 'shoulder_slung': 2, 'shoulders_draped': 1, 'chest': 1, 'front': 1, 'chest_slipped': 1, 'back': 1, 'arms': 1, 'wrist': 2, 'hands': 1, 'fingers': 2, 'waist': 1, 'belt': 3, 'legs_pulled': 1, 'legs_attached': 1, 'legs_slipped': 1, 'ankle': 1, 'feet_slipped': 1, 'feet_on': 1, 'locus': 1 },
         'Premium': { 'pin': 8, 'head': 1, 'hair': 1, 'single_ear': 2, 'both_ears': 2, 'neck': 4, 'shoulder_slung': 2, 'shoulders_draped': 1, 'chest': 1, 'front': 1, 'chest_slipped': 1, 'back': 1, 'arms': 1, 'wrist': 3, 'hands': 1, 'fingers': 3, 'waist': 1, 'belt': 3, 'legs_pulled': 1, 'legs_attached': 1, 'legs_slipped': 1, 'ankle': 1, 'feet_slipped': 1, 'feet_on': 1, 'locus': 1 },
         'Platinum': { 'pin': 8, 'head': 1, 'hair': 1, 'single_ear': 3, 'both_ears': 3, 'neck': 5, 'shoulder_slung': 2, 'shoulders_draped': 1, 'chest': 1, 'front': 1, 'chest_slipped': 1, 'back': 1, 'arms': 1, 'wrist': 4, 'hands': 1, 'fingers': 4, 'waist': 1, 'belt': 3, 'legs_pulled': 1, 'legs_attached': 1, 'legs_slipped': 1, 'ankle': 1, 'feet_slipped': 1, 'feet_on': 1, 'locus': 1 }
       }
+      
+      const setResponse = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/sets')
+      const setData = await setResponse.json()
+      const currentSet = setData.sets.find(s => s.id == currentSetId)
+      const accountType = currentSet?.account_type || 'F2P'
+      console.log('Account type:', accountType, 'Limits keys:', Object.keys(slotLimits[accountType] || slotLimits['F2P']))
       const limits = slotLimits[accountType] || slotLimits['F2P']
       
       const slotUsageSection = document.getElementById('slotUsageSection')
