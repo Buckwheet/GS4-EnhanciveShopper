@@ -3242,9 +3242,9 @@ app.get('/api/debug/sets', async (c) => {
   })
 })
 
-        const enhancives = JSON.parse(item.enhancives_json)
+        const enhancives = JSON.parse(item.enhancives_json as string)
         const hasMatch = enhancives.some((enh: any) => 
-          enh.ability.toLowerCase().includes(goal.stat.toLowerCase()) && enh.boost >= goal.min_boost
+          enh.ability.toLowerCase().includes((goal.stat as string).toLowerCase()) && enh.boost >= (goal.min_boost as number)
         )
         if (hasMatch) {
           matches.push({ id: item.id, name: item.name, enhancives })
@@ -3287,10 +3287,10 @@ app.post('/api/inventory', async (c) => {
     'SELECT account_type FROM user_goals WHERE discord_id = ? AND goal_set_name = ? LIMIT 1'
   ).bind(discord_id, goal_set_name).first()
 
-  const accountType = goalData?.account_type || 'F2P'
+  const accountType = (goalData?.account_type as string) || 'F2P'
   const slotCount = countSlotUsage(existingItems.results, slot, accountType)
   const limits = SLOT_LIMITS[accountType as keyof typeof SLOT_LIMITS]
-  const slotLimit = limits ? (limits as Record<string, number>)[slot] || 1 : 1
+  const slotLimit = limits ? (limits as Record<string, number>)[slot as string] || 1 : 1
 
   if (slotCount >= slotLimit) {
     return c.json({ error: `Slot limit exceeded: ${slot} is ${slotCount}/${slotLimit}` }, 400)
