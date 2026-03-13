@@ -3627,39 +3627,44 @@ app.delete('/api/inventory/:id', async (c) => {
 
 // Get recommendations for a character set
 app.get('/api/recommendations/:discord_id/:goal_set', async (c) => {
-  const discordId = c.req.param('discord_id')
-  const goalSetName = c.req.param('goal_set')
-  
-  const cacheResult = await c.env.DB.prepare('SELECT recommendations_json, calculated_at FROM recommendation_cache WHERE discord_id = ? AND goal_set_name = ? AND datetime(calculated_at) > datetime("now", "-1 hour")')
-    .bind(discordId, goalSetName).first()
-  
-  if (cacheResult) {
-    return c.json(JSON.parse(cacheResult.recommendations_json as string))
+  try {
+    const discordId = c.req.param('discord_id')
+    const goalSetName = c.req.param('goal_set')
+    
+    const cacheResult = await c.env.DB.prepare('SELECT recommendations_json, calculated_at FROM recommendation_cache WHERE discord_id = ? AND goal_set_name = ? AND datetime(calculated_at) > datetime("now", "-1 hour")')
+      .bind(discordId, goalSetName).first()
+    
+    if (cacheResult) {
+      return c.json(JSON.parse(cacheResult.recommendations_json as string))
+    }
+    
+    const setResult = await c.env.DB.prepare('SELECT id, account_type FROM sets WHERE discord_id = ? AND set_name = ?')
+      .bind(discordId, goalSetName).first()
+    
+    if (!setResult) {
+      return c.json({ error: 'Set not found' }, 404)
+    }
+    
+    const { results: goals } = await c.env.DB.prepare('SELECT * FROM set_goals WHERE set_id = ?').bind(setResult.id).all()
+    const { results: inventory } = await c.env.DB.prepare('SELECT * FROM set_inventory WHERE set_id = ?').bind(setResult.id).all()
+    const { results: items } = await c.env.DB.prepare('SELECT * FROM shop_items').all()
+    
+    const slotUsage = {}
+    const direct = findDirectMatches(items as any, goals as any, slotUsage, setResult.account_type as string)
+    const nuggets = findNuggetOpportunities(items as any, goals as any, slotUsage, setResult.account_type as string)
+    const swatches = findSwatchOpportunities(items as any, goals as any, slotUsage, setResult.account_type as string)
+    const swaps = findSimpleSwaps(inventory as any, items as any, goals as any)
+    
+    const recommendations = { direct, nuggets, swatches, swaps }
+    
+    await c.env.DB.prepare('INSERT OR REPLACE INTO recommendation_cache (discord_id, goal_set_name, recommendations_json, calculated_at) VALUES (?, ?, ?, datetime("now"))')
+      .bind(discordId, goalSetName, JSON.stringify(recommendations)).run()
+    
+    return c.json(recommendations)
+  } catch (error: any) {
+    console.error('Recommendations error:', error)
+    return c.json({ error: error.message, stack: error.stack }, 500)
   }
-  
-  const setResult = await c.env.DB.prepare('SELECT id, account_type FROM sets WHERE discord_id = ? AND set_name = ?')
-    .bind(discordId, goalSetName).first()
-  
-  if (!setResult) {
-    return c.json({ error: 'Set not found' }, 404)
-  }
-  
-  const { results: goals } = await c.env.DB.prepare('SELECT * FROM set_goals WHERE set_id = ?').bind(setResult.id).all()
-  const { results: inventory } = await c.env.DB.prepare('SELECT * FROM set_inventory WHERE set_id = ?').bind(setResult.id).all()
-  const { results: items } = await c.env.DB.prepare('SELECT * FROM shop_items').all()
-  
-  const slotUsage = {}
-  const direct = findDirectMatches(items as any, goals as any, slotUsage, setResult.account_type as string)
-  const nuggets = findNuggetOpportunities(items as any, goals as any, slotUsage, setResult.account_type as string)
-  const swatches = findSwatchOpportunities(items as any, goals as any, slotUsage, setResult.account_type as string)
-  const swaps = findSimpleSwaps(inventory as any, items as any, goals as any)
-  
-  const recommendations = { direct, nuggets, swatches, swaps }
-  
-  await c.env.DB.prepare('INSERT OR REPLACE INTO recommendation_cache (discord_id, goal_set_name, recommendations_json, calculated_at) VALUES (?, ?, ?, datetime("now"))')
-    .bind(discordId, goalSetName, JSON.stringify(recommendations)).run()
-  
-  return c.json(recommendations)
 })
 
 app.delete('/api/recommendations/:discord_id/:goal_set', async (c) => {
