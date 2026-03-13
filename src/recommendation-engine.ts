@@ -125,8 +125,13 @@ export function findDirectMatches(
     let matchesPreferredSlot = false
     for (const goal of goals) {
       if (goalsMatched.includes(goal.stat)) {
-        if (!goal.preferred_slots || goal.preferred_slots.includes(item.slot)) {
+        if (!goal.preferred_slots) {
           matchesPreferredSlot = true
+        } else {
+          const slots = goal.preferred_slots.split(',').map(s => s.trim())
+          if (slots.includes(item.slot)) {
+            matchesPreferredSlot = true
+          }
         }
         // Check max cost
         if (goal.max_cost && item.price > goal.max_cost) {
@@ -221,7 +226,8 @@ export function findSwatchOpportunities(
     let needsSwatchForGoal = false
     for (const goal of goals) {
       if (goalsMatched.includes(goal.stat) && goal.preferred_slots) {
-        if (!goal.preferred_slots.includes(item.slot)) {
+        const slots = goal.preferred_slots.split(',').map(s => s.trim())
+        if (!slots.includes(item.slot)) {
           needsSwatchForGoal = true
           break
         }
