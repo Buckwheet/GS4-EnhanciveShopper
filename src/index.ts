@@ -1469,16 +1469,96 @@ app.get('/', (c) => {
       document.getElementById('bulkInventoryLocation').value = ''
     })
     
+    async function processYamlImport(yamlText: string) {
+      const lines = yamlText.split('\n')
+      const items: any[] = []
+      let inWornItems = false
+      let currentItem: any = null
+      
+      for (const line of lines) {
+        if (line.includes('worn_items:')) {
+          inWornItems = true
+          continue
+        }
+        if (inWornItems && line.match(/^[a-z_]+:/)) {
+          inWornItems = false
+        }
+        if (!inWornItems) continue
+        
+        if (line.match(/^- name:/)) {
+          if (currentItem) items.push(currentItem)
+          const nameMatch = line.match(/name:\s*(.+)/)
+          if (nameMatch) {
+            const fullName = nameMatch[1].trim()
+            const idMatch = fullName.match(/exist="(\d+)"/)
+            const nounMatch = fullName.match(/noun="([^"]+)"/)
+            const cleanName = fullName.replace(/<[^>]+>/g, '').trim()
+            currentItem = { name: cleanName, id: idMatch?.[1], noun: nounMatch?.[1] }
+          }
+        }
+      }
+      if (currentItem) items.push(currentItem)
+      
+      const slotMap: Record<string, string> = {
+        'locus': 'elsewhere', 'helm': 'head', 'barrette': 'pin', 'earcuff': 'ear',
+        'bracelet': 'wrist', 'wristchain': 'wrist', 'chain': 'neck', 'socks': 'socks',
+        'earrings': 'ears', 'ring': 'finger', 'handflowers': 'hands', 'anklet': 'ankle',
+        'pants': 'leggings', 'pendant': 'neck', 'necklace': 'neck', 'pectoral': 'front',
+        'undershirt': 'undershirt', 'armbands': 'arms', 'aventail': 'neck', 'clasp': 'shoulder',
+        'charm': 'neck', 'badge': 'pin', 'pin': 'pin', 'greaves': 'legs', 'tattoo': 'elsewhere'
+      }
+      
+      let imported = 0, skipped = 0
+      
+      for (const item of items) {
+        const slot = item.noun ? slotMap[item.noun.toLowerCase()] : null
+        if (!slot) {
+          console.log('Skipping (no slot):', item.name)
+          skipped++
+          continue
+        }
+        
+        const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/inventory', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            item_name: item.name,
+            slot: slot,
+            enhancives_json: '[]',
+            is_permanent: true
+          })
+        })
+        
+        if (response.ok) imported++
+        else { console.error('Failed:', item.name); skipped++ }
+      }
+      
+      alert(`Import complete!\n\nImported: ${imported} items\nSkipped: ${skipped} items`)
+      document.getElementById('bulkImportForm').classList.add('hidden')
+      document.getElementById('bulkEnhanciveDetail').value = ''
+      loadInventory()
+    }
+
     document.getElementById('processBulkImport').addEventListener('click', async () => {
       const enhanciveDetail = document.getElementById('bulkEnhanciveDetail').value
       const inventoryLocation = document.getElementById('bulkInventoryLocation').value
       
-      if (!enhanciveDetail.trim() || !inventoryLocation.trim()) {
-        alert('Please provide both inventory enhancive detail and inventory location')
+      if (!enhanciveDetail.trim()) {
+        alert('Please provide enhancive data')
         return
       }
       
       try {
+        // Check if input is YAML format
+        if (enhanciveDetail.trim().startsWith('---') || enhanciveDetail.includes('worn_items:')) {
+          await processYamlImport(enhanciveDetail)
+          return
+        }
+        
+        if (!inventoryLocation.trim()) {
+          alert('Please provide both inventory enhancive detail and inventory location')
+          return
+        }
         // Parse enhancive detail to extract items and their enhancives
         const itemEnhancives = {}
         const detailLines = enhanciveDetail.split('\\n')
