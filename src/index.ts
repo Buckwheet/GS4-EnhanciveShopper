@@ -3242,13 +3242,18 @@ app.get('/api/my-matches', async (c) => {
       i.*
     FROM alerts a
     JOIN shop_items i ON a.item_id = i.id
-    WHERE a.discord_id = ?
   `
   const params = [discordId]
   
   if (setName) {
-    query += ` AND a.goal_set_name = ?`
+    query += `
+      JOIN set_goals sg ON a.goal_id = sg.id
+      JOIN sets s ON sg.set_id = s.id
+      WHERE a.discord_id = ? AND s.set_name = ?
+    `
     params.push(setName)
+  } else {
+    query += ` WHERE a.discord_id = ?`
   }
   
   query += ` ORDER BY a.sent_at DESC`
