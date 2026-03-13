@@ -58,8 +58,8 @@ export function calculateSlotUsage(inventory: InventoryItem[]): SlotUsage {
 
 // Check if an item can fit in a slot given current usage
 export function canFitInSlot(slot: string, slotUsage: SlotUsage, accountType: string = 'F2P'): boolean {
-  const limits = SLOT_LIMITS[accountType] || SLOT_LIMITS['F2P']
-  const limit = limits[slot] || 0
+  const limits = SLOT_LIMITS[accountType as keyof typeof SLOT_LIMITS] || SLOT_LIMITS['F2P']
+  const limit = limits[slot as keyof typeof limits] || 0
   const current = slotUsage[slot] || 0
   return current < limit
 }
