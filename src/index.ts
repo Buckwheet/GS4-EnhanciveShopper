@@ -2078,8 +2078,11 @@ app.get('/', (c) => {
         const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/goals')
         const data = await response.json()
         userGoals = data.goals.filter(g => g.goal_set_name === currentGoalSet)
+        console.log('Reloaded goals after save:', userGoals)
+        console.log('Filter enabled:', filterByGoalsEnabled)
         
         if (filterByGoalsEnabled) {
+          console.log('Applying filter...')
           filterItems()
         }
       }
