@@ -20,7 +20,7 @@ export async function scrapeEnhancives(): Promise<EnhanciveItem[]> {
   for (const town of TOWNS) {
     try {
       const response = await fetch(`${BASE_URL}${town}.json`)
-      const data = await response.json()
+      const data = await response.json() as { town?: string; shops?: any[]; created_at?: string }
 
       for (const shop of data.shops || []) {
         for (const room of shop.inv || []) {
@@ -55,7 +55,7 @@ export async function getLastUpdated(): Promise<string | null> {
   try {
     // Get timestamp from first town's JSON
     const response = await fetch(`${BASE_URL}icemule_trace.json`)
-    const data = await response.json()
+    const data = await response.json() as { created_at?: string }
     return data.created_at || null
   } catch (error) {
     console.error('Failed to get last updated:', error)
