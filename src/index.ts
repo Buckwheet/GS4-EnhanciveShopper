@@ -1473,7 +1473,7 @@ app.get('/', (c) => {
       const lines = yamlText.split('\\n')
       const items = []
       let inWornItems = false
-      let currentItem: any = null
+      let currentItem = null
       
       for (const line of lines) {
         if (line.includes('worn_items:')) {
