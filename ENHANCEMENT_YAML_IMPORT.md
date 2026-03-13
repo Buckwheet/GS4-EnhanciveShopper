@@ -1,66 +1,79 @@
 # Enhancement: YAML-based Bulk Import
 
+## Status: ✅ IMPLEMENTED (Version b854e0b7-a1e9-4600-bed7-e264dc0e784b)
+
 ## Problem
 Current bulk import parser has limitations:
-- Cannot handle duplicate items with same name (e.g., two "a mossbark ring")
-- Requires matching items across two separate text outputs
-- Text parsing is fragile and error-prone
-- Skips tattoos and non-wearable items
+- Can't handle duplicate item names (uses name as key)
+- Skips tattoos (not in location list)
+- Fragile text parsing (requires exact format)
+- No permanence detection
 
-## Proposed Solution
-Add YAML-based import format with unique item IDs.
+## Solution: YAML Import with Item IDs
 
-## YAML Format (Draft)
+User provided Lich script (`enh_export.lic`) that generates YAML files with:
+- Unique item IDs from `exist` attributes
+- Clean item names (XML tags stripped)
+- Charge info (timed/counter)
+- Complete stat/skill/resource breakdown
+
+### YAML Format Example
 ```yaml
-items:
-  - id: "185391909"
-    name: "a gilded locus"
-    slot: "elsewhere"
-    permanent: true
-    enhancives:
-      - stat: "Strength"
-        bonus: 9
-      - stat: "Constitution"
-        bonus: 1
-      - stat: "Aura"
-        bonus: 2
-  - id: "185391910"
-    name: "an ornate vultite helm"
-    slot: "head"
-    permanent: true
-    enhancives:
-      - stat: "Shield Use Bonus"
-        bonus: 7
+---
+character: Tijay
+generated: '2026-03-13 11:37:43'
+worn_items:
+- name: a <a exist="185391909" noun="locus">gilded locus
+  id:
+  charge_info:
+    type: timed
+    expiry: 8/19/2029 19:15:37 CDT
+```
+
+## Implementation
+
+### Detection
+Bulk import now detects YAML format:
+```typescript
+if (enhanciveDetail.trim().startsWith('---') || enhanciveDetail.includes('worn_items:')) {
+  await processYamlImport(enhanciveDetail)
+  return
+}
+```
+
+### Parser
+Minimal YAML parser extracts:
+- Item names (strips XML tags)
+- Item IDs from `exist` attributes
+- Noun for slot mapping
+
+### Slot Mapping
+Maps item nouns to slots:
+```typescript
+const slotMap = {
+  'locus': 'elsewhere', 'helm': 'head', 'barrette': 'pin',
+  'earcuff': 'ear', 'bracelet': 'wrist', 'ring': 'finger',
+  'tattoo': 'elsewhere', ...
+}
 ```
 
 ## Benefits
-- ✅ Handles duplicate items via unique IDs
-- ✅ Single source of truth (no matching required)
-- ✅ Easy to parse with standard YAML library
-- ✅ Includes permanence info directly
-- ✅ Clean, unambiguous structure
-- ✅ Can include tattoos and all item types
+✅ Handles duplicate items (unique IDs)
+✅ Imports tattoos (mapped to 'elsewhere')
+✅ Single source of truth (no matching required)
+✅ More reliable parsing
 
-## Implementation Tasks
-1. Add YAML parser to bulk import (detect YAML vs text format)
-2. Add file upload option to bulk import form
-3. User will provide Lich script to generate YAML output
-4. Test with real inventory data
+## Usage
+1. Run `;enh_export` in game (Lich script)
+2. Copy YAML file content
+3. Paste into bulk import field
+4. Click "Process Import"
 
-## Alternative: XML Format
-User also suggested using `;showxml` output with `exist` IDs:
-```xml
-<a exist="185391909" noun="locus">gilded locus</a>
-```
+## Limitations
+- Currently imports items without enhancive data (empty `[]`)
+- Future: Parse totals section to populate enhancives
+- Future: Detect permanence from charge_info
 
-Pros: Already available in game
-Cons: More complex parsing, requires matching two XML outputs
-
-## Status
-- [ ] Waiting for user to provide Lich script
-- [ ] Waiting for example YAML output
-- [ ] Implementation pending
-
-## Related Issues
-- Bulk import duplicate item bug (mossbark ring issue)
-- Tattoo items not imported
+## Files
+- `enh_export.lic` - Lich script to generate YAML
+- `Tijay_enhancives_2026-03-13_11-37-42.yaml` - Example output
