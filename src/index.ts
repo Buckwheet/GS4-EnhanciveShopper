@@ -11,7 +11,7 @@ const app = new Hono<{ Bindings: Env }>()
 app.use('/*', cors())
 
 function countSlotUsage(items: any[], slot: string, accountType: string): number {
-  const limit = SLOT_LIMITS[accountType as keyof typeof SLOT_LIMITS]?.[slot] || 1
+  const _limit = SLOT_LIMITS[accountType as keyof typeof SLOT_LIMITS]?.[slot] || 1
   const count = items.filter(i => i.slot === slot).length
   return count
 }
@@ -2989,7 +2989,7 @@ app.post('/api/ai-chat', async (c) => {
     SELECT sql FROM sqlite_master WHERE type='table' AND name='shop_items'
   `).first()
   
-  const schemaContext = schemaResult ? '\n\nDatabase Schema:\n' + schemaResult.sql : ''
+  const schemaContext = schemaResult ? `\n\nDatabase Schema:\n${schemaResult.sql}` : ''
   
   const goalsResult = await c.env.DB.prepare(`
     SELECT sg.stat, sg.min_boost, sg.max_cost, sg.preferred_slots 
@@ -3000,7 +3000,7 @@ app.post('/api/ai-chat', async (c) => {
   `).bind(discord_id).all()
   let goalsContext = ''
   if (goalsResult.results.length > 0) {
-    goalsContext = ' User goals: ' + goalsResult.results.map(g => g.stat + ' +' + g.min_boost + ' under ' + g.max_cost + ' silvers' + (g.preferred_slots ? ' in slots ' + g.preferred_slots : '')).join(', ') + '.'
+    goalsContext = ` User goals: ${goalsResult.results.map(g => `${g.stat} +${g.min_boost} under ${g.max_cost} silvers${g.preferred_slots ? ` in slots ${g.preferred_slots}` : ''}`).join(', ')}.`
   }
   
   const invResult = await c.env.DB.prepare(`
@@ -3012,23 +3012,23 @@ app.post('/api/ai-chat', async (c) => {
   `).bind(discord_id).all()
   let invContext = ''
   if (invResult.results.length > 0) {
-    invContext = ' User inventory: ' + invResult.results.map(i => i.item_name + ' (' + i.slot + ')').join(', ') + '.'
+    invContext = ` User inventory: ${invResult.results.map(i => `${i.item_name} (${i.slot})`).join(', ')}.`
   }
   
-  const summaryResponse = await fetch(c.req.url.replace('/api/ai-chat', '/api/summary') + '?discord_id=' + discord_id + '&goal_set_name=Default')
+  const summaryResponse = await fetch(`${c.req.url.replace('/api/ai-chat', '/api/summary')}?discord_id=${discord_id}&goal_set_name=Default`)
   let statsContext = ''
   if (summaryResponse.ok) {
     const summaryData = await summaryResponse.json()
     const needs = []
     for (const stat in summaryData.stats) {
       const s = summaryData.stats[stat]
-      if (s.enhancive < s.cap) needs.push(stat + ' needs +' + (s.cap - s.enhancive))
+      if (s.enhancive < s.cap) needs.push(`${stat} needs +${s.cap - s.enhancive}`)
     }
     for (const skill in summaryData.skills) {
       const sk = summaryData.skills[skill]
-      if (sk.enhancive < sk.cap) needs.push(skill + ' needs +' + (sk.cap - sk.enhancive))
+      if (sk.enhancive < sk.cap) needs.push(`${skill} needs +${sk.cap - sk.enhancive}`)
     }
-    if (needs.length > 0) statsContext = ' To cap: ' + needs.join(', ') + '.'
+    if (needs.length > 0) statsContext = ` To cap: ${needs.join(', ')}.`
   }
   
   let itemsContext = ''
@@ -3039,18 +3039,18 @@ app.post('/api/ai-chat', async (c) => {
   if (matchedStat && (lowerMsg.includes('show') || lowerMsg.includes('find') || lowerMsg.includes('search') || lowerMsg.includes('item'))) {
     const itemsQuery = await c.env.DB.prepare(
       "SELECT name, town, cost, worn, enhancives_json FROM shop_items WHERE available = 1 AND enhancives_json LIKE ? LIMIT 10"
-    ).bind('%' + matchedStat.charAt(0).toUpperCase() + matchedStat.slice(1) + '%').all()
+    ).bind(`%${matchedStat.charAt(0).toUpperCase()}${matchedStat.slice(1)}%`).all()
     
     if (itemsQuery.results.length > 0) {
-      itemsContext = ' Available ' + matchedStat + ' items: ' + itemsQuery.results.map((item: any) => {
+      itemsContext = ` Available ${matchedStat} items: ${itemsQuery.results.map((item: any) => {
         const enhs = JSON.parse(item.enhancives_json)
-        const enhText = enhs.map((e: any) => '+' + e.boost + ' ' + e.ability).join(', ')
-        return item.name + ' (' + item.worn + ') - ' + (item.cost ? item.cost.toLocaleString() : '?') + ' silvers in ' + item.town + ' - ' + enhText
-      }).join('; ') + '.'
+        const enhText = enhs.map((e: any) => `+${e.boost} ${e.ability}`).join(', ')
+        return `${item.name} (${item.worn}) - ${item.cost ? item.cost.toLocaleString() : '?'} silvers in ${item.town} - ${enhText}`
+      }).join('; ')}.`
     }
   }
   
-  const systemPrompt = 'You are a SQL query generator for GS4 Enhancive Shopper. Generate SQLite queries based on user requests.\n\n' + schemaContext + '\n\nIMPORTANT:\n- enhancives_json is TEXT (not JSON type) - use LIKE for searching\n- ALWAYS include: WHERE available = 1\n- Use LIKE \'%pattern%\' for text search in enhancives_json\n- NO PostgreSQL syntax (no ::jsonb, no ->, no ->>) \n- Sort by cost ASC (cheapest first) unless user asks for "highest/best/most"\n\nCommon slots: neck, finger, fingers, wrist, head, ear, ears, waist, arms, legs, feet, shoulder, shoulders, back, chest, front, hands, hair, ankle, pin\n\nCommon stats: Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence\n\nExamples:\n- "neck wisdom items" → SELECT name, town, shop, cost, worn, enhancives_json FROM shop_items WHERE available = 1 AND worn = \'neck\' AND enhancives_json LIKE \'%Wisdom%\' ORDER BY cost ASC LIMIT 10;\n- "cheap strength under 5M" → SELECT name, town, shop, cost, worn, enhancives_json FROM shop_items WHERE available = 1 AND enhancives_json LIKE \'%Strength%\' AND cost < 5000000 ORDER BY cost ASC LIMIT 10;\n\nRespond with ONLY the SQL query, nothing else.' + goalsContext + invContext + statsContext + itemsContext
+  const systemPrompt = `You are a SQL query generator for GS4 Enhancive Shopper. Generate SQLite queries based on user requests.\n\n${schemaContext}\n\nIMPORTANT:\n- enhancives_json is TEXT (not JSON type) - use LIKE for searching\n- ALWAYS include: WHERE available = 1\n- Use LIKE '%pattern%' for text search in enhancives_json\n- NO PostgreSQL syntax (no ::jsonb, no ->, no ->>) \n- Sort by cost ASC (cheapest first) unless user asks for "highest/best/most"\n\nCommon slots: neck, finger, fingers, wrist, head, ear, ears, waist, arms, legs, feet, shoulder, shoulders, back, chest, front, hands, hair, ankle, pin\n\nCommon stats: Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence\n\nExamples:\n- "neck wisdom items" → SELECT name, town, shop, cost, worn, enhancives_json FROM shop_items WHERE available = 1 AND worn = 'neck' AND enhancives_json LIKE '%Wisdom%' ORDER BY cost ASC LIMIT 10;\n- "cheap strength under 5M" → SELECT name, town, shop, cost, worn, enhancives_json FROM shop_items WHERE available = 1 AND enhancives_json LIKE '%Strength%' AND cost < 5000000 ORDER BY cost ASC LIMIT 10;\n\nRespond with ONLY the SQL query, nothing else.${goalsContext}${invContext}${statsContext}${itemsContext}`
   
   const messages = [{ role: 'system', content: systemPrompt }]
   if (history && history.length > 0) {
@@ -3082,7 +3082,7 @@ app.post('/api/ai-chat', async (c) => {
             
             // Detect if user wants minimum total (e.g., "at least 20 wisdom")
             const minTotalMatch = userMessage.match(/(?:at least|minimum|min|total of)\s+(\d+)/i)
-            const minTotal = minTotalMatch ? parseInt(minTotalMatch[1]) : 0
+            const minTotal = minTotalMatch ? parseInt(minTotalMatch[1], 10) : 0
             
             // If user asked for "highest" or "best", sort by total boost of the stat they're searching for
             if (userMessage.includes('highest') || userMessage.includes('best') || userMessage.includes('most') || minTotal > 0) {
@@ -3114,7 +3114,7 @@ app.post('/api/ai-chat', async (c) => {
             let displayLimit = 5
             if (numberMatch) {
               const numMap: any = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 }
-              displayLimit = numMap[numberMatch[1]] || parseInt(numberMatch[1]) || 5
+              displayLimit = numMap[numberMatch[1]] || parseInt(numberMatch[1], 10) || 5
             }
             
             if (results.length === 0) {
@@ -3124,21 +3124,21 @@ app.post('/api/ai-chat', async (c) => {
             
             const itemList = results.slice(0, displayLimit).map((item: any) => {
               const enhs = JSON.parse(item.enhancives_json || '[]')
-              const enhText = enhs.map((e: any) => '+' + e.boost + ' ' + e.ability).join(', ')
-              const totalBadge = item._sortValue ? ' [Total: +' + item._sortValue + ']' : ''
-              return item.name + ' - ' + (item.cost ? item.cost.toLocaleString() + ' silvers' : 'unknown cost') + ' - ' + item.town + ' - ' + enhText + totalBadge
+              const enhText = enhs.map((e: any) => `+${e.boost} ${e.ability}`).join(', ')
+              const totalBadge = item._sortValue ? ` [Total: +${item._sortValue}]` : ''
+              return `${item.name} - ${item.cost ? `${item.cost.toLocaleString()} silvers` : 'unknown cost'} - ${item.town} - ${enhText}${totalBadge}`
             }).join('\n')
             
             // Don't show the SQL query in the response, but include it for debugging
-            responseText = 'Found ' + results.length + ' items:\n' + itemList
-            if (results.length > displayLimit) responseText += '\n... and ' + (results.length - displayLimit) + ' more'
+            responseText = `Found ${results.length} items:\n${itemList}`
+            if (results.length > displayLimit) responseText += `\n... and ${results.length - displayLimit} more`
             
             // Return SQL query separately so it can be logged on client side
             return c.json({ response: responseText, sql: sql })
           } else {
             responseText += '\n\nNo items found.'
           }
-        } catch (e) {
+        } catch (_e) {
           responseText += '\n\n(Query error)'
         }
       }
@@ -3148,7 +3148,7 @@ app.post('/api/ai-chat', async (c) => {
   } catch (error) {
     console.error('AI error:', error)
     const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-    return c.json({ error: 'AI request failed: ' + errorMsg + '. Please try again or rephrase your question.' }, 500)
+    return c.json({ error: `AI request failed: ${errorMsg}. Please try again or rephrase your question.` }, 500)
   }
 })
 
@@ -3291,7 +3291,7 @@ app.post('/api/inventory', async (c) => {
   const slotLimit = SLOT_LIMITS[accountType as keyof typeof SLOT_LIMITS]?.[slot] || 1
 
   if (slotCount >= slotLimit) {
-    return c.json({ error: 'Slot limit exceeded: ' + slot + ' is ' + slotCount + '/' + slotLimit }, 400)
+    return c.json({ error: `Slot limit exceeded: ${slot} is ${slotCount}/${slotLimit}` }, 400)
   }
 
   const result = await c.env.DB.prepare(
@@ -3481,7 +3481,7 @@ app.get('/api/summary', async (c) => {
     const enhancives = JSON.parse(item.enhancives_json as string)
     for (const enh of enhancives) {
       const { ability, boost } = enh
-      const isBase = ability.includes('Base')
+      const _isBase = ability.includes('Base')
       const isBonus = ability.includes('Bonus')
       const isRanks = ability.includes('Ranks')
       
@@ -3624,7 +3624,7 @@ app.post('/api/scrape', async (c) => {
 export default {
   fetch: app.fetch,
   
-  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext) {
+  async scheduled(_event: ScheduledEvent, env: Env, _ctx: ExecutionContext) {
     try {
       const lastUpdated = await getLastUpdated()
       if (!lastUpdated) return

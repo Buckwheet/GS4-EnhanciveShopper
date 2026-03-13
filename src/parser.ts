@@ -15,7 +15,7 @@ export function parseItemText(text: string) {
     // Parse enhancive boosts
     const boostMatch = line.match(/It provides a boost of (\d+) to (.+)\./)
     if (boostMatch) {
-      const boost = parseInt(boostMatch[1])
+      const boost = parseInt(boostMatch[1], 10)
       const ability = boostMatch[2].trim()
       
       // Check for level requirement
@@ -24,7 +24,7 @@ export function parseItemText(text: string) {
       if (nextLineIndex < lines.length) {
         const levelMatch = lines[nextLineIndex].match(/not trained (\d+) times/)
         if (levelMatch) {
-          level = parseInt(levelMatch[1])
+          level = parseInt(levelMatch[1], 10)
         }
       }
       
@@ -41,7 +41,7 @@ export function parseItemText(text: string) {
     // Also check for "can be worn on the X"
     const canBeWornMatch = line.match(/can be worn (on|in|around|from|over|as) (?:the |your )?(head|neck|hair|ears?|shoulders?|back|chest|front|arms?|wrists?|hands?|fingers?|waist|belt|legs|ankle|feet)/i)
     if (canBeWornMatch) {
-      const location = 'on your ' + canBeWornMatch[2].toLowerCase()
+      const location = `on your ${canBeWornMatch[2].toLowerCase()}`
       detectedSlot = mapSlotLocation(location)
     }
   }
@@ -93,7 +93,7 @@ export function parseStats(text: string) {
       if (line.includes(`(${stat})`)) {
         const match = line.match(/\((\d+)\)/)
         if (match) {
-          stats[stat] = parseInt(match[1])
+          stats[stat] = parseInt(match[1], 10)
         }
       }
     }
@@ -112,7 +112,7 @@ export function parseSkills(text: string) {
     const match = line.match(/^ {2}(.+?)\.*\|\s+\d+\s+(\d+)/)
     if (match) {
       const skillName = match[1].trim()
-      const ranks = parseInt(match[2])
+      const ranks = parseInt(match[2], 10)
       skills[skillName] = ranks
     }
   }
