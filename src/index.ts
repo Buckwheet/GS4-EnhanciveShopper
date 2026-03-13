@@ -85,12 +85,6 @@ app.get('/', (c) => {
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-2xl font-semibold">My Alert Goals</h2>
           <div class="flex gap-2">
-            <button id="manageCharBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm">
-              Manage Character
-            </button>
-            <button id="manageInvBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm">
-              Manage Inventory
-            </button>
             <button id="myMatchesBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
               My Matches
             </button>
@@ -106,8 +100,7 @@ app.get('/', (c) => {
               <option value="">No characters yet</option>
             </select>
             <button id="newCharacterBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm">+ New Character</button>
-            <button id="editCharacterBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">Edit Character</button>
-            <button id="deleteCharacterBtn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">Delete Character</button>
+            <button id="manageCharacterBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">Manage Character</button>
           </div>
         
         <div class="flex gap-2 items-center mb-4">
@@ -234,18 +227,121 @@ app.get('/', (c) => {
         </div>
       </div>
 
-      <div id="editCharacterModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-md w-full">
-          <h2 class="text-2xl font-semibold mb-4">Edit Character</h2>
-          <div class="space-y-4">
+      <!-- Manage Character Modal with Tabs -->
+      <div id="manageCharacterModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <h2 class="text-2xl font-semibold mb-4">Manage Character</h2>
+          
+          <!-- Tab Navigation -->
+          <div class="flex border-b mb-4">
+            <button id="tabCharInfo" class="px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-semibold">Character Info</button>
+            <button id="tabCharData" class="px-4 py-2 text-gray-600 hover:text-blue-600">Character Data</button>
+            <button id="tabInventory" class="px-4 py-2 text-gray-600 hover:text-blue-600">Inventory</button>
+          </div>
+          
+          <!-- Tab Content: Character Info -->
+          <div id="tabContentCharInfo" class="space-y-4">
             <div>
               <label class="block text-sm font-medium mb-1">Character Name</label>
               <input type="text" id="editCharacterName" class="border p-2 rounded w-full">
             </div>
             <div class="flex gap-2">
-              <button id="editCharacterConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1">Save</button>
-              <button id="editCharacterCancel" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
+              <button id="editCharacterConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1">Save Name</button>
+              <button id="deleteCharacterBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded flex-1">Delete Character</button>
             </div>
+          </div>
+          
+          <!-- Tab Content: Character Data -->
+          <div id="tabContentCharData" class="hidden space-y-4">
+            <div id="currentCharSummary" class="mb-6"></div>
+            
+            <div>
+              <h3 class="text-lg font-semibold mb-2">Base Stats</h3>
+              <p class="text-sm text-gray-600 mb-2">Paste output from '>stats' command (with all enhancives removed)</p>
+              <textarea id="statsInput" rows="12" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste stats here..."></textarea>
+              <button id="parseStatsBtn" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Parse Stats</button>
+              <div id="parsedStats" class="mt-2 text-sm"></div>
+            </div>
+            
+            <div>
+              <h3 class="text-lg font-semibold mb-2">Skill Ranks</h3>
+              <p class="text-sm text-gray-600 mb-2">Paste output from '>skill base' command</p>
+              <textarea id="skillsInput" rows="12" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste skills here..."></textarea>
+              <button id="parseSkillsBtn" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Parse Skills</button>
+              <div id="parsedSkills" class="mt-2 text-sm"></div>
+            </div>
+            
+            <button id="saveCharDataBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded w-full">Save Character Data</button>
+          </div>
+          
+          <!-- Tab Content: Inventory -->
+          <div id="tabContentInventory" class="hidden space-y-4">
+            <div id="slotUsageDisplay" class="mb-4 p-3 bg-blue-50 rounded text-sm"></div>
+            
+            <div class="mb-4">
+              <button id="addItemBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mr-2">+ Add Enhancive Item</button>
+              <button id="bulkImportBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mr-2">Bulk Import</button>
+              <button id="deleteAllInventoryBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete All</button>
+            </div>
+            
+            <div id="bulkImportForm" class="hidden mb-6 p-4 border rounded bg-gray-50">
+              <h3 class="font-semibold mb-3">Bulk Import Inventory</h3>
+              <p class="text-sm text-gray-600 mb-3">Paste your inventory data below:</p>
+              
+              <div class="mb-4">
+                <label class="block font-medium mb-1">Inventory Enhancive Detail</label>
+                <textarea id="bulkEnhanciveDetail" rows="10" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste inventory enhancive detail here..."></textarea>
+              </div>
+              
+              <div class="mb-4">
+                <label class="block font-medium mb-1">Inventory Location</label>
+                <textarea id="bulkInventoryLocation" rows="10" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste inventory location here..."></textarea>
+              </div>
+              
+              <div class="flex gap-2">
+                <button id="processBulkImport" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Process Import</button>
+                <button id="cancelBulkImport" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+              </div>
+            </div>
+            
+            <div id="addItemForm" class="hidden mb-6 p-4 border rounded bg-gray-50">
+              <h3 class="font-semibold mb-3">Add New Item</h3>
+              <textarea id="itemTextInput" rows="15" class="border p-2 rounded w-full font-mono text-sm mb-3" placeholder="Paste item description here..."></textarea>
+              <button id="parseItemBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-3">Parse Item</button>
+              
+              <div id="parsedItemInfo" class="hidden">
+                <div class="mb-3">
+                  <label class="block font-medium mb-1">Item Name</label>
+                  <input type="text" id="parsedItemName" class="border p-2 rounded w-full">
+                </div>
+                
+                <div class="mb-3">
+                  <label class="block font-medium mb-1">Enhancives Detected</label>
+                  <div id="parsedEnhancives" class="text-sm bg-white p-2 border rounded"></div>
+                </div>
+                
+                <div class="mb-3">
+                  <label class="block font-medium mb-1">Permanent/Temporary</label>
+                  <div id="parsedPermanence" class="text-sm"></div>
+                </div>
+                
+                <div class="mb-3">
+                  <label class="block font-medium mb-1">Select Slot</label>
+                  <div id="slotCheckboxes" class="grid grid-cols-3 gap-2"></div>
+                </div>
+                
+                <div class="flex gap-2">
+                  <button id="confirmAddItem" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Add to Inventory</button>
+                  <button id="cancelAddItem" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
+                </div>
+              </div>
+            </div>
+            
+            <div id="inventoryList" class="space-y-2"></div>
+          </div>
+          
+          <div class="flex justify-end mt-4">
+            <button id="manageCharacterClose" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Close</button>
           </div>
         </div>
       </div>
@@ -369,113 +465,7 @@ app.get('/', (c) => {
         </div>
       </div>
       
-      <!-- Manage Character Modal -->
-      <div id="manageCharModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-semibold">Manage Character Data</h2>
-            <button id="closeCharBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
-          </div>
-          
-          <div id="currentCharSummary" class="mb-6"></div>
-          
-          <div class="space-y-6">
-            <div>
-              <h3 class="text-lg font-semibold mb-2">Base Stats</h3>
-              <p class="text-sm text-gray-600 mb-2">Paste output from '>stats' command (with all enhancives removed)</p>
-              <textarea id="statsInput" rows="12" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste stats here..."></textarea>
-              <button id="parseStatsBtn" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Parse Stats</button>
-              <div id="parsedStats" class="mt-2 text-sm"></div>
-            </div>
-            
-            <div>
-              <h3 class="text-lg font-semibold mb-2">Skill Ranks</h3>
-              <p class="text-sm text-gray-600 mb-2">Paste output from '>skill base' command</p>
-              <textarea id="skillsInput" rows="12" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste skills here..."></textarea>
-              <button id="parseSkillsBtn" class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Parse Skills</button>
-              <div id="parsedSkills" class="mt-2 text-sm"></div>
-            </div>
-            
-            <button id="saveCharDataBtn" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded w-full">Save Character Data</button>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Manage Inventory Modal -->
-      <div id="manageInvModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
-          <div class="flex justify-between items-center mb-4">
-            <h2 class="text-2xl font-semibold">Manage Inventory</h2>
-            <button id="closeInvBtn" class="text-gray-600 hover:text-gray-800 text-2xl">&times;</button>
-          </div>
-          
-          <div id="slotUsageDisplay" class="mb-4 p-3 bg-blue-50 rounded text-sm"></div>
-          
-          <div class="mb-4">
-            <button id="addItemBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mr-2">+ Add Enhancive Item</button>
-            <button id="bulkImportBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mr-2">Bulk Import</button>
-            <button id="deleteAllInventoryBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete All</button>
-          </div>
-          
-          <div id="bulkImportForm" class="hidden mb-6 p-4 border rounded bg-gray-50">
-            <h3 class="font-semibold mb-3">Bulk Import Inventory</h3>
-            <p class="text-sm text-gray-600 mb-3">Paste your inventory data below:</p>
-            
-            <div class="mb-4">
-              <label class="block font-medium mb-1">Inventory Enhancive Detail</label>
-              <textarea id="bulkEnhanciveDetail" rows="10" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste inventory enhancive detail here..."></textarea>
-            </div>
-            
-            <div class="mb-4">
-              <label class="block font-medium mb-1">Inventory Location</label>
-              <textarea id="bulkInventoryLocation" rows="10" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste inventory location here..."></textarea>
-            </div>
-            
-            <div class="flex gap-2">
-              <button id="processBulkImport" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Process Import</button>
-              <button id="cancelBulkImport" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
-            </div>
-          </div>
-          
-          <div id="addItemForm" class="hidden mb-6 p-4 border rounded bg-gray-50">
-            <h3 class="font-semibold mb-3">Add New Item</h3>
-            <textarea id="itemTextInput" rows="15" class="border p-2 rounded w-full font-mono text-sm mb-3" placeholder="Paste item description here..."></textarea>
-            <button id="parseItemBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mb-3">Parse Item</button>
-            
-            <div id="parsedItemInfo" class="hidden">
-              <div class="mb-3">
-                <label class="block font-medium mb-1">Item Name</label>
-                <input type="text" id="parsedItemName" class="border p-2 rounded w-full">
-              </div>
-              
-              <div class="mb-3">
-                <label class="block font-medium mb-1">Enhancives Detected</label>
-                <div id="parsedEnhancives" class="text-sm bg-white p-2 border rounded"></div>
-              </div>
-              
-              <div class="mb-3">
-                <label class="block font-medium mb-1">Permanent/Temporary</label>
-                <div id="parsedPermanence" class="text-sm"></div>
-              </div>
-              
-              <div class="mb-3">
-                <label class="block font-medium mb-1">Select Slot</label>
-                <div id="slotCheckboxes" class="grid grid-cols-3 gap-2"></div>
-              </div>
-              
-              <div class="flex gap-2">
-                <button id="confirmAddItem" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Add to Inventory</button>
-                <button id="cancelAddItem" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
-              </div>
-            </div>
-          </div>
-          
-          <div id="inventoryList" class="space-y-2"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Edit Inventory Item Modal -->
+      <!-- Set Modals -->
     <div id="editInvModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
         <h2 class="text-xl font-semibold mb-4">Edit Item</h2>
@@ -953,23 +943,6 @@ app.get('/', (c) => {
       await loadCharacters()
     })
 
-    document.getElementById('editCharacterBtn').addEventListener('click', async () => {
-      if (!currentCharacterId) return
-      
-      const response = await fetch(API_BASE + '/api/characters?discord_id=' + currentUser.id)
-      const data = await response.json()
-      const char = data.characters.find(c => c.id == currentCharacterId)
-      
-      if (char) {
-        document.getElementById('editCharacterName').value = char.character_name
-        document.getElementById('editCharacterModal').classList.remove('hidden')
-      }
-    })
-
-    document.getElementById('editCharacterCancel').addEventListener('click', () => {
-      document.getElementById('editCharacterModal').classList.add('hidden')
-    })
-
     document.getElementById('editCharacterConfirm').addEventListener('click', async () => {
       const name = document.getElementById('editCharacterName').value.trim()
       
@@ -989,7 +962,6 @@ app.get('/', (c) => {
       })
       
       currentCharacterName = name
-      document.getElementById('editCharacterModal').classList.add('hidden')
       await loadCharacters()
     })
 
@@ -1005,6 +977,74 @@ app.get('/', (c) => {
       currentCharacterName = ''
       await loadCharacters()
     })
+
+    // Manage Character Modal - Tab Switching
+    document.getElementById('manageCharacterBtn').addEventListener('click', async () => {
+      if (!currentCharacterId) return
+      
+      // Load character data
+      const response = await fetch(API_BASE + '/api/characters?discord_id=' + currentUser.id)
+      const data = await response.json()
+      const char = data.characters.find(c => c.id == currentCharacterId)
+      
+      if (char) {
+        document.getElementById('editCharacterName').value = char.character_name
+        document.getElementById('manageCharacterModal').classList.remove('hidden')
+        
+        // Show Character Info tab by default
+        switchToTab('CharInfo')
+      }
+    })
+
+    document.getElementById('manageCharacterClose').addEventListener('click', () => {
+      document.getElementById('manageCharacterModal').classList.add('hidden')
+      // Refresh displays after closing
+      loadSlotUsage()
+      loadSummary()
+    })
+
+    function switchToTab(tabName) {
+      // Hide all tabs
+      document.getElementById('tabContentCharInfo').classList.add('hidden')
+      document.getElementById('tabContentCharData').classList.add('hidden')
+      document.getElementById('tabContentInventory').classList.add('hidden')
+      
+      // Reset all tab buttons
+      document.getElementById('tabCharInfo').className = 'px-4 py-2 text-gray-600 hover:text-blue-600'
+      document.getElementById('tabCharData').className = 'px-4 py-2 text-gray-600 hover:text-blue-600'
+      document.getElementById('tabInventory').className = 'px-4 py-2 text-gray-600 hover:text-blue-600'
+      
+      // Show selected tab
+      document.getElementById('tabContent' + tabName).classList.remove('hidden')
+      document.getElementById('tab' + tabName).className = 'px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-semibold'
+      
+      // Load data for specific tabs
+      if (tabName === 'CharData') {
+        loadCharacterDataTab()
+      } else if (tabName === 'Inventory') {
+        loadInventoryTab()
+      }
+    }
+
+    document.getElementById('tabCharInfo').addEventListener('click', () => switchToTab('CharInfo'))
+    document.getElementById('tabCharData').addEventListener('click', () => switchToTab('CharData'))
+    document.getElementById('tabInventory').addEventListener('click', () => switchToTab('Inventory'))
+
+    async function loadCharacterDataTab() {
+      const response = await fetch(API_BASE + '/api/characters?discord_id=' + currentUser.id)
+      const data = await response.json()
+      const char = data.characters.find(c => c.id == currentCharacterId)
+      
+      if (char && char.base_stats) {
+        document.getElementById('currentCharSummary').innerHTML = '<div class="p-3 bg-green-50 rounded"><strong>Character Data Saved</strong><br>Stats and skills are on file.</div>'
+      } else {
+        document.getElementById('currentCharSummary').innerHTML = '<div class="p-3 bg-yellow-50 rounded"><strong>No Character Data</strong><br>Please paste your stats and skills below.</div>'
+      }
+    }
+
+    async function loadInventoryTab() {
+      await loadInventory()
+    }
 
     document.getElementById('goalSetSelector').addEventListener('change', async (e) => {
       currentSetId = e.target.value
@@ -1182,50 +1222,6 @@ app.get('/', (c) => {
     let parsedSkillsData = null
     let parsedItemData = null
 
-    document.getElementById('manageCharBtn').addEventListener('click', async () => {
-      const summaryDiv = document.getElementById('currentCharSummary')
-      
-      if (!currentCharacterId) {
-        summaryDiv.innerHTML = '<p class="text-gray-500">No character selected</p>'
-        document.getElementById('manageCharModal').classList.remove('hidden')
-        return
-      }
-      
-      const response = await fetch(API_BASE + '/api/characters?discord_id=' + currentUser.id)
-      const data = await response.json()
-      const activeChar = data.characters.find(c => c.id == currentCharacterId)
-      
-      if (activeChar && (activeChar.base_stats || activeChar.skill_ranks)) {
-        const baseStats = activeChar.base_stats ? JSON.parse(activeChar.base_stats) : {}
-        const skillRanks = activeChar.skill_ranks ? JSON.parse(activeChar.skill_ranks) : {}
-        
-        let html = '<div class="p-4 bg-blue-50 border border-blue-200 rounded"><h3 class="font-semibold mb-2">Current Character Data</h3>'
-        
-        if (Object.keys(baseStats).length > 0) {
-          html += '<div class="mb-2"><strong>Base Stats:</strong> '
-          html += Object.entries(baseStats).map(([k, v]) => k + ': ' + v).join(', ')
-          html += '</div>'
-        }
-        
-        if (Object.keys(skillRanks).length > 0) {
-          html += '<div><strong>Skill Ranks:</strong> '
-          html += Object.entries(skillRanks).map(([k, v]) => k + ': ' + v).join(', ')
-          html += '</div>'
-        }
-        
-        html += '<p class="text-sm text-gray-600 mt-2">Update by pasting new data below</p></div>'
-        summaryDiv.innerHTML = html
-      } else {
-        summaryDiv.innerHTML = '<div class="p-4 bg-yellow-50 border border-yellow-200 rounded"><p class="text-sm text-gray-700"><strong>No character data yet.</strong> Paste your stats and skills below to get started. This helps calculate your enhancive needs.</p></div>'
-      }
-      
-      document.getElementById('manageCharModal').classList.remove('hidden')
-    })
-
-    document.getElementById('closeCharBtn').addEventListener('click', () => {
-      document.getElementById('manageCharModal').classList.add('hidden')
-    })
-
     document.getElementById('parseStatsBtn').addEventListener('click', () => {
       const text = document.getElementById('statsInput').value
       // Simple parser for stats
@@ -1292,11 +1288,6 @@ app.get('/', (c) => {
       document.getElementById('manageCharModal').classList.add('hidden')
     })
 
-    document.getElementById('manageInvBtn').addEventListener('click', async () => {
-      document.getElementById('manageInvModal').classList.remove('hidden')
-      await loadInventory()
-    })
-
     document.getElementById('cancelEditItem').addEventListener('click', () => {
       document.getElementById('editInvModal').classList.add('hidden')
     })
@@ -1320,13 +1311,6 @@ app.get('/', (c) => {
       } else {
         alert('Error updating item')
       }
-    })
-
-    document.getElementById('closeInvBtn').addEventListener('click', () => {
-      document.getElementById('manageInvModal').classList.add('hidden')
-      // Refresh displays after closing inventory modal
-      loadSlotUsage()
-      loadSummary()
     })
 
     document.getElementById('addItemBtn').addEventListener('click', () => {
