@@ -3835,7 +3835,11 @@ app.get('/api/recommendations/:discord_id/:goal_set', async (c) => {
     const { results: inventory } = await c.env.DB.prepare('SELECT * FROM set_inventory WHERE set_id = ?').bind(setResult.id).all()
     const { results: items } = await c.env.DB.prepare('SELECT * FROM shop_items').all()
     
-    const slotUsage = {}
+    const slotUsage: Record<string, number> = {}
+    for (const item of inventory as any[]) {
+      slotUsage[item.slot] = (slotUsage[item.slot] || 0) + 1
+    }
+    
     const direct = findDirectMatches(items as any, goals as any, slotUsage, setResult.account_type as string)
     const nuggets = findNuggetOpportunities(items as any, goals as any, slotUsage, setResult.account_type as string)
     const swatches = findSwatchOpportunities(items as any, goals as any, slotUsage, setResult.account_type as string)
