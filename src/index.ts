@@ -3233,8 +3233,7 @@ app.get('/api/my-matches', async (c) => {
   const setName = c.req.query('set_name')
   if (!discordId) return c.json({ error: 'discord_id required' }, 400)
 
-  // If set_name provided, filter by goals in that set
-  let query = `
+  const { results } = await c.env.DB.prepare(`
     SELECT 
       a.id as alert_id,
       a.sent_at,
@@ -3242,26 +3241,27 @@ app.get('/api/my-matches', async (c) => {
       i.*
     FROM alerts a
     JOIN shop_items i ON a.item_id = i.id
-  `
-  const params = [discordId]
+    WHERE a.discord_id = ?
+    ORDER BY a.sent_at DESC
+  `).bind(discordId).all()
+
+  let filtered = results
   
+  // Filter by set goals if set_name provided
   if (setName) {
-    query += `
-      JOIN set_goals sg ON a.goal_id = sg.id
-      JOIN sets s ON sg.set_id = s.id
-      WHERE a.discord_id = ? AND s.set_name = ?
-    `
-    params.push(setName)
-  } else {
-    query += ` WHERE a.discord_id = ?`
+    const setResult = await c.env.DB.prepare('SELECT s.id FROM sets s JOIN characters ch ON s.character_id = ch.id WHERE ch.discord_id = ? AND s.set_name = ?').bind(discordId, setName).first()
+    if (setResult) {
+      const { results: goals } = await c.env.DB.prepare('SELECT stat FROM set_goals WHERE set_id = ?').bind(setResult.id).all()
+      const goalStats = new Set(goals.map((g: any) => g.stat))
+      filtered = results.filter((r: any) => {
+        const enhs = JSON.parse(r.enhancives_json || '[]')
+        return enhs.some((e: any) => goalStats.has(e.ability))
+      })
+    }
   }
-  
-  query += ` ORDER BY a.sent_at DESC`
 
-  const { results } = await c.env.DB.prepare(query).bind(...params).all()
-
-  const available = results.filter((r: any) => r.available === 1)
-  const recentlySold = results.filter((r: any) => r.available === 0)
+  const available = filtered.filter((r: any) => r.available === 1)
+  const recentlySold = filtered.filter((r: any) => r.available === 0)
 
   return c.json({ available, recentlySold })
 })
