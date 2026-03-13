@@ -1469,9 +1469,9 @@ app.get('/', (c) => {
       document.getElementById('bulkInventoryLocation').value = ''
     })
     
-    async function processYamlImport(yamlText: string) {
-      const lines = yamlText.split('\n')
-      const items: any[] = []
+    async function processYamlImport(yamlText) {
+      const lines = yamlText.split('\\n')
+      const items = []
       let inWornItems = false
       let currentItem: any = null
       
@@ -1499,7 +1499,7 @@ app.get('/', (c) => {
       }
       if (currentItem) items.push(currentItem)
       
-      const slotMap: Record<string, string> = {
+      const slotMap = {
         'locus': 'elsewhere', 'helm': 'head', 'barrette': 'pin', 'earcuff': 'ear',
         'bracelet': 'wrist', 'wristchain': 'wrist', 'chain': 'neck', 'socks': 'socks',
         'earrings': 'ears', 'ring': 'finger', 'handflowers': 'hands', 'anklet': 'ankle',
