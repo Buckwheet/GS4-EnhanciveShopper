@@ -102,6 +102,7 @@ app.get('/', (c) => {
             </select>
             <button id="newCharacterBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-sm">+ New Character</button>
             <button id="manageCharacterBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">Manage Character</button>
+            <span class="text-xs text-gray-500 italic ml-2">Note: Inventories are tied to character/set combinations</span>
           </div>
         
         <div class="flex gap-2 items-center mb-4">
