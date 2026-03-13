@@ -1929,6 +1929,11 @@ app.get('/', (c) => {
       if (data.error) {
         addChatMessage('Error: ' + data.error, false)
       } else {
+        // Log SQL query to console for debugging
+        if (data.sql) {
+          console.log('AI Generated SQL:', data.sql)
+        }
+        
         addChatMessage(data.response, false)
         chatHistory.push({ role: 'assistant', content: data.response })
         localStorage.setItem('chatHistory_' + currentUser.id, JSON.stringify(chatHistory))
@@ -3050,8 +3055,13 @@ app.post('/api/ai-chat', async (c) => {
               const enhText = enhs.map((e: any) => '+' + e.boost + ' ' + e.ability).join(', ')
               return item.name + ' - ' + (item.cost ? item.cost.toLocaleString() + ' silvers' : 'unknown cost') + ' - ' + item.town + ' - ' + enhText
             }).join('\n')
-            responseText += '\n\nFound ' + queryResult.results.length + ' items:\n' + itemList
+            
+            // Don't show the SQL query in the response, but include it for debugging
+            responseText = 'Found ' + queryResult.results.length + ' items:\n' + itemList
             if (queryResult.results.length > displayLimit) responseText += '\n... and ' + (queryResult.results.length - displayLimit) + ' more'
+            
+            // Return SQL query separately so it can be logged on client side
+            return c.json({ response: responseText, sql: sql })
           } else {
             responseText += '\n\nNo items found.'
           }
