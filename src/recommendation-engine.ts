@@ -245,7 +245,7 @@ export function findSwatchOpportunities(
     
     if (!withinBudget) continue
     
-    recommendations.push({
+    const rec: Recommendation = {
       type: 'swatch',
       item,
       totalCost,
