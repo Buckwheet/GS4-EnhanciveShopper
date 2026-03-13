@@ -1916,6 +1916,7 @@ app.get('/', (c) => {
         const displaySlot = slotMapping[item.slot] || item.slot
         slotCounts[displaySlot] = (slotCounts[displaySlot] || 0) + 1
       })
+      console.log('Slot counts:', slotCounts)
       
       const setResponse = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/sets')
       const setData = await setResponse.json()
