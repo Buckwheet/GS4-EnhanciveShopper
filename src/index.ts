@@ -1533,10 +1533,8 @@ app.get('/', (c) => {
         else { console.error('Failed:', item.name); skipped++ }
       }
       
-      alert(`Import complete!
-
-Imported: ${imported} items
-Skipped: ${skipped} items`)
+      var yamlMsg = 'Import complete! Imported: ' + imported + ' items. Skipped: ' + skipped + ' items'
+      alert(yamlMsg)
       document.getElementById('bulkImportForm').classList.add('hidden')
       document.getElementById('bulkEnhanciveDetail').value = ''
       loadInventory()
