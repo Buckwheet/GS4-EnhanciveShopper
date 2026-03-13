@@ -88,3 +88,51 @@ export function calculateTotalCost(item: ShopItem, conversionType: 'none' | 'nug
   if (conversionType === 'swatch') cost += SWATCH_COST
   return cost
 }
+
+// Find direct match recommendations (items that match goals and slots)
+export function findDirectMatches(
+  items: ShopItem[],
+  goals: Goal[],
+  slotUsage: SlotUsage,
+  accountType: string = 'F2P'
+): Recommendation[] {
+  const recommendations: Recommendation[] = []
+  
+  for (const item of items) {
+    if (!item.available || !item.slot) continue
+    
+    const goalsMatched = calculateGoalCoverage(item, goals)
+    if (goalsMatched.length === 0) continue
+    
+    // Check if item matches preferred slots for any goal
+    let matchesPreferredSlot = false
+    for (const goal of goals) {
+      if (goalsMatched.includes(goal.stat)) {
+        if (!goal.preferred_slots || goal.preferred_slots.includes(item.slot)) {
+          matchesPreferredSlot = true
+        }
+        // Check max cost
+        if (goal.max_cost && item.price > goal.max_cost) {
+          continue
+        }
+      }
+    }
+    
+    if (!matchesPreferredSlot) continue
+    
+    // Check if slot has capacity
+    if (!canFitInSlot(item.slot, slotUsage, accountType)) continue
+    
+    recommendations.push({
+      type: 'direct',
+      item,
+      totalCost: item.price,
+      goalsMatched,
+      explanation: `Direct match for ${goalsMatched.join(', ')}`
+    })
+  }
+  
+  // Sort by cost (lowest first) and return top 10
+  return recommendations.sort((a, b) => a.totalCost - b.totalCost).slice(0, 10)
+}
+
