@@ -3003,7 +3003,14 @@ app.post('/api/ai-chat', async (c) => {
     
     const sqlMatch = responseText.match(/SELECT[\s\S]*?FROM[\s\S]*?;/i)
     if (sqlMatch) {
-      const sql = sqlMatch[0]
+      let sql = sqlMatch[0]
+      
+      // If user asked for "highest/best/most", fetch more items so we can sort properly
+      const userMessage = (messages[messages.length - 1]?.content || '').toLowerCase()
+      if (userMessage.includes('highest') || userMessage.includes('best') || userMessage.includes('most')) {
+        sql = sql.replace(/LIMIT\s+\d+/i, 'LIMIT 50')
+      }
+      
       if (sql.toLowerCase().includes('select') && sql.toLowerCase().includes('from shop_items')) {
         try {
           const queryResult = await c.env.DB.prepare(sql).all()
