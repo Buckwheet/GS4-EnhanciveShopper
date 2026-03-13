@@ -10,7 +10,7 @@ export async function sendDiscordDM(botToken: string, userId: string, message: s
       body: JSON.stringify({ recipient_id: userId }),
     })
 
-    const channel = await channelResponse.json()
+    const channel = await channelResponse.json() as { id?: string }
     if (!channel.id) return false
 
     // Send message
