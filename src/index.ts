@@ -1936,15 +1936,6 @@ app.get('/', (c) => {
     })
 
     document.getElementById('chatInput').addEventListener('keypress', (e) => {
-      if (data.error) {
-        addChatMessage('Error: ' + data.error, false)
-      } else {
-        addChatMessage(data.response, false)
-        chatHistory.push({ role: 'assistant', content: data.response })
-      }
-    })
-
-    document.getElementById('chatInput').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault()
         document.getElementById('sendChatBtn').click()
