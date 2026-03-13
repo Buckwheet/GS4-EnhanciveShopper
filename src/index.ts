@@ -2077,12 +2077,9 @@ app.get('/', (c) => {
       if (currentUser && currentSetId) {
         const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/goals')
         const data = await response.json()
-        // Use all goals from the current set (already filtered by set_id in API)
         userGoals = data.goals || []
-        console.log('Reloaded goals after save:', userGoals)
         
         if (filterByGoalsEnabled) {
-          console.log('Applying filter with', userGoals.length, 'goals')
           filterItems()
         }
       }
@@ -2395,8 +2392,6 @@ app.get('/', (c) => {
                 } else if (!item.worn || item.worn.trim() === '' || item.worn === 'N/A') {
                   itemSlot = 'nugget'
                 }
-                
-                console.log(`Checking item ${item.name}: slot=${itemSlot}, allowed=${slots.join(',')}, match=${slots.includes(itemSlot)}`)
                 
                 if (!slots.includes(itemSlot)) continue
               }
