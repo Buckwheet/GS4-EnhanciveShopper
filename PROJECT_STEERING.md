@@ -1,5 +1,25 @@
 # Project Steering Document
 
+## Documentation
+
+### CLAUDE.md - Project Guide
+**Location:** `/home/rpgfilms/enhancive-alert/CLAUDE.md`
+
+Comprehensive project guide for AI assistants containing:
+- Complete file structure with sizes and purposes
+- Key code locations with line numbers
+- API routes and UI sections mapped
+- Database schema documentation
+- Development workflow and common tasks
+- Memory system to reduce grep usage (use `code` tool instead)
+- Recent changes log
+
+**When to reference:**
+- Starting new features (find relevant code locations)
+- Debugging (check common patterns and tips)
+- Understanding architecture (see tech stack and relationships)
+- Finding specific functionality (use indexed line numbers)
+
 ## Development Principles
 
 ### Small, Incremental Changes
