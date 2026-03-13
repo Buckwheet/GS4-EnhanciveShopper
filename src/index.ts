@@ -287,6 +287,7 @@ app.get('/', (c) => {
               <button id="addItemBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mr-2">+ Add Enhancive Item</button>
               <button id="bulkImportBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mr-2">Bulk Import</button>
               <button id="yamlImportBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded mr-2">YAML Import File</button>
+              <a href="/enh_export.lic" download class="inline-block bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded mr-2">Download Lich Script</a>
               <button id="copyInventoryBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded mr-2">Copy from Set</button>
               <button id="deleteAllInventoryBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Delete All</button>
             </div>
@@ -2940,6 +2941,15 @@ app.get('/', (c) => {
   </script>
 </body>
 </html>`)
+})
+
+app.get('/enh_export.lic', async (c) => {
+  const script = await fetch('https://raw.githubusercontent.com/Buckwheet/GS4-EnhanciveShopper/main/enh_export.lic')
+  const text = await script.text()
+  return c.text(text, 200, {
+    'Content-Type': 'text/plain',
+    'Content-Disposition': 'attachment; filename="enh_export.lic"'
+  })
 })
 
 app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }))
