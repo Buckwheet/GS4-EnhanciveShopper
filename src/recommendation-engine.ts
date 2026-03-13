@@ -89,6 +89,23 @@ export function calculateTotalCost(item: ShopItem, conversionType: 'none' | 'nug
   return cost
 }
 
+// Generate detailed explanation for a recommendation
+function generateExplanation(rec: Recommendation, item: ShopItem, goals: Goal[]): string {
+  const baseCost = item.price || 0
+  const conversionCost = rec.totalCost - baseCost
+  
+  const enhancives = JSON.parse(item.enhancives_json)
+  const matchedEnhancives = enhancives.filter((e: any) => rec.goalsMatched.includes(e.ability))
+  const enhDetails = matchedEnhancives.map((e: any) => `+${e.boost} ${e.ability}`).join(', ')
+  
+  let explanation = `${enhDetails} | ${baseCost.toLocaleString()}s`
+  if (conversionCost > 0) {
+    explanation += ` + ${conversionCost.toLocaleString()}s conversion`
+  }
+  
+  return explanation
+}
+
 // Find direct match recommendations (items that match goals and slots)
 export function findDirectMatches(
   items: ShopItem[],
@@ -123,13 +140,15 @@ export function findDirectMatches(
     // Check if slot has capacity
     if (!canFitInSlot(item.slot, slotUsage, accountType)) continue
     
-    recommendations.push({
+    const rec: Recommendation = {
       type: 'direct',
       item,
       totalCost: item.price,
       goalsMatched,
-      explanation: `Direct match for ${goalsMatched.join(', ')}`
-    })
+      explanation: ''
+    }
+    rec.explanation = generateExplanation(rec, item, goals)
+    recommendations.push(rec)
   }
   
   // Sort by cost (lowest first) and return top 10
@@ -166,13 +185,15 @@ export function findNuggetOpportunities(
     
     if (!withinBudget) continue
     
-    recommendations.push({
+    const rec: Recommendation = {
       type: 'nugget',
       item,
       totalCost,
       goalsMatched,
-      explanation: `Convert with nugget (+25M) for ${goalsMatched.join(', ')}`
-    })
+      explanation: ''
+    }
+    rec.explanation = generateExplanation(rec, item, goals)
+    recommendations.push(rec)
   }
   
   // Sort by value/cost ratio and return top 10
@@ -229,8 +250,10 @@ export function findSwatchOpportunities(
       item,
       totalCost,
       goalsMatched,
-      explanation: `Change slot with swatch (+25M) for ${goalsMatched.join(', ')}`
-    })
+      explanation: ''
+    }
+    rec.explanation = generateExplanation(rec, item, goals)
+    recommendations.push(rec)
   }
   
   // Sort by value/cost ratio and return top 10
@@ -265,13 +288,15 @@ export function findSimpleSwaps(
       
       if (improvementScore <= 0) continue
       
-      recommendations.push({
+      const rec: Recommendation = {
         type: 'swap',
         item: shopItem,
         totalCost: shopItem.price,
         goalsMatched: shopGoalsMatched,
-        explanation: `Replace ${invItem.item_name} (+${improvementScore.toFixed(1)} improvement)`
-      })
+        explanation: ''
+      }
+      rec.explanation = `Replace ${invItem.item_name} | ${generateExplanation(rec, shopItem, goals)} | +${goalImprovement} goals`
+      recommendations.push(rec)
     }
   }
   
