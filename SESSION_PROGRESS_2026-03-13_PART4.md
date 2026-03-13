@@ -183,11 +183,12 @@ interface Recommendation {
 - **Deployment Status**: ✅ Live
 
 ## Next Session Goals
-1. Complete Task 4 (Advanced Instructions UI)
-2. Complete Task 9 (Simple Inventory Optimization)
-3. Complete Task 10 (Recommendation API Endpoint)
-4. Complete Task 11 (Tabbed UI)
-5. Test end-to-end with real data
+1. **Quick UI Fix**: Add close button at top of Inventory tab (currently only at bottom)
+2. Complete Task 4 (Advanced Instructions UI)
+3. Complete Task 9 (Simple Inventory Optimization)
+4. Complete Task 10 (Recommendation API Endpoint)
+5. Complete Task 11 (Tabbed UI)
+6. Test end-to-end with real data
 
 ## Notes
 - Database uses new schema (`set_inventory`, not `user_inventory`)
