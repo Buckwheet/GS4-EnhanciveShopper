@@ -3035,13 +3035,22 @@ app.post('/api/ai-chat', async (c) => {
               }
             }
             
-            const itemList = results.slice(0, 5).map((item: any) => {
+            // Try to detect how many items user wants
+            const userMessage = (messages[messages.length - 1]?.content || '').toLowerCase()
+            const numberMatch = userMessage.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\b/)
+            let displayLimit = 5
+            if (numberMatch) {
+              const numMap: any = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 }
+              displayLimit = numMap[numberMatch[1]] || parseInt(numberMatch[1]) || 5
+            }
+            
+            const itemList = results.slice(0, displayLimit).map((item: any) => {
               const enhs = JSON.parse(item.enhancives_json || '[]')
               const enhText = enhs.map((e: any) => '+' + e.boost + ' ' + e.ability).join(', ')
               return item.name + ' - ' + (item.cost ? item.cost.toLocaleString() + ' silvers' : 'unknown cost') + ' - ' + item.town + ' - ' + enhText
             }).join('\n')
             responseText += '\n\nFound ' + queryResult.results.length + ' items:\n' + itemList
-            if (queryResult.results.length > 5) responseText += '\n... and ' + (queryResult.results.length - 5) + ' more'
+            if (queryResult.results.length > displayLimit) responseText += '\n... and ' + (queryResult.results.length - displayLimit) + ' more'
           } else {
             responseText += '\n\nNo items found.'
           }
