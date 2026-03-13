@@ -114,6 +114,8 @@ userGoals = data.goals || []
 13. `c6b713b` - Add Dependabot config for weekly npm security updates
 14. `a7799c3` - Debug: Add logging to slot filtering logic
 15. `96cc9b5` - Clean: Remove debug console.log that breaks TypeScript
+16. `13cf422` - Docs: Add session 3 progress document
+17. `f9bc3d7` - UI: Consolidate character management into single tabbed modal
 
 ## Deployments
 - Latest: `2cffa3ea-9311-4f79-9bc6-3f61f850b9de`
@@ -127,11 +129,40 @@ userGoals = data.goals || []
 - ✅ UI improvements deployed
 - 🔄 User testing in progress (debug logging enabled)
 
+### 5. Character Management UI Consolidation
+- ✅ **Reduced Button Clutter** - Consolidated 5 buttons into 2
+  - Removed: "Manage Character", "Manage Inventory", "Edit Character", "Delete Character" buttons
+  - Kept: "+ New Character" button
+  - Added: Single "Manage Character" button
+  - Commit: `f9bc3d7`
+
+- ✅ **Created Tabbed Modal** - Single location for all character management
+  - **Character Info Tab**: Edit character name, delete character
+  - **Character Data Tab**: Paste stats/skills from game
+  - **Inventory Tab**: Add items, bulk import, manage inventory
+  - Tabs switch without closing modal
+  - Auto-loads data when switching to Character Data or Inventory tabs
+
+- ✅ **Removed Old Modals** - Cleaned up duplicate code
+  - Removed `editCharacterModal` (old edit name modal)
+  - Removed `manageCharModal` (old character data modal)
+  - Removed `manageInvModal` (old inventory modal)
+  - All functionality now in single `manageCharacterModal`
+
+- ✅ **Updated Event Handlers** - Wired up new tab system
+  - Tab switching with visual feedback (blue underline for active tab)
+  - Modal close button refreshes slot usage and summary displays
+  - Removed old button handlers (manageCharBtn, manageInvBtn, editCharacterBtn, closeCharBtn, closeInvBtn)
+
+## Deployments This Session
+- `2cffa3ea-9311-4f79-9bc6-3f61f850b9de` - Goal filter fix with debug logging
+- `1a4936ef-dfe8-40bc-beeb-59ce84a876af` - UI consolidation (latest)
+
 ## Next Steps
-- Monitor user testing feedback
+- Monitor user testing feedback on goal filtering
 - Remove debug logging once confirmed working
-- Consider adding more UI polish
-- Update session progress documents
+- Plan next feature improvements
+- Consider additional UI polish
 
 ## Known Issues
 - None currently blocking
@@ -140,3 +171,4 @@ userGoals = data.goals || []
 - Debug logging intentionally left in for user testing
 - Pre-commit hooks now require Windows path due to WSL/node_modules location
 - CLAUDE.md should reduce grep usage in future sessions
+- UI consolidation reduces cognitive load for users (5 buttons → 2 buttons)
