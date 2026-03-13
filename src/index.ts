@@ -147,8 +147,6 @@ app.get('/', (c) => {
             <div class="grid grid-cols-3 md:grid-cols-5 gap-2">
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ankle" class="mr-1"> ankle</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="arms" class="mr-1"> arms</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ankle" class="mr-1"> ankle</label>
-              <label class="flex items-center"><input type="checkbox" name="goalSlot" value="arms" class="mr-1"> arms</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="back" class="mr-1"> back</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="belt" class="mr-1"> belt</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="chest" class="mr-1"> chest</label>
