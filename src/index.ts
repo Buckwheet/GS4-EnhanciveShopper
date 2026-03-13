@@ -174,7 +174,7 @@ app.get('/', (c) => {
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="wrist" class="mr-1"> wrist</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="nugget" class="mr-1"> nugget</label>
               <label class="flex items-center ml-4">
-                <input type="checkbox" id="includeNuggetPrice" class="mr-1">
+                <input type="checkbox" id="goalNuggetPrice" class="mr-1">
                 <span class="text-sm text-gray-600">+25M price</span>
               </label>
             </div>
@@ -1145,6 +1145,7 @@ app.get('/', (c) => {
       document.getElementById('goalStat').value = goal.stat
       document.getElementById('goalBoost').value = goal.min_boost
       document.getElementById('goalMaxCost').value = goal.max_cost || ''
+      document.getElementById('goalNuggetPrice').checked = goal.include_nugget_price === 1
       
       if (goal.preferred_slots) {
         const slots = goal.preferred_slots.split(',').map(s => s.trim())
@@ -1854,7 +1855,7 @@ app.get('/', (c) => {
           const enhs = JSON.parse(item.enhancives_json)
           const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
           const isNugget = !item.worn || item.worn === 'N/A'
-          const displayCost = (isNugget && includeNuggetPrice) ? (item.cost || 0) + 25000000 : item.cost
+          const displayCost = (isNugget && shouldShowNuggetPrice(item)) ? (item.cost || 0) + 25000000 : item.cost
           return \`
             <div class="p-3 border rounded bg-green-50">
               <div class="font-semibold">\${item.name}</div>
@@ -1873,7 +1874,7 @@ app.get('/', (c) => {
           const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
           const soldDate = new Date(item.unavailable_since).toLocaleString()
           const isNugget = !item.worn || item.worn === 'N/A'
-          const displayCost = (isNugget && includeNuggetPrice) ? (item.cost || 0) + 25000000 : item.cost
+          const displayCost = (isNugget && shouldShowNuggetPrice(item)) ? (item.cost || 0) + 25000000 : item.cost
           return \`
             <div class="p-3 border rounded bg-gray-100">
               <div class="font-semibold text-gray-600">\${item.name}</div>
@@ -1983,6 +1984,7 @@ app.get('/', (c) => {
       const stat = document.getElementById('goalStat').value
       const boost = document.getElementById('goalBoost').value
       const maxCost = document.getElementById('goalMaxCost').value
+      const includeNuggetPrice = document.getElementById('goalNuggetPrice').checked ? 1 : 0
       const selectedSlots = Array.from(document.querySelectorAll('input[name="goalSlot"]:checked'))
         .map(cb => cb.value)
         .join(',')
@@ -2001,6 +2003,7 @@ app.get('/', (c) => {
             min_boost: parseInt(boost),
             max_cost: maxCost ? parseInt(maxCost) : null,
             preferred_slots: selectedSlots || null,
+            include_nugget_price: includeNuggetPrice
           }),
         })
         editingGoalId = null
@@ -2018,7 +2021,8 @@ app.get('/', (c) => {
             stat,
             min_boost: parseInt(boost),
             max_cost: maxCost ? parseInt(maxCost) : null,
-            preferred_slots: selectedSlots || null
+            preferred_slots: selectedSlots || null,
+            include_nugget_price: includeNuggetPrice
           }),
         })
         
@@ -2224,6 +2228,24 @@ app.get('/', (c) => {
           if (isStatBonus) {
             sum += enh.boost * 2
           } else {
+
+    function shouldShowNuggetPrice(item) {
+      if (!userGoals || userGoals.length === 0) return false
+      const isNugget = !item.worn || item.worn === 'N/A'
+      if (!isNugget) return false
+      
+      try {
+        const enhancives = JSON.parse(item.enhancives_json)
+        return enhancives.some(enh => {
+          const ability = enh.ability.toLowerCase()
+          return userGoals.some(goal => 
+            ability.includes(goal.stat.toLowerCase()) && goal.include_nugget_price === 1
+          )
+        })
+      } catch {
+        return false
+      }
+    }
             sum += enh.boost
           }
         }
@@ -2405,10 +2427,10 @@ app.get('/', (c) => {
           displaySlot = 'nugget'
         }
         
-        // Calculate display cost (add 25M if nugget and option enabled)
+        // Calculate display cost (add 25M if nugget and matching goal has flag)
         let displayCost = item.cost || 0
         let costLabel = ''
-        if (isNugget && includeNuggetPrice) {
+        if (isNugget && shouldShowNuggetPrice(item)) {
           displayCost = displayCost + 25000000
           costLabel = '<div class="text-xs text-yellow-600">+NUGGET</div>'
         }
@@ -2725,15 +2747,15 @@ app.get('/api/sets/:id/goals', async (c) => {
 app.post('/api/sets/:id/goals', async (c) => {
   try {
     const setId = c.req.param('id')
-    const { stat, min_boost, max_cost, preferred_slots } = await c.req.json()
+    const { stat, min_boost, max_cost, preferred_slots, include_nugget_price } = await c.req.json()
     
     if (!stat || min_boost === undefined || min_boost === null) {
       return c.json({ error: 'stat and min_boost required' }, 400)
     }
 
     const result = await c.env.DB.prepare(
-      'INSERT INTO set_goals (set_id, stat, min_boost, max_cost, preferred_slots, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-    ).bind(setId, stat, min_boost, max_cost || null, preferred_slots || null, new Date().toISOString()).run()
+      'INSERT INTO set_goals (set_id, stat, min_boost, max_cost, preferred_slots, include_nugget_price, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(setId, stat, min_boost, max_cost || null, preferred_slots || null, include_nugget_price || 0, new Date().toISOString()).run()
 
     return c.json({ success: true, id: result.meta.last_row_id })
   } catch (error) {
@@ -2908,15 +2930,15 @@ app.get('/api/set-goals/:id', async (c) => {
 // New API: Update goal
 app.put('/api/set-goals/:id', async (c) => {
   const id = c.req.param('id')
-  const { stat, min_boost, max_cost, preferred_slots } = await c.req.json()
+  const { stat, min_boost, max_cost, preferred_slots, include_nugget_price } = await c.req.json()
   
   if (!stat || min_boost === undefined || min_boost === null) {
     return c.json({ error: 'stat and min_boost required' }, 400)
   }
 
   await c.env.DB.prepare(
-    'UPDATE set_goals SET stat = ?, min_boost = ?, max_cost = ?, preferred_slots = ? WHERE id = ?'
-  ).bind(stat, min_boost, max_cost || null, preferred_slots || null, id).run()
+    'UPDATE set_goals SET stat = ?, min_boost = ?, max_cost = ?, preferred_slots = ?, include_nugget_price = ? WHERE id = ?'
+  ).bind(stat, min_boost, max_cost || null, preferred_slots || null, include_nugget_price || 0, id).run()
 
   return c.json({ success: true })
 })
