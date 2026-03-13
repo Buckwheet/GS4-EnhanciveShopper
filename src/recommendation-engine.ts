@@ -181,4 +181,63 @@ export function findNuggetOpportunities(
     .slice(0, 10)
 }
 
+// Find swatch conversion opportunities (wrong slot items)
+export function findSwatchOpportunities(
+  items: ShopItem[],
+  goals: Goal[],
+  slotUsage: SlotUsage,
+  accountType: string = 'F2P'
+): Recommendation[] {
+  const recommendations: Recommendation[] = []
+  
+  for (const item of items) {
+    if (!item.available || !item.slot) continue
+    
+    const goalsMatched = calculateGoalCoverage(item, goals)
+    if (goalsMatched.length === 0) continue
+    
+    // Check if item is in wrong slot for any goal
+    let needsSwatchForGoal = false
+    for (const goal of goals) {
+      if (goalsMatched.includes(goal.stat) && goal.preferred_slots) {
+        if (!goal.preferred_slots.includes(item.slot)) {
+          needsSwatchForGoal = true
+          break
+        }
+      }
+    }
+    
+    if (!needsSwatchForGoal) continue
+    
+    const totalCost = calculateTotalCost(item, 'swatch')
+    
+    // Check if total cost is within budget
+    let withinBudget = false
+    for (const goal of goals) {
+      if (goalsMatched.includes(goal.stat)) {
+        if (!goal.max_cost || totalCost <= goal.max_cost) {
+          withinBudget = true
+          break
+        }
+      }
+    }
+    
+    if (!withinBudget) continue
+    
+    recommendations.push({
+      type: 'swatch',
+      item,
+      totalCost,
+      goalsMatched,
+      explanation: `Change slot with swatch (+25M) for ${goalsMatched.join(', ')}`
+    })
+  }
+  
+  // Sort by value/cost ratio and return top 10
+  return recommendations
+    .sort((a, b) => (b.goalsMatched.length / b.totalCost) - (a.goalsMatched.length / a.totalCost))
+    .slice(0, 10)
+}
+
+
 
