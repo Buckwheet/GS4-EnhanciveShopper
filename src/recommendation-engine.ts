@@ -241,3 +241,45 @@ export function findSwatchOpportunities(
 
 
 
+
+// Find simple 1-for-1 inventory swaps (replace existing items with better alternatives)
+export function findSimpleSwaps(
+  inventory: InventoryItem[],
+  items: ShopItem[],
+  goals: Goal[]
+): Recommendation[] {
+  const recommendations: Recommendation[] = []
+  
+  for (const invItem of inventory) {
+    if (invItem.is_irreplaceable) continue
+    
+    const invGoalsMatched = calculateGoalCoverage({ enhancives_json: invItem.enhancives_json } as ShopItem, goals)
+    
+    for (const shopItem of items) {
+      if (!shopItem.available || shopItem.slot !== invItem.slot) continue
+      
+      const shopGoalsMatched = calculateGoalCoverage(shopItem, goals)
+      const goalImprovement = shopGoalsMatched.length - invGoalsMatched.length
+      const costSavings = 0 - shopItem.price
+      const improvementScore = goalImprovement + (costSavings / 1000000)
+      
+      if (improvementScore <= 0) continue
+      
+      recommendations.push({
+        type: 'swap',
+        item: shopItem,
+        totalCost: shopItem.price,
+        goalsMatched: shopGoalsMatched,
+        explanation: `Replace ${invItem.item_name} (+${improvementScore.toFixed(1)} improvement)`
+      })
+    }
+  }
+  
+  return recommendations
+    .sort((a, b) => {
+      const aScore = parseFloat(a.explanation.match(/\+([0-9.]+)/)?.[1] || '0')
+      const bScore = parseFloat(b.explanation.match(/\+([0-9.]+)/)?.[1] || '0')
+      return bScore - aScore
+    })
+    .slice(0, 5)
+}
