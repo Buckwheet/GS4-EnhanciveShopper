@@ -32,7 +32,14 @@ export async function checkMatches(env: Env, newItems: any[]) {
 
         if (goal.preferred_slots) {
           const slots = goal.preferred_slots.split(',').map((s: string) => s.trim())
-          if (!slots.includes(item.worn)) return false
+          const itemSlot = item.worn || 'nugget'
+          const matchesSlot = slots.some((slot: string) => {
+            if (slot === 'nugget') {
+              return !item.worn || item.worn === 'N/A'
+            }
+            return slot === itemSlot
+          })
+          if (!matchesSlot) return false
         }
 
         return true
