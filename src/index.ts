@@ -2936,6 +2936,13 @@ app.post('/api/ai-chat', async (c) => {
     return c.json({ error: 'Rate limit: Maximum 50 messages per session. Please refresh to start a new session.' }, 429)
   }
   
+  // Get database schema
+  const schemaResult = await c.env.DB.prepare(`
+    SELECT sql FROM sqlite_master WHERE type='table' AND name='shop_items'
+  `).first()
+  
+  const schemaContext = schemaResult ? '\n\nDatabase Schema:\n' + schemaResult.sql : ''
+  
   const goalsResult = await c.env.DB.prepare(`
     SELECT sg.stat, sg.min_boost, sg.max_cost, sg.preferred_slots 
     FROM set_goals sg
@@ -2995,7 +3002,7 @@ app.post('/api/ai-chat', async (c) => {
     }
   }
   
-  const systemPrompt = 'You are a database query assistant for GS4 Enhancive Shopper using SQLite. When users ask for items, respond with ONLY a SQL query.\n\nDatabase: SQLite (D1)\nTable: shop_items (name, town, shop, cost, worn, enhancives_json, available)\n\nIMPORTANT: enhancives_json is TEXT, not JSON type. Use LIKE for searching.\n\nQuery format:\nSELECT name, town, shop, cost, worn, enhancives_json FROM shop_items WHERE available = 1 AND [conditions] ORDER BY cost ASC LIMIT 10;\n\nExamples:\n- "neck wisdom items" → WHERE worn = \'neck\' AND enhancives_json LIKE \'%Wisdom%\'\n- "cheap strength" → WHERE enhancives_json LIKE \'%Strength%\' AND cost < 5000000\n- "finger rings under 10M" → WHERE worn IN (\'finger\',\'fingers\') AND cost < 10000000\n\nSlots: neck, finger, fingers, wrist, head, ear, ears, waist, arms, legs, feet, shoulder, shoulders, back, chest, front, hands, hair, ankle, pin\nStats: Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence\n\nRULES:\n- ALWAYS include: available = 1\n- Use LIKE for text search in enhancives_json\n- NO PostgreSQL syntax (no ::jsonb, no ->)\n- Sort by cost ASC unless user asks for "highest" or "best" then use cost DESC\n- Respond with ONLY the SQL query' + goalsContext + invContext + statsContext + itemsContext
+  const systemPrompt = 'You are a SQL query generator for GS4 Enhancive Shopper. Generate SQLite queries based on user requests.\n\n' + schemaContext + '\n\nIMPORTANT:\n- enhancives_json is TEXT (not JSON type) - use LIKE for searching\n- ALWAYS include: WHERE available = 1\n- Use LIKE \'%pattern%\' for text search in enhancives_json\n- NO PostgreSQL syntax (no ::jsonb, no ->, no ->>) \n- Sort by cost ASC (cheapest first) unless user asks for "highest/best/most"\n\nCommon slots: neck, finger, fingers, wrist, head, ear, ears, waist, arms, legs, feet, shoulder, shoulders, back, chest, front, hands, hair, ankle, pin\n\nCommon stats: Strength, Constitution, Dexterity, Agility, Discipline, Aura, Logic, Intuition, Wisdom, Influence\n\nExamples:\n- "neck wisdom items" → SELECT name, town, shop, cost, worn, enhancives_json FROM shop_items WHERE available = 1 AND worn = \'neck\' AND enhancives_json LIKE \'%Wisdom%\' ORDER BY cost ASC LIMIT 10;\n- "cheap strength under 5M" → SELECT name, town, shop, cost, worn, enhancives_json FROM shop_items WHERE available = 1 AND enhancives_json LIKE \'%Strength%\' AND cost < 5000000 ORDER BY cost ASC LIMIT 10;\n\nRespond with ONLY the SQL query, nothing else.' + goalsContext + invContext + statsContext + itemsContext
   
   const messages = [{ role: 'system', content: systemPrompt }]
   if (history && history.length > 0) {
