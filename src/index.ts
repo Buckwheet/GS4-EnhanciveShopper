@@ -3150,46 +3150,11 @@ app.post('/api/character-sets/:id/goals', async (c) => {
   return c.json({ success: true, id: result.meta.last_row_id })
 })
 
-app.post('/api/goals', async (c) => {
-  const { discord_id, stat, min_boost, max_cost, preferred_slots, goal_set_name, account_type, base_stats, skill_ranks } = await c.req.json()
-  
-  if (!discord_id || !stat || min_boost === undefined || min_boost === null) {
-    return c.json({ error: 'discord_id, stat, and min_boost required' }, 400)
-  }
-
-  const result = await c.env.DB.prepare(
-    'INSERT INTO user_goals (discord_id, stat, min_boost, max_cost, preferred_slots, goal_set_name, account_type, base_stats, skill_ranks, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-  ).bind(discord_id, stat, min_boost, max_cost || null, preferred_slots || null, goal_set_name || 'Default', account_type || 'F2P', base_stats || null, skill_ranks || null, new Date().toISOString()).run()
-
-  return c.json({ success: true, id: result.meta.last_row_id })
-})
-
-app.put('/api/goals/:id', async (c) => {
-  const id = c.req.param('id')
-  const { stat, min_boost, max_cost, preferred_slots, goal_set_name, account_type } = await c.req.json()
-  
-  if (!stat || min_boost === undefined || min_boost === null) {
-    return c.json({ error: 'stat and min_boost required' }, 400)
-  }
-
-  await c.env.DB.prepare(
-    'UPDATE user_goals SET stat = ?, min_boost = ?, max_cost = ?, preferred_slots = ?, goal_set_name = ?, account_type = ? WHERE id = ?'
-  ).bind(stat, min_boost, max_cost || null, preferred_slots || null, goal_set_name || null, account_type || null, id).run()
-
-  return c.json({ success: true })
-})
-
-app.put('/api/goal-set/:discord_id/:set_name', async (c) => {
-  const discordId = c.req.param('discord_id')
-  const setName = c.req.param('set_name')
-  const { account_type, base_stats, skill_ranks } = await c.req.json()
-
-  await c.env.DB.prepare(
-    'UPDATE user_goals SET account_type = ?, base_stats = ?, skill_ranks = ? WHERE discord_id = ? AND goal_set_name = ?'
-  ).bind(account_type, base_stats, skill_ranks, discordId, setName).run()
-
-  return c.json({ success: true })
-})
+// DEPRECATED: Legacy endpoints for old schema (user_goals, user_inventory)
+// These tables don't exist in production - use new endpoints instead:
+// - POST /api/sets/:id/goals
+// - PUT /api/set-goals/:id
+// - POST /api/sets/:id/inventory
 
 // New API: Get single goal
 app.get('/api/set-goals/:id', async (c) => {
@@ -3562,36 +3527,8 @@ app.post('/api/test-match', async (c) => {
   }
 })
 
-app.post('/api/inventory', async (c) => {
-  const { discord_id, goal_set_name, item_name, slot, enhancives_json, is_permanent } = await c.req.json()
-  
-  if (!discord_id || !goal_set_name || !item_name || !slot) {
-    return c.json({ error: 'Missing required fields' }, 400)
-  }
-
-  const existingItems = await c.env.DB.prepare(
-    'SELECT slot FROM user_inventory WHERE discord_id = ? AND goal_set_name = ?'
-  ).bind(discord_id, goal_set_name).all()
-
-  const goalData = await c.env.DB.prepare(
-    'SELECT account_type FROM user_goals WHERE discord_id = ? AND goal_set_name = ? LIMIT 1'
-  ).bind(discord_id, goal_set_name).first()
-
-  const accountType = (goalData?.account_type as string) || 'F2P'
-  const slotCount = countSlotUsage(existingItems.results, slot, accountType)
-  const limits = SLOT_LIMITS[accountType as keyof typeof SLOT_LIMITS]
-  const slotLimit = limits ? (limits as Record<string, number>)[slot as string] || 1 : 1
-
-  if (slotCount >= slotLimit) {
-    return c.json({ error: `Slot limit exceeded: ${slot} is ${slotCount}/${slotLimit}` }, 400)
-  }
-
-  const result = await c.env.DB.prepare(
-    'INSERT INTO user_inventory (discord_id, goal_set_name, item_name, slot, enhancives_json, is_permanent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).bind(discord_id, goal_set_name, item_name, slot, enhancives_json, is_permanent ? 1 : 0, new Date().toISOString()).run()
-
-  return c.json({ success: true, id: result.meta.last_row_id })
-})
+// DEPRECATED: Legacy inventory endpoint (user_inventory table doesn't exist)
+// Use POST /api/sets/:id/inventory instead
 
 // New API: Get inventory for character set
 app.get('/api/character-sets/:id/inventory', async (c) => {
@@ -3685,19 +3622,8 @@ app.delete('/api/inventory/:id', async (c) => {
   return c.json({ success: true })
 })
 
-app.put('/api/inventory/:id/irreplaceable', async (c) => {
-  const id = c.req.param('id')
-  const { is_irreplaceable } = await c.req.json()
-  
-  if (typeof is_irreplaceable !== 'boolean') {
-    return c.json({ error: 'is_irreplaceable must be a boolean' }, 400)
-  }
-  
-  await c.env.DB.prepare('UPDATE user_inventory SET is_irreplaceable = ? WHERE id = ?')
-    .bind(is_irreplaceable ? 1 : 0, id).run()
-  
-  return c.json({ success: true })
-})
+// DEPRECATED: Legacy irreplaceable endpoint (user_inventory table doesn't exist)
+// Use PUT /api/inventory/:id/irreplaceable with set_inventory table instead
 
 // Get recommendations for a character set
 app.get('/api/recommendations/:discord_id/:goal_set', async (c) => {
