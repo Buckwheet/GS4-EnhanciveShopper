@@ -171,6 +171,15 @@ Existing tables used:
 - Create `goal_set_preferences` table migration
 - Wire up save/load functionality
 
+### Quality of Life Improvements
+- **Copy Inventory Feature**: Add "Copy from Set" button in Inventory tab
+  - Allows users to copy inventory from another character/set combination
+  - Useful for characters with multiple sets (e.g., hunting vs. town gear)
+  - Saves time on re-importing the same items
+  - UI: Dropdown to select source set + "Copy" button
+  - API: `POST /api/sets/:id/inventory/copy` with `source_set_id` parameter
+  - Copies all items except those marked as irreplaceable in target set
+
 ## 🎉 Milestone Achieved
 **MVP Recommendation Engine is LIVE!**
 
