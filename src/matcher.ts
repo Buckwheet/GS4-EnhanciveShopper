@@ -23,7 +23,7 @@ export async function checkMatches(env: Env, newItems: any[]) {
         const enhancives = JSON.parse(item.enhancives_json)
         
         const hasMatch = enhancives.some((enh: any) => 
-          enh.ability.toLowerCase().includes(goal.stat.toLowerCase()) && enh.boost >= Number(goal.min_boost)
+          enh.ability.toLowerCase().includes((goal.stat as string).toLowerCase()) && enh.boost >= Number(goal.min_boost)
         )
         
         if (!hasMatch) return false
@@ -31,7 +31,7 @@ export async function checkMatches(env: Env, newItems: any[]) {
         if (goal.max_cost && item.cost > Number(goal.max_cost)) return false
 
         if (goal.preferred_slots) {
-          const slots = goal.preferred_slots.split(',').map((s: string) => s.trim())
+          const slots = (goal.preferred_slots as string).split(',').map((s: string) => s.trim())
           const itemSlot = item.worn || 'nugget'
           const matchesSlot = slots.some((slot: string) => {
             if (slot === 'nugget') {
@@ -53,7 +53,7 @@ export async function checkMatches(env: Env, newItems: any[]) {
     for (const item of matchingItems) {
       const { results: existing } = await env.DB.prepare(
         'SELECT id FROM alerts WHERE discord_id = ? AND item_id = ?'
-      ).bind(character.discord_id, item.id).all()
+      ).bind(character.discord_id as string, item.id).all()
 
       if (existing.length === 0) {
         const user = await env.DB.prepare('SELECT notifications_enabled FROM users WHERE discord_id = ?').bind(character.discord_id).first()
