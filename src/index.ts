@@ -3833,7 +3833,9 @@ app.get('/api/recommendations/:discord_id/:goal_set', async (c) => {
     
     const { results: goals } = await c.env.DB.prepare('SELECT * FROM set_goals WHERE set_id = ?').bind(setResult.id).all()
     const { results: inventory } = await c.env.DB.prepare('SELECT * FROM set_inventory WHERE set_id = ?').bind(setResult.id).all()
-    const { results: items } = await c.env.DB.prepare('SELECT * FROM shop_items').all()
+    const { results: rawItems } = await c.env.DB.prepare('SELECT * FROM shop_items').all()
+    
+    const items = (rawItems as any[]).map(item => ({ ...item, slot: item.worn, price: item.cost }))
     
     const slotUsage: Record<string, number> = {}
     for (const item of inventory as any[]) {
