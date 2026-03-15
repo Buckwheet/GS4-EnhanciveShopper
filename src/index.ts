@@ -4204,7 +4204,7 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
     // Insert new items (chunked)
     if (newItems.length > 0) {
       const stmt = env.DB.prepare(
-        `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available, is_permanent)
+        `INSERT OR REPLACE INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available, is_permanent)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`
       )
       for (let i = 0; i < newItems.length; i += BATCH_SIZE) {
