@@ -1513,7 +1513,8 @@ app.get('/', (c) => {
             const idMatch = fullName.match(/exist="(\d+)"/)
             const nounMatch = fullName.match(/noun="([^"]+)"/)
             const cleanName = fullName.replace(/<[^>]+>/g, '').trim()
-            const noun = nounMatch?.[1] || cleanName.split(' ').pop()
+            const words = cleanName.split(' ')
+            const noun = nounMatch?.[1] || words.reverse().find(w => slotMap[w.toLowerCase()]) || words[0]
             currentItem = { name: cleanName, id: idMatch?.[1], noun: noun }
           }
         }
@@ -1561,7 +1562,7 @@ app.get('/', (c) => {
         'apron': 'front', 'band': 'finger', 'belt': 'belt', 'bracer': 'wrist',
         'cloak': 'cloak', 'crown': 'head', 'earring': 'ear', 'gauntlets': 'hands',
         'gloves': 'hands', 'hairpin': 'pin', 'stickpin': 'pin', 'torc': 'neck',
-        'armor': 'armor', 'harness': 'armor', 'scales': 'armor', 'moonstones': 'armor'
+        'armor': 'armor', 'harness': 'container', 'scales': 'armor', 'moonstones': 'armor'
       }
       
       let imported = 0, skipped = 0
