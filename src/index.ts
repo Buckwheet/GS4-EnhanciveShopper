@@ -1513,7 +1513,8 @@ app.get('/', (c) => {
             const idMatch = fullName.match(/exist="(\d+)"/)
             const nounMatch = fullName.match(/noun="([^"]+)"/)
             const cleanName = fullName.replace(/<[^>]+>/g, '').trim()
-            currentItem = { name: cleanName, id: idMatch?.[1], noun: nounMatch?.[1] }
+            const noun = nounMatch?.[1] || cleanName.split(' ').pop()
+            currentItem = { name: cleanName, id: idMatch?.[1], noun: noun }
           }
         }
       }
@@ -1556,7 +1557,11 @@ app.get('/', (c) => {
         'earrings': 'ears', 'ring': 'finger', 'handflowers': 'hands', 'anklet': 'ankle',
         'pants': 'leggings', 'pendant': 'neck', 'necklace': 'neck', 'pectoral': 'front',
         'undershirt': 'undershirt', 'armbands': 'arms', 'aventail': 'neck', 'clasp': 'shoulder',
-        'charm': 'neck', 'badge': 'pin', 'pin': 'pin', 'greaves': 'legs', 'tattoo': 'elsewhere'
+        'charm': 'neck', 'badge': 'pin', 'pin': 'pin', 'greaves': 'legs', 'tattoo': 'elsewhere',
+        'apron': 'front', 'band': 'finger', 'belt': 'belt', 'bracer': 'wrist',
+        'cloak': 'cloak', 'crown': 'head', 'earring': 'ear', 'gauntlets': 'hands',
+        'gloves': 'hands', 'hairpin': 'pin', 'stickpin': 'pin', 'torc': 'neck',
+        'armor': 'armor', 'harness': 'armor', 'scales': 'armor', 'moonstones': 'armor'
       }
       
       let imported = 0, skipped = 0

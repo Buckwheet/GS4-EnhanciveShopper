@@ -1,0 +1,584 @@
+---
+character: Shollindal
+generated: '2026-03-13 14:14:56'
+worn_items:
+- name: an oval bloodstone pendant
+  id: '189066910'
+  charge_info:
+- name: a trim wolverine fur cloak
+  id: '189066912'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 15:39:25 CDT
+- name: a lead-bound linen badge
+  id: '189066918'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:04 CDT
+- name: a glittering platinum bracer
+  id: '189066919'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:04 CDT
+- name: some black casting gloves
+  id: '189066920'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:05 CDT
+- name: a polished red sunstone earcuff
+  id: '189066923'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:06 CDT
+- name: a trilliant-cut beryl earring
+  id: '189066924'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:06 CDT
+- name: a simple Vaalor crest tattoo
+  id: '189066926'
+  charge_info:
+    type: raw
+    value: hidden
+- name: a rhimar earring
+  id: '189066928'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:07 CDT
+- name: a scratched spiked imflass helm
+  id: '189066929'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:07 CDT
+- name: an elegant golvern hairpin
+  id: '189066930'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:07 CDT
+- name: some ornate rolaren earrings
+  id: '189066931'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:07 CDT
+- name: a pair of veil iron earrings
+  id: '189066932'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:08 CDT
+- name: a pair of ora earrings
+  id: '189066933'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:08 CDT
+- name: an old rolaren aventail
+  id: '189066935'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:08 CDT
+- name: a round-cut red sunstone necklace
+  id: '189066937'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:08 CDT
+- name: a pearl and amethyst torc
+  id: '189066938'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:09 CDT
+- name: a delicate wild orchid tattoo
+  id: '189066965'
+  charge_info:
+    type: timed
+    expiry: 3/24/2027 20:47:44 CDT
+    hidden: true
+- name: a black chain tattoo
+  id: '189066966'
+  charge_info:
+    type: counter
+    current: 85
+    max: 100
+    hidden: true
+- name: an ora pin
+  id: '189066970'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:09 CDT
+- name: an ipantor pin
+  id: '189066971'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:09 CDT
+- name: a carmiln pin
+  id: '189066972'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:09 CDT
+- name: a shadowy black starsilk harness studded with tiny moonstones
+  id: '189066992'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:09 CDT
+- name: a suit of dark shadarl armor fitted with grey and ebon scales
+  id: '189067008'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:09 CDT
+- name: a shadowy black leather undershirt
+  id: '189067009'
+  charge_info:
+    type: timed
+    expiry: 4/5/2026 15:08:10 CDT
+- name: a chased platinum bracelet
+  id: '189067011'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:10 CDT
+- name: a step-cut garnet bracelet
+  id: '189067012'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:10 CDT
+- name: a mithril ring
+  id: '189067013'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:10 CDT
+- name: a mithril belt
+  id: '189067016'
+  charge_info:
+    type: counter
+    current: 4
+    max: 15
+- name: a gilded locus
+  id: '189067167'
+  charge_info:
+    type: timed
+    expiry: 12/24/2029 15:24:10 CST
+- name: some pewter and turquoise socks
+  id: '189067169'
+  charge_info:
+    type: timed
+    expiry: 3/13/2026 17:56:11 CDT
+totals:
+  stats:
+    Strength (STR):
+      current: 27
+      cap: 40
+      sources:
+      - amount: 2
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 6
+        item_id: '189066919'
+        item_name: a glittering platinum bracer
+      - amount: 11
+        item_id: '189066933'
+        item_name: a pair of ora earrings
+      - amount: 6
+        item_id: '189066970'
+        item_name: an ora pin
+      - amount: 2
+        item_id: '189066912'
+        item_name: a trim wolverine fur cloak
+    Constitution (CON):
+      current: 28
+      cap: 40
+      sources:
+      - amount: 5
+        item_id: '189066924'
+        item_name: a trilliant-cut beryl earring
+      - amount: 12
+        item_id: '189066972'
+        item_name: a carmiln pin
+      - amount: 5
+        item_id: '189067011'
+        item_name: a chased platinum bracelet
+      - amount: 6
+        item_id: '189067012'
+        item_name: a step-cut garnet bracelet
+    Dexterity (DEX):
+      current: 28
+      cap: 40
+      sources:
+      - amount: 5
+        item_id: '189066937'
+        item_name: a round-cut red sunstone necklace
+      - amount: 6
+        item_id: '189066938'
+        item_name: a pearl and amethyst torc
+      - amount: 10
+        item_id: '189066970'
+        item_name: an ora pin
+      - amount: 1
+        item_id: '189066972'
+        item_name: a carmiln pin
+      - amount: 6
+        item_id: '189067169'
+        item_name: some pewter and turquoise socks
+    Discipline (DIS):
+      current: 25
+      cap: 40
+      sources:
+      - amount: 4
+        item_id: '189066935'
+        item_name: an old rolaren aventail
+      - amount: 4
+        item_id: '189066929'
+        item_name: a scratched spiked imflass helm
+      - amount: 10
+        item_id: '189066918'
+        item_name: a lead-bound linen badge
+      - amount: 7
+        item_id: '189067167'
+        item_name: a gilded locus
+    Aura (AUR):
+      current: 13
+      cap: 40
+      sources:
+      - amount: 2
+        item_id: '189066924'
+        item_name: a trilliant-cut beryl earring
+      - amount: 3
+        item_id: '189066933'
+        item_name: a pair of ora earrings
+      - amount: 2
+        item_id: '189066919'
+        item_name: a glittering platinum bracer
+      - amount: 6
+        item_id: '189066971'
+        item_name: an ipantor pin
+    Logic (LOG):
+      current: 35
+      cap: 40
+      sources:
+      - amount: 7
+        item_id: '189066920'
+        item_name: some black casting gloves
+      - amount: 8
+        item_id: '189066966'
+        item_name: a black chain tattoo
+      - amount: 12
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 8
+        item_id: '189066919'
+        item_name: a glittering platinum bracer
+    Intuition (INT):
+      current: 34
+      cap: 40
+      sources:
+      - amount: 10
+        item_id: '189066937'
+        item_name: a round-cut red sunstone necklace
+      - amount: 8
+        item_id: '189066938'
+        item_name: a pearl and amethyst torc
+      - amount: 6
+        item_id: '189066970'
+        item_name: an ora pin
+      - amount: 10
+        item_id: '189066992'
+        item_name: a shadowy black starsilk harness studded with tiny moonstones
+    Wisdom (WIS):
+      current: 8
+      cap: 40
+      sources:
+      - amount: 8
+        item_id: '189066931'
+        item_name: some ornate rolaren earrings
+    Influence (INF):
+      current: 6
+      cap: 40
+      sources:
+      - amount: 6
+        item_id: '189067167'
+        item_name: a gilded locus
+  skills:
+    Two Weapon Combat Ranks:
+      current: 2
+      cap: 50
+      sources:
+      - amount: 2
+        item_id: '189066919'
+        item_name: a glittering platinum bracer
+    Edged Weapons Ranks:
+      current: 4
+      cap: 50
+      sources:
+      - amount: 4
+        item_id: '189066935'
+        item_name: an old rolaren aventail
+    Stalking and Hiding Ranks:
+      current: 40
+      cap: 50
+      sources:
+      - amount: 40
+        item_id: '189067008'
+        item_name: a suit of dark shadarl armor fitted with grey and ebon scales
+    First Aid Ranks:
+      current: 3
+      cap: 50
+      sources:
+      - amount: 3
+        item_id: '189066935'
+        item_name: an old rolaren aventail
+    Shield Use Bonus:
+      current: 2
+      cap: 50
+      sources:
+      - amount: 2
+        item_id: '189066923'
+        item_name: a polished red sunstone earcuff
+    Combat Maneuvers Bonus:
+      current: 28
+      cap: 50
+      sources:
+      - amount: 2
+        item_id: '189066912'
+        item_name: a trim wolverine fur cloak
+      - amount: 4
+        item_id: '189066920'
+        item_name: some black casting gloves
+      - amount: 5
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 10
+        item_id: '189066918'
+        item_name: a lead-bound linen badge
+      - amount: 2
+        item_id: '189066937'
+        item_name: a round-cut red sunstone necklace
+      - amount: 5
+        item_id: '189067167'
+        item_name: a gilded locus
+    Edged Weapons Bonus:
+      current: 47
+      cap: 50
+      sources:
+      - amount: 14
+        item_id: '189066932'
+        item_name: a pair of veil iron earrings
+      - amount: 9
+        item_id: '189066929'
+        item_name: a scratched spiked imflass helm
+      - amount: 9
+        item_id: '189067011'
+        item_name: a chased platinum bracelet
+      - amount: 14
+        item_id: '189067013'
+        item_name: a mithril ring
+      - amount: 1
+        item_id: '189066937'
+        item_name: a round-cut red sunstone necklace
+    Ranged Weapons Bonus:
+      current: 41
+      cap: 50
+      sources:
+      - amount: 7
+        item_id: '189066992'
+        item_name: a shadowy black starsilk harness studded with tiny moonstones
+      - amount: 8
+        item_id: '189066972'
+        item_name: a carmiln pin
+      - amount: 12
+        item_id: '189066931'
+        item_name: some ornate rolaren earrings
+      - amount: 9
+        item_id: '189066971'
+        item_name: an ipantor pin
+      - amount: 5
+        item_id: '189067169'
+        item_name: some pewter and turquoise socks
+    Polearm Weapons Bonus:
+      current: 6
+      cap: 50
+      sources:
+      - amount: 6
+        item_id: '189066920'
+        item_name: some black casting gloves
+    Brawling Bonus:
+      current: 3
+      cap: 50
+      sources:
+      - amount: 3
+        item_id: '189066920'
+        item_name: some black casting gloves
+    Ambush Bonus:
+      current: 17
+      cap: 50
+      sources:
+      - amount: 6
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 11
+        item_id: '189067016'
+        item_name: a mithril belt
+    Physical Fitness Bonus:
+      current: 8
+      cap: 50
+      sources:
+      - amount: 8
+        item_id: '189066992'
+        item_name: a shadowy black starsilk harness studded with tiny moonstones
+    Dodging Bonus:
+      current: 10
+      cap: 50
+      sources:
+      - amount: 1
+        item_id: '189066933'
+        item_name: a pair of ora earrings
+      - amount: 5
+        item_id: '189067016'
+        item_name: a mithril belt
+      - amount: 4
+        item_id: '189066932'
+        item_name: a pair of veil iron earrings
+    Spiritual Lore - Blessings Bonus:
+      current: 13
+      cap: 50
+      sources:
+      - amount: 4
+        item_id: '189066924'
+        item_name: a trilliant-cut beryl earring
+      - amount: 4
+        item_id: '189066923'
+        item_name: a polished red sunstone earcuff
+      - amount: 5
+        item_id: '189066918'
+        item_name: a lead-bound linen badge
+    Survival Bonus:
+      current: 13
+      cap: 50
+      sources:
+      - amount: 13
+        item_id: '189066923'
+        item_name: a polished red sunstone earcuff
+    Stalking and Hiding Bonus:
+      current: 17
+      cap: 50
+      sources:
+      - amount: 9
+        item_id: '189067016'
+        item_name: a mithril belt
+      - amount: 8
+        item_id: '189067169'
+        item_name: some pewter and turquoise socks
+    Perception Bonus:
+      current: 11
+      cap: 50
+      sources:
+      - amount: 11
+        item_id: '189066971'
+        item_name: an ipantor pin
+    Pickpocketing Bonus:
+      current: 3
+      cap: 50
+      sources:
+      - amount: 3
+        item_id: '189067169'
+        item_name: some pewter and turquoise socks
+  resources:
+    Max Mana:
+      current: 50
+      cap: 600
+      sources:
+      - amount: 50
+        item_id:
+        item_name: an unknown source (needs loresong)
+    Max Health:
+      current: 104
+      cap: 300
+      sources:
+      - amount: 100
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 4
+        item_id: '189067012'
+        item_name: a step-cut garnet bracelet
+    Max Stamina:
+      current: 50
+      cap: 300
+      sources:
+      - amount: 1
+        item_id: '189066931'
+        item_name: some ornate rolaren earrings
+      - amount: 6
+        item_id: '189066932'
+        item_name: a pair of veil iron earrings
+      - amount: 10
+        item_id: '189066935'
+        item_name: an old rolaren aventail
+      - amount: 25
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 8
+        item_id: '189067167'
+        item_name: a gilded locus
+    Mana Recovery:
+      current: 12
+      cap: 50
+      sources:
+      - amount: 10
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 2
+        item_id: '189067013'
+        item_name: a mithril ring
+    Health Recovery:
+      current: 30
+      cap: 50
+      sources:
+      - amount: 20
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 3
+        item_id: '189067008'
+        item_name: a suit of dark shadarl armor fitted with grey and ebon scales
+      - amount: 7
+        item_id: '189067013'
+        item_name: a mithril ring
+    Stamina Recovery:
+      current: 52
+      cap: 50
+      sources:
+      - amount: 13
+        item_id: '189066929'
+        item_name: a scratched spiked imflass helm
+      - amount: 5
+        item_id: '189066931'
+        item_name: some ornate rolaren earrings
+      - amount: 6
+        item_id: '189066933'
+        item_name: a pair of ora earrings
+      - amount: 5
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 3
+        item_id: '189067008'
+        item_name: a suit of dark shadarl armor fitted with grey and ebon scales
+      - amount: 2
+        item_id: '189066912'
+        item_name: a trim wolverine fur cloak
+      - amount: 6
+        item_id: '189067012'
+        item_name: a step-cut garnet bracelet
+      - amount: 12
+        item_id: '189067016'
+        item_name: a mithril belt
+  self_knowledge:
+    '215':
+    - id: '189066965'
+      name: a delicate wild orchid tattoo
+    '506':
+    - id: '189066965'
+      name: a delicate wild orchid tattoo
+    '606':
+    - id: '189066930'
+      name: an elegant golvern hairpin
+    '1109':
+    - id: '189066926'
+      name: a simple Vaalor crest tattoo
+  summary:
+    Enhancive Items: '31'
+    Enhancive Properties: '95'
+    Total Enhancive Amount: '770'
