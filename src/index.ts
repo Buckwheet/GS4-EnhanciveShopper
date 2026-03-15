@@ -2,10 +2,13 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { scrapeEnhancives, getLastUpdated } from './scraper'
 import { checkMatches } from './matcher'
+import { sendDiscordDM } from './discord'
 import { STAT_CAP, SKILL_CAP, SLOT_LIMITS } from './constants'
 import { ranksToBonus } from './parser'
 import { findDirectMatches, findNuggetOpportunities, findSwatchOpportunities, findSimpleSwaps } from './recommendation-engine'
 import type { Env } from './types'
+
+const ADMIN_DISCORD_ID = '219836905297018880'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -2960,6 +2963,31 @@ app.post('/api/trigger-scrape', async (c) => {
   return c.json(result)
 })
 
+app.get('/api/scrape-health', async (c) => {
+  const env = c.env as Env
+  const { results } = await env.DB.prepare(
+    'SELECT * FROM scrape_log ORDER BY id DESC LIMIT 20'
+  ).all()
+  const lastSuccess = await env.DB.prepare(
+    "SELECT ran_at FROM scrape_log WHERE status = 'updated' ORDER BY id DESC LIMIT 1"
+  ).first() as { ran_at: string } | null
+  const hoursSinceSuccess = lastSuccess
+    ? (Date.now() - new Date(lastSuccess.ran_at).getTime()) / 3600000
+    : null
+  return c.json({
+    healthy: hoursSinceSuccess !== null && hoursSinceSuccess < 3,
+    hours_since_last_success: hoursSinceSuccess ? Math.round(hoursSinceSuccess * 10) / 10 : null,
+    recent_runs: results,
+  })
+})
+
+app.post('/api/test-scrape-alert', async (c) => {
+  const env = c.env as Env
+  const sent = await sendDiscordDM(env.DISCORD_BOT_TOKEN, ADMIN_DISCORD_ID,
+    `🧪 **Test Alert**\nScrape monitoring is working!\nTime: ${new Date().toISOString()}`)
+  return c.json({ sent })
+})
+
 app.get('/api/user/settings', async (c) => {
   const discordId = c.req.query('discord_id')
   if (!discordId) return c.json({ error: 'discord_id required' }, 400)
@@ -4152,56 +4180,63 @@ app.post('/api/scrape', async (c) => {
 
 async function runScrape(env: Env): Promise<{ status: string; detail?: string }> {
   const BATCH_SIZE = 400
+  const start = Date.now()
+  let status = 'error'
+  let detail = ''
+  let itemsTotal = 0, itemsNew = 0, itemsRemoved = 0
+
   try {
     const lastUpdated = await getLastUpdated()
-    if (!lastUpdated) return { status: 'no_timestamp', detail: 'getLastUpdated returned null' }
+    if (!lastUpdated) {
+      status = 'no_timestamp'
+      detail = 'getLastUpdated returned null'
+      return { status, detail }
+    }
 
     const { results } = await env.DB.prepare('SELECT value FROM metadata WHERE key = ?')
-      .bind('last_updated')
-      .all()
-
+      .bind('last_updated').all()
     const stored = results[0]?.value as string | undefined
 
     if (stored === lastUpdated) {
-      // Cleanup items unavailable for 72+ hours even when no new data
+      status = 'no_change'
+      detail = `stored=${stored}, remote=${lastUpdated}`
+      // Cleanup items unavailable for 72+ hours
       const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()
       const { meta } = await env.DB.prepare('DELETE FROM shop_items WHERE available = 0 AND unavailable_since < ?').bind(cutoff).run()
       if (meta.changes > 0) console.log(`Cleaned up ${meta.changes} items older than 72 hours`)
-      return { status: 'no_change', detail: `stored=${stored}, remote=${lastUpdated}` }
+      return { status, detail }
     }
 
     console.log('Update detected, scraping...')
     const items = await scrapeEnhancives()
     const now = new Date().toISOString()
+    itemsTotal = items.length
 
     const { results: existingItems } = await env.DB.prepare('SELECT id FROM shop_items WHERE available = 1').all()
     const existingIds = new Set(existingItems.map((i: any) => i.id))
     const scrapedIds = new Set(items.map(i => i.id))
 
-    // Mark removed items as unavailable (chunked)
     const removedIds = [...existingIds].filter(id => !scrapedIds.has(id))
+    itemsRemoved = removedIds.length
     for (let i = 0; i < removedIds.length; i += BATCH_SIZE) {
       const chunk = removedIds.slice(i, i + BATCH_SIZE)
       const placeholders = chunk.map(() => '?').join(',')
       await env.DB.prepare(`UPDATE shop_items SET available = 0, unavailable_since = ? WHERE id IN (${placeholders})`)
         .bind(now, ...chunk).run()
     }
-    if (removedIds.length > 0) console.log(`Marked ${removedIds.length} items as unavailable`)
 
     const newItems = items.filter(item => !existingIds.has(item.id))
+    itemsNew = newItems.length
     const existingAvailableItems = items.filter(item => existingIds.has(item.id))
 
-    // Update existing items (chunked)
     if (existingAvailableItems.length > 0) {
       const updateStmt = env.DB.prepare('UPDATE shop_items SET last_seen = ?, is_permanent = ?, available = 1 WHERE id = ?')
       for (let i = 0; i < existingAvailableItems.length; i += BATCH_SIZE) {
         const chunk = existingAvailableItems.slice(i, i + BATCH_SIZE)
         await env.DB.batch(chunk.map(item => updateStmt.bind(now, item.is_permanent ? 1 : 0, item.id)))
       }
-      console.log(`Updated ${existingAvailableItems.length} existing items`)
     }
 
-    // Insert new items (chunked)
     if (newItems.length > 0) {
       const stmt = env.DB.prepare(
         `INSERT OR REPLACE INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available, is_permanent)
@@ -4214,7 +4249,6 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
           item.enchant, item.worn, JSON.stringify(item.enhancives), now, now, item.is_permanent ? 1 : 0
         )))
       }
-      console.log(`Inserted ${newItems.length} new items`)
     }
 
     await checkMatches(env, newItems)
@@ -4222,15 +4256,26 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
     await env.DB.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)')
       .bind('last_updated', lastUpdated).run()
 
-    // Cleanup items unavailable for 72+ hours
     const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()
     const { meta } = await env.DB.prepare('DELETE FROM shop_items WHERE available = 0 AND unavailable_since < ?').bind(cutoff).run()
     if (meta.changes > 0) console.log(`Cleaned up ${meta.changes} items older than 72 hours`)
 
-    return { status: 'updated', detail: `${items.length} total, ${newItems.length} new, ${removedIds.length} removed` }
+    status = 'updated'
+    detail = `${itemsTotal} total, ${itemsNew} new, ${itemsRemoved} removed`
+    return { status, detail }
   } catch (error) {
+    status = 'error'
+    detail = String(error)
     console.error('Scheduled scrape error:', error)
-    return { status: 'error', detail: String(error) }
+    // Alert admin on failure
+    await sendDiscordDM(env.DISCORD_BOT_TOKEN, ADMIN_DISCORD_ID,
+      `⚠️ **Scrape Failed**\n\`\`\`${detail.slice(0, 500)}\`\`\`\nTime: ${new Date().toISOString()}`)
+    return { status, detail }
+  } finally {
+    const duration = Date.now() - start
+    await env.DB.prepare(
+      'INSERT INTO scrape_log (ran_at, status, detail, duration_ms, items_total, items_new, items_removed) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(new Date().toISOString(), status, detail, duration, itemsTotal, itemsNew, itemsRemoved).run()
   }
 }
 
