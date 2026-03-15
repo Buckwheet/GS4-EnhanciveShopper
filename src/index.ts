@@ -2956,9 +2956,8 @@ app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISO
 
 app.post('/api/trigger-scrape', async (c) => {
   const env = c.env as Env
-  await runScrape(env)
-  const { results } = await env.DB.prepare('SELECT value FROM metadata WHERE key = ?').bind('last_updated').all()
-  return c.json({ status: 'ok', last_updated: results[0]?.value })
+  const result = await runScrape(env)
+  return c.json(result)
 })
 
 app.get('/api/user/settings', async (c) => {
@@ -4151,11 +4150,11 @@ app.post('/api/scrape', async (c) => {
   }
 })
 
-async function runScrape(env: Env) {
+async function runScrape(env: Env): Promise<{ status: string; detail?: string }> {
   const BATCH_SIZE = 400
   try {
     const lastUpdated = await getLastUpdated()
-    if (!lastUpdated) return
+    if (!lastUpdated) return { status: 'no_timestamp', detail: 'getLastUpdated returned null' }
 
     const { results } = await env.DB.prepare('SELECT value FROM metadata WHERE key = ?')
       .bind('last_updated')
@@ -4163,68 +4162,75 @@ async function runScrape(env: Env) {
 
     const stored = results[0]?.value as string | undefined
 
-    if (stored !== lastUpdated) {
-      console.log('Update detected, scraping...')
-      const items = await scrapeEnhancives()
-      const now = new Date().toISOString()
-
-      const { results: existingItems } = await env.DB.prepare('SELECT id FROM shop_items WHERE available = 1').all()
-      const existingIds = new Set(existingItems.map((i: any) => i.id))
-      const scrapedIds = new Set(items.map(i => i.id))
-
-      // Mark removed items as unavailable (chunked)
-      const removedIds = [...existingIds].filter(id => !scrapedIds.has(id))
-      for (let i = 0; i < removedIds.length; i += BATCH_SIZE) {
-        const chunk = removedIds.slice(i, i + BATCH_SIZE)
-        const placeholders = chunk.map(() => '?').join(',')
-        await env.DB.prepare(`UPDATE shop_items SET available = 0, unavailable_since = ? WHERE id IN (${placeholders})`)
-          .bind(now, ...chunk).run()
-      }
-      if (removedIds.length > 0) console.log(`Marked ${removedIds.length} items as unavailable`)
-
-      const newItems = items.filter(item => !existingIds.has(item.id))
-      const existingAvailableItems = items.filter(item => existingIds.has(item.id))
-
-      // Update existing items (chunked)
-      if (existingAvailableItems.length > 0) {
-        const updateStmt = env.DB.prepare('UPDATE shop_items SET last_seen = ?, is_permanent = ?, available = 1 WHERE id = ?')
-        for (let i = 0; i < existingAvailableItems.length; i += BATCH_SIZE) {
-          const chunk = existingAvailableItems.slice(i, i + BATCH_SIZE)
-          await env.DB.batch(chunk.map(item => updateStmt.bind(now, item.is_permanent ? 1 : 0, item.id)))
-        }
-        console.log(`Updated ${existingAvailableItems.length} existing items`)
-      }
-
-      // Insert new items (chunked)
-      if (newItems.length > 0) {
-        const stmt = env.DB.prepare(
-          `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available, is_permanent)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`
-        )
-        for (let i = 0; i < newItems.length; i += BATCH_SIZE) {
-          const chunk = newItems.slice(i, i + BATCH_SIZE)
-          await env.DB.batch(chunk.map(item => stmt.bind(
-            item.id, item.name, item.town, item.shop, item.cost,
-            item.enchant, item.worn, JSON.stringify(item.enhancives), now, now, item.is_permanent ? 1 : 0
-          )))
-        }
-        console.log(`Inserted ${newItems.length} new items`)
-      }
-
-      await checkMatches(env, newItems)
-
-      await env.DB.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)')
-        .bind('last_updated', lastUpdated).run()
-
-      console.log(`Scrape complete: ${items.length} total, ${newItems.length} new, ${removedIds.length} removed`)
+    if (stored === lastUpdated) {
+      // Cleanup items unavailable for 72+ hours even when no new data
+      const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()
+      const { meta } = await env.DB.prepare('DELETE FROM shop_items WHERE available = 0 AND unavailable_since < ?').bind(cutoff).run()
+      if (meta.changes > 0) console.log(`Cleaned up ${meta.changes} items older than 72 hours`)
+      return { status: 'no_change', detail: `stored=${stored}, remote=${lastUpdated}` }
     }
+
+    console.log('Update detected, scraping...')
+    const items = await scrapeEnhancives()
+    const now = new Date().toISOString()
+
+    const { results: existingItems } = await env.DB.prepare('SELECT id FROM shop_items WHERE available = 1').all()
+    const existingIds = new Set(existingItems.map((i: any) => i.id))
+    const scrapedIds = new Set(items.map(i => i.id))
+
+    // Mark removed items as unavailable (chunked)
+    const removedIds = [...existingIds].filter(id => !scrapedIds.has(id))
+    for (let i = 0; i < removedIds.length; i += BATCH_SIZE) {
+      const chunk = removedIds.slice(i, i + BATCH_SIZE)
+      const placeholders = chunk.map(() => '?').join(',')
+      await env.DB.prepare(`UPDATE shop_items SET available = 0, unavailable_since = ? WHERE id IN (${placeholders})`)
+        .bind(now, ...chunk).run()
+    }
+    if (removedIds.length > 0) console.log(`Marked ${removedIds.length} items as unavailable`)
+
+    const newItems = items.filter(item => !existingIds.has(item.id))
+    const existingAvailableItems = items.filter(item => existingIds.has(item.id))
+
+    // Update existing items (chunked)
+    if (existingAvailableItems.length > 0) {
+      const updateStmt = env.DB.prepare('UPDATE shop_items SET last_seen = ?, is_permanent = ?, available = 1 WHERE id = ?')
+      for (let i = 0; i < existingAvailableItems.length; i += BATCH_SIZE) {
+        const chunk = existingAvailableItems.slice(i, i + BATCH_SIZE)
+        await env.DB.batch(chunk.map(item => updateStmt.bind(now, item.is_permanent ? 1 : 0, item.id)))
+      }
+      console.log(`Updated ${existingAvailableItems.length} existing items`)
+    }
+
+    // Insert new items (chunked)
+    if (newItems.length > 0) {
+      const stmt = env.DB.prepare(
+        `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available, is_permanent)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`
+      )
+      for (let i = 0; i < newItems.length; i += BATCH_SIZE) {
+        const chunk = newItems.slice(i, i + BATCH_SIZE)
+        await env.DB.batch(chunk.map(item => stmt.bind(
+          item.id, item.name, item.town, item.shop, item.cost,
+          item.enchant, item.worn, JSON.stringify(item.enhancives), now, now, item.is_permanent ? 1 : 0
+        )))
+      }
+      console.log(`Inserted ${newItems.length} new items`)
+    }
+
+    await checkMatches(env, newItems)
+
+    await env.DB.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)')
+      .bind('last_updated', lastUpdated).run()
 
     // Cleanup items unavailable for 72+ hours
     const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()
     const { meta } = await env.DB.prepare('DELETE FROM shop_items WHERE available = 0 AND unavailable_since < ?').bind(cutoff).run()
     if (meta.changes > 0) console.log(`Cleaned up ${meta.changes} items older than 72 hours`)
+
+    return { status: 'updated', detail: `${items.length} total, ${newItems.length} new, ${removedIds.length} removed` }
   } catch (error) {
     console.error('Scheduled scrape error:', error)
+    return { status: 'error', detail: String(error) }
   }
 }
 
