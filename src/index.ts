@@ -8,7 +8,7 @@ import { ranksToBonus } from './parser'
 import { findDirectMatches, findNuggetOpportunities, findSwatchOpportunities, findSimpleSwaps } from './recommendation-engine'
 import type { Env } from './types'
 
-const ADMIN_DISCORD_ID = '219836905297018880'
+const ADMIN_DISCORD_ID = '411322973920821258'
 
 const app = new Hono<{ Bindings: Env }>()
 
