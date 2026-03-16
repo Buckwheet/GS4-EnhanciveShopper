@@ -2150,24 +2150,14 @@ app.get('/', (c) => {
         let color = 'text-red-600'
         if (vals.enhancive >= vals.cap) color = 'text-green-600'
         else if (vals.enhancive >= vals.cap * 0.8) color = 'text-yellow-600'
-        
-        const isRecovery = name.includes('Recovery')
-        const displayText = isRecovery 
-          ? vals.enhancive + '/' + vals.cap
-          : vals.base + ' + ' + vals.enhancive + ' = ' + vals.total + ' [' + vals.enhancive + '/' + vals.cap + ']'
-        
-        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + '">' + displayText + '</span></div>'
+        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + '">' + vals.enhancive + '/' + vals.cap + '</span></div>'
       }).join('')
       
       skillsSummary.innerHTML = Object.entries(data.skills).map(([name, vals]) => {
         let color = 'text-red-600'
         if (vals.enhancive >= vals.cap) color = 'text-green-600'
         else if (vals.enhancive >= vals.cap * 0.8) color = 'text-yellow-600'
-        
-        const isRecovery = name.includes('Recovery')
-        const displayText = isRecovery 
-          ? vals.enhancive + '/' + vals.cap
-          : vals.base + ' + ' + vals.enhancive + ' = ' + vals.total + ' [' + vals.enhancive + '/' + vals.cap + ']'
+        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + '">' + vals.enhancive + '/' + vals.cap + '</span></div>'
         
         return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + '">' + displayText + '</span></div>'
       }).join('')
