@@ -1566,6 +1566,9 @@ app.get('/', (c) => {
       }
       
       let imported = 0, skipped = 0
+      console.log('enhMap keys:', Object.keys(enhMap))
+      console.log('enhMap entries:', JSON.stringify(enhMap).substring(0, 500))
+      console.log('items:', items.map(i => i.name))
       
       for (const item of items) {
         const slot = item.noun ? slotMap[item.noun.toLowerCase()] : null
