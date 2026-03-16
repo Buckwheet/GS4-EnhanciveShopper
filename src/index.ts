@@ -249,9 +249,12 @@ app.get('/', (c) => {
       
       <!-- Summary Section -->
       <div id="summarySection" class="hidden bg-white p-6 rounded-lg shadow-md mb-6">
-        <h2 class="text-2xl font-semibold mb-4 cursor-pointer flex items-center justify-between" onclick="document.getElementById('summaryContent').classList.toggle('hidden'); document.getElementById('summaryChevron').classList.toggle('rotate-180')">
-          Enhancive Summary
-          <svg id="summaryChevron" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        <h2 class="text-2xl font-semibold mb-4 cursor-pointer flex items-center justify-between p-2 -m-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700" onclick="document.getElementById('summaryContent').classList.toggle('hidden'); document.getElementById('summaryChevron').classList.toggle('rotate-180')">
+          <span>Enhancive Summary</span>
+          <span class="flex items-center gap-2 text-gray-500 text-sm font-normal">
+            <span class="hidden sm:inline">click to toggle</span>
+            <svg id="summaryChevron" class="w-6 h-6 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </span>
         </h2>
         <div id="summaryContent" class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
