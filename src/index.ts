@@ -646,7 +646,7 @@ app.get('/', (c) => {
 
     <div id="itemsContainer" class="bg-white rounded-lg shadow-md overflow-hidden hidden">
       <table class="min-w-full">
-        <thead class="bg-gray-800 text-white">
+        <thead class="bg-gray-800 text-white sticky top-0 z-10">
           <tr>
             <th class="px-4 py-3 text-left cursor-pointer hover:bg-gray-700" onclick="sortItems('name')">Name ↕</th>
             <th class="px-4 py-3 text-left cursor-pointer hover:bg-gray-700" onclick="sortItems('town')">Town ↕</th>
@@ -658,9 +658,13 @@ app.get('/', (c) => {
             <th class="px-4 py-3 text-left">Enhancives</th>
           </tr>
         </thead>
-        <tbody id="itemsTable" class="divide-y divide-gray-200">
-        </tbody>
       </table>
+      <div id="tableScroller" class="overflow-auto" style="max-height: 70vh;">
+        <table class="min-w-full">
+          <tbody id="itemsTable" class="divide-y divide-gray-200">
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -2938,9 +2942,13 @@ app.get('/', (c) => {
       renderItems()
     }
 
+    const BATCH_SIZE = 100
+    let renderedCount = 0
+
     function renderItems() {
       const tbody = document.getElementById('itemsTable')
       tbody.innerHTML = ''
+      renderedCount = 0
 
       document.getElementById('totalItems').textContent = filteredItems.length
       
@@ -2970,71 +2978,78 @@ app.get('/', (c) => {
         statusEl.classList.add('hidden')
       }
 
-      filteredItems.slice(0, 500).forEach(item => {
-        const tr = document.createElement('tr')
-        tr.className = 'hover:bg-gray-50'
-
-        let enhancivesText = ''
-        try {
-          const enhancives = JSON.parse(item.enhancives_json)
-          enhancivesText = enhancives.map(e => {
-            const useless = isUselessAbility(e.ability)
-            const cls = useless ? 'color: #9333ea' : ''
-            return '<span style="' + cls + '">+' + e.boost + ' ' + e.ability + '</span>'
-          }).join(', ')
-        } catch {
-          enhancivesText = 'Error parsing'
-        }
-        
-        const matchSum = calculateMatchSum(item)
-        const matchSumDisplay = matchSum > 0 ? matchSum : '-'
-        
-        const totalSum = calculateTotalSum(item)
-        const usefulSum = calculateUsefulSum(item)
-        const hasUseless = currentUselessSkills.length > 0 && usefulSum !== totalSum
-        const primarySum = (showUsefulSum && hasUseless) ? usefulSum : totalSum
-        const totalSumDisplay = primarySum > 0 ? primarySum : '-'
-        const hoverText = hasUseless
-          ? (showUsefulSum ? 'Total: ' + totalSum : 'Useful: ' + usefulSum)
-          : 'Total: ' + totalSum
-        
-        // Override slot for crossbows (Nugget items)
-        let displaySlot = item.worn || 'N/A'
-        const isNugget = item.name.toLowerCase().includes('crossbow') || !item.worn || item.worn === 'N/A'
-        if (isNugget) {
-          displaySlot = 'nugget'
-        }
-        
-        // Calculate display cost (add 25M if nugget and matching goal has flag)
-        let displayCost = item.cost || 0
-        let costLabel = ''
-        if (isNugget && shouldShowNuggetPrice(item)) {
-          displayCost = displayCost + 25000000
-          costLabel = '<div class="text-xs text-yellow-600">+NUGGET</div>'
-        }
-        
-        // Add crumble icon for temporary items
-        const crumbleIcon = !item.is_permanent ? '<span title="Temporary - will crumble">⚠️</span> ' : ''
-
-        tr.innerHTML = \`
-          <td class="px-4 py-3">\${crumbleIcon}\${item.name}</td>
-          <td class="px-4 py-3">\${item.town}</td>
-          <td class="px-4 py-3">\${item.shop}</td>
-          <td class="px-4 py-3 text-right">\${displayCost ? displayCost.toLocaleString() : 'N/A'}\${costLabel}</td>
-          <td class="px-4 py-3">\${displaySlot}</td>
-          <td class="px-4 py-3 text-right font-semibold \${matchSum > 0 ? 'text-green-600' : 'text-gray-400'}">\${matchSumDisplay}</td>
-          <td class="px-4 py-3 text-right font-semibold text-blue-600" title="\${hoverText}">\${totalSumDisplay}</td>
-          <td class="px-4 py-3 text-sm">\${enhancivesText}</td>
-        \`
-        tbody.appendChild(tr)
-      })
-
-      if (filteredItems.length > 500) {
-        const tr = document.createElement('tr')
-        tr.innerHTML = \`<td colspan="8" class="px-4 py-3 text-center text-gray-500">Showing first 500 of \${filteredItems.length} items</td>\`
-        tbody.appendChild(tr)
-      }
+      renderBatch()
     }
+
+    function buildRow(item) {
+      const tr = document.createElement('tr')
+      tr.className = 'hover:bg-gray-50'
+
+      let enhancivesText = ''
+      try {
+        const enhancives = JSON.parse(item.enhancives_json)
+        enhancivesText = enhancives.map(e => {
+          const useless = isUselessAbility(e.ability)
+          const cls = useless ? 'color: #9333ea' : ''
+          return '<span style="' + cls + '">+' + e.boost + ' ' + e.ability + '</span>'
+        }).join(', ')
+      } catch {
+        enhancivesText = 'Error parsing'
+      }
+      
+      const matchSum = calculateMatchSum(item)
+      const matchSumDisplay = matchSum > 0 ? matchSum : '-'
+      
+      const totalSum = calculateTotalSum(item)
+      const usefulSum = calculateUsefulSum(item)
+      const hasUseless = currentUselessSkills.length > 0 && usefulSum !== totalSum
+      const primarySum = (showUsefulSum && hasUseless) ? usefulSum : totalSum
+      const totalSumDisplay = primarySum > 0 ? primarySum : '-'
+      const hoverText = hasUseless
+        ? (showUsefulSum ? 'Total: ' + totalSum : 'Useful: ' + usefulSum)
+        : 'Total: ' + totalSum
+      
+      let displaySlot = item.worn || 'N/A'
+      const isNugget = item.name.toLowerCase().includes('crossbow') || !item.worn || item.worn === 'N/A'
+      if (isNugget) displaySlot = 'nugget'
+      
+      let displayCost = item.cost || 0
+      let costLabel = ''
+      if (isNugget && shouldShowNuggetPrice(item)) {
+        displayCost = displayCost + 25000000
+        costLabel = '<div class="text-xs text-yellow-600">+NUGGET</div>'
+      }
+      
+      const crumbleIcon = !item.is_permanent ? '<span title="Temporary - will crumble">⚠️</span> ' : ''
+
+      tr.innerHTML = \`
+        <td class="px-4 py-3">\${crumbleIcon}\${item.name}</td>
+        <td class="px-4 py-3">\${item.town}</td>
+        <td class="px-4 py-3">\${item.shop}</td>
+        <td class="px-4 py-3 text-right">\${displayCost ? displayCost.toLocaleString() : 'N/A'}\${costLabel}</td>
+        <td class="px-4 py-3">\${displaySlot}</td>
+        <td class="px-4 py-3 text-right font-semibold \${matchSum > 0 ? 'text-green-600' : 'text-gray-400'}">\${matchSumDisplay}</td>
+        <td class="px-4 py-3 text-right font-semibold text-blue-600" title="\${hoverText}">\${totalSumDisplay}</td>
+        <td class="px-4 py-3 text-sm">\${enhancivesText}</td>
+      \`
+      return tr
+    }
+
+    function renderBatch() {
+      const tbody = document.getElementById('itemsTable')
+      const end = Math.min(renderedCount + BATCH_SIZE, filteredItems.length)
+      for (let i = renderedCount; i < end; i++) {
+        tbody.appendChild(buildRow(filteredItems[i]))
+      }
+      renderedCount = end
+    }
+
+    document.getElementById('tableScroller').addEventListener('scroll', function() {
+      if (renderedCount >= filteredItems.length) return
+      if (this.scrollTop + this.clientHeight >= this.scrollHeight - 200) {
+        renderBatch()
+      }
+    })
 
     document.getElementById('searchName').addEventListener('input', filterItems)
     document.getElementById('filterTown').addEventListener('change', filterItems)
