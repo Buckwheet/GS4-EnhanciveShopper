@@ -1337,13 +1337,14 @@ app.get('/', (c) => {
         return
       }
       
+      const body: any = {}
+      if (parsedStatsData) body.base_stats = JSON.stringify(parsedStatsData)
+      if (parsedSkillsData) body.skill_ranks = JSON.stringify(parsedSkillsData)
+      
       await fetch(API_BASE + '/api/characters/' + currentCharacterId, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          base_stats: parsedStatsData ? JSON.stringify(parsedStatsData) : null,
-          skill_ranks: parsedSkillsData ? JSON.stringify(parsedSkillsData) : null
-        })
+        body: JSON.stringify(body)
       })
       
       alert('Character data saved!')
