@@ -173,3 +173,21 @@ Create a web application that monitors GemStone IV player shop listings and aler
 - **Enhancive matching by item_id**: The YAML `totals` section has `item_id` on every enhancive source, and `worn_items` has matching `id`. Use ID-based matching instead of fragile name-string matching.
 - **Lich script: export worn location**: The script currently doesn't export what slot each item occupies. If we add that, we can eliminate the noun-to-slot guessing entirely. Until then, the noun reverse-walk approach is a workaround.
 - **Current state (March 2026)**: Noun extraction walks backwards through item name words to find a recognized noun in the slotMap. Works for most items but is inherently fragile for items with descriptive suffixes.
+
+### Frontend Performance (from site review, March 2026)
+- **Table virtualization** [HIGH]: `renderItemsTable()` renders all 5,700+ rows into the DOM at once, causing UI lag and memory pressure. Switch to virtualized list rendering (~20 visible rows at a time).
+- **Tailwind CSS production build** [HIGH]: Currently loading Tailwind via dev CDN (~2MB). Compile into a purged static bundle (~50KB).
+
+### Filtering & Search Enhancements
+- **Numeric bonus filtering**: Add ability to filter by bonus value (e.g., Strength > 5), not just stat type. Range sliders or input operators.
+- **Search syntax expansion**: Upgrade search to support `key:value` pairs for power users (e.g., `slot:finger bonus:str`).
+
+### UI/UX
+- **Responsive card view**: Add a card-view toggle for mobile/small viewports that stacks item data vertically instead of the 8-column table.
+
+### Goal Analysis
+- **"What-if" / Wishlist**: Auto-identify marketplace items that bridge the largest gaps in a character's current build. Related to the deferred set-builder optimization in the Future Vision section above.
+
+### Cleanup
+- **Lint warnings**: Unused params in recommendation-engine.ts, unused `countSlotUsage` in index.ts, useLiteralKeys. Non-blocking.
+- **Remove YAML files from repo**: Mejora/Shollindal YAML files and `.Zone.Identifier` files accidentally committed. Add to .gitignore.
