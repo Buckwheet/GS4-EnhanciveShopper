@@ -3022,6 +3022,27 @@ app.delete('/api/characters/:id', async (c) => {
   return c.json({ success: true })
 })
 
+// Useless skills per character
+app.get('/api/characters/:id/useless-skills', async (c) => {
+  const id = c.req.param('id')
+  const { results } = await c.env.DB.prepare('SELECT skill_name FROM character_useless_skills WHERE character_id = ? ORDER BY skill_name').bind(id).all()
+  return c.json(results.map((r: any) => r.skill_name))
+})
+
+app.post('/api/characters/:id/useless-skills', async (c) => {
+  const id = c.req.param('id')
+  const { skill_name } = await c.req.json()
+  await c.env.DB.prepare('INSERT OR IGNORE INTO character_useless_skills (character_id, skill_name) VALUES (?, ?)').bind(id, skill_name).run()
+  return c.json({ success: true })
+})
+
+app.delete('/api/characters/:id/useless-skills/:skill', async (c) => {
+  const id = c.req.param('id')
+  const skill = decodeURIComponent(c.req.param('skill'))
+  await c.env.DB.prepare('DELETE FROM character_useless_skills WHERE character_id = ? AND skill_name = ?').bind(id, skill).run()
+  return c.json({ success: true })
+})
+
 // New API: Get sets for character
 app.get('/api/characters/:id/sets', async (c) => {
   const characterId = c.req.param('id')
@@ -3891,6 +3912,15 @@ app.get('/api/fix-nullable-columns', async (c) => {
     return c.json({ success: true, message: 'Columns made nullable' })
   } catch (error: any) {
     await c.env.DB.prepare(`PRAGMA foreign_keys = ON`).run()
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+app.get('/api/migrate-useless-skills', async (c) => {
+  try {
+    await c.env.DB.prepare(`CREATE TABLE IF NOT EXISTS character_useless_skills (id INTEGER PRIMARY KEY AUTOINCREMENT, character_id INTEGER NOT NULL, skill_name TEXT NOT NULL, FOREIGN KEY (character_id) REFERENCES characters(id) ON DELETE CASCADE, UNIQUE(character_id, skill_name))`).run()
+    return c.json({ success: true, message: 'character_useless_skills table created' })
+  } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
   }
 })
