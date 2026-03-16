@@ -619,7 +619,7 @@ app.get('/', (c) => {
     let currentCharacterSkills = null
     let currentUselessSkills = []
     let showUsefulSum = false
-    let modalDirty = false
+    let modalOriginalState = null
     let currentSetId = null
     let currentSetName = 'Default'
     let currentGoalSet = 'Default'
@@ -1062,7 +1062,7 @@ app.get('/', (c) => {
       if (char) {
         document.getElementById('editCharacterName').value = char.character_name
         document.getElementById('manageCharacterModal').classList.remove('hidden')
-        modalDirty = false
+        modalOriginalState = null
         document.getElementById('manageCharacterClose').textContent = 'Close'
         document.getElementById('manageCharacterClose').className = 'bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded'
         
@@ -1083,11 +1083,19 @@ app.get('/', (c) => {
       renderItems()
     })
 
-    function markModalDirty() {
-      if (!modalDirty) {
-        modalDirty = true
-        document.getElementById('manageCharacterClose').textContent = 'Save and Close'
-        document.getElementById('manageCharacterClose').className = 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded'
+    function checkModalDirty() {
+      if (!modalOriginalState) {
+        modalOriginalState = { showUsefulSum, uselessSkills: [...currentUselessSkills] }
+      }
+      const isDirty = showUsefulSum !== modalOriginalState.showUsefulSum ||
+        JSON.stringify([...currentUselessSkills].sort()) !== JSON.stringify([...modalOriginalState.uselessSkills].sort())
+      const btn = document.getElementById('manageCharacterClose')
+      if (isDirty) {
+        btn.textContent = 'Save and Close'
+        btn.className = 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded'
+      } else {
+        btn.textContent = 'Close'
+        btn.className = 'bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded'
       }
     }
 
@@ -1529,12 +1537,12 @@ app.get('/', (c) => {
       list.innerHTML = currentUselessSkills.length
         ? currentUselessSkills.map(s => '<div class="flex justify-between items-center bg-gray-50 border border-gray-200 rounded px-3 py-1"><span>' + s + '</span><button class="text-red-500 hover:text-red-700 text-sm" onclick="removeUselessSkill(\\'' + s.replace(/'/g, "\\\\'") + '\\')">Remove</button></div>').join('')
         : '<p class="text-gray-500 text-sm">No useless skills configured. All enhancives count toward total sum.</p>'
+      checkModalDirty()
     }
     
     window.removeUselessSkill = async function(skill) {
       await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/useless-skills/' + encodeURIComponent(skill), { method: 'DELETE' })
-      markModalDirty()
-      loadUselessSkillsTab()
+      await loadUselessSkillsTab()
     }
     
     document.getElementById('addUselessSkill').addEventListener('click', async () => {
@@ -1544,8 +1552,7 @@ app.get('/', (c) => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ skill_name: select.value })
       })
-      markModalDirty()
-      loadUselessSkillsTab()
+      await loadUselessSkillsTab()
     })
 
     document.getElementById('showUsefulSumCheck').addEventListener('change', async (e) => {
@@ -1554,7 +1561,7 @@ app.get('/', (c) => {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ value: showUsefulSum })
       })
-      markModalDirty()
+      checkModalDirty()
     })
 
     async function processYamlImport(yamlText) {
