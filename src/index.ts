@@ -577,6 +577,7 @@ app.get('/', (c) => {
         <div>
           <p class="text-gray-600">Total Items in Database: <span id="dbTotal" class="font-bold">0</span></p>
           <p class="text-gray-600">Filtered Results: <span id="totalItems" class="font-bold">0</span></p>
+          <p id="usefulSumNotice" class="hidden text-purple-600 text-sm">Total Sum sorted by Useful Sum. <a href="#" id="usefulSumPrefLink" class="underline hover:text-purple-800">Change preference</a></p>
         </div>
         <div class="text-right">
           <p class="text-gray-600 text-sm">Last Updated: <span id="lastUpdated" class="font-semibold">Loading...</span></p>
@@ -1051,6 +1052,13 @@ app.get('/', (c) => {
     })
 
     // Manage Character Modal - Tab Switching
+    document.getElementById('usefulSumPrefLink').addEventListener('click', (e) => {
+      e.preventDefault()
+      if (!currentCharacterId) return
+      document.getElementById('manageCharacterBtn').click()
+      setTimeout(() => switchToTab('Useless'), 100)
+    })
+
     document.getElementById('manageCharacterBtn').addEventListener('click', async () => {
       if (!currentCharacterId) return
       
@@ -2566,8 +2574,8 @@ app.get('/', (c) => {
             bVal = calculateMatchSum(b)
             break
           case 'totalSum':
-            aVal = calculateTotalSum(a)
-            bVal = calculateTotalSum(b)
+            aVal = showUsefulSum ? calculateUsefulSum(a) : calculateTotalSum(a)
+            bVal = showUsefulSum ? calculateUsefulSum(b) : calculateTotalSum(b)
             break
           default:
             return 0
@@ -2834,6 +2842,14 @@ app.get('/', (c) => {
       tbody.innerHTML = ''
 
       document.getElementById('totalItems').textContent = filteredItems.length
+      
+      // Show useful sum notice
+      const notice = document.getElementById('usefulSumNotice')
+      if (showUsefulSum && currentUselessSkills.length > 0) {
+        notice.classList.remove('hidden')
+      } else {
+        notice.classList.add('hidden')
+      }
       
       // Update goal filter status
       const statusEl = document.getElementById('goalFilterStatus')
