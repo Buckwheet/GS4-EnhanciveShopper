@@ -578,6 +578,7 @@ app.get('/', (c) => {
           <p class="text-gray-600">Total Items in Database: <span id="dbTotal" class="font-bold">0</span></p>
           <p class="text-gray-600">Filtered Results: <span id="totalItems" class="font-bold">0</span></p>
           <p id="usefulSumNotice" class="hidden text-purple-600 text-sm">Total Sum sorted by Useful Sum. <a href="#" id="usefulSumPrefLink" class="underline hover:text-purple-800">Change preference</a></p>
+          <label id="defaultSortTotalLabel" class="hidden flex items-center gap-1 text-sm text-gray-600 mt-1"><input type="checkbox" id="defaultSortTotalCheck"> Default sort by Total Sum</label>
         </div>
         <div class="text-right">
           <p class="text-gray-600 text-sm">Last Updated: <span id="lastUpdated" class="font-semibold">Loading...</span></p>
@@ -620,6 +621,7 @@ app.get('/', (c) => {
     let currentCharacterSkills = null
     let currentUselessSkills = []
     let showUsefulSum = false
+    let defaultSortTotal = false
     let modalOriginalState = null
     let currentSetId = null
     let currentSetName = 'Default'
@@ -874,6 +876,7 @@ app.get('/', (c) => {
           const char = data.characters[0]
           currentCharacterSkills = char && char.skill_ranks ? JSON.parse(char.skill_ranks) : null
           showUsefulSum = !!char.show_useful_sum
+          defaultSortTotal = !!char.default_sort_total
           const usRes = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/useless-skills')
           currentUselessSkills = await usRes.json()
         }
@@ -965,12 +968,14 @@ app.get('/', (c) => {
         const char = data.characters.find(c => c.id == currentCharacterId)
         currentCharacterSkills = char && char.skill_ranks ? JSON.parse(char.skill_ranks) : null
         showUsefulSum = !!(char && char.show_useful_sum)
+        defaultSortTotal = !!(char && char.default_sort_total)
         const usRes = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/useless-skills')
         currentUselessSkills = await usRes.json()
       } else {
         currentCharacterSkills = null
         currentUselessSkills = []
         showUsefulSum = false
+        defaultSortTotal = false
       }
       
       await loadSets()
@@ -1057,6 +1062,15 @@ app.get('/', (c) => {
       if (!currentCharacterId) return
       document.getElementById('manageCharacterBtn').click()
       setTimeout(() => switchToTab('Useless'), 100)
+    })
+
+    document.getElementById('defaultSortTotalCheck').addEventListener('change', async (e) => {
+      defaultSortTotal = e.target.checked
+      await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/default-sort-total', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: defaultSortTotal })
+      })
+      filterItems()
     })
 
     document.getElementById('manageCharacterBtn').addEventListener('click', async () => {
@@ -2833,6 +2847,14 @@ app.get('/', (c) => {
           const bSum = calculateMatchSum(b)
           return bSum - aSum // Descending
         })
+      } else if (defaultSortTotal) {
+        currentSortColumn = 'totalSum'
+        currentSortDirection = 'desc'
+        filteredItems.sort((a, b) => {
+          const aSum = showUsefulSum ? calculateUsefulSum(a) : calculateTotalSum(a)
+          const bSum = showUsefulSum ? calculateUsefulSum(b) : calculateTotalSum(b)
+          return bSum - aSum
+        })
       }
 
       renderItems()
@@ -2850,6 +2872,15 @@ app.get('/', (c) => {
         notice.classList.remove('hidden')
       } else {
         notice.classList.add('hidden')
+      }
+      
+      // Show default sort checkbox for logged-in users
+      const sortLabel = document.getElementById('defaultSortTotalLabel')
+      if (currentUser && currentCharacterId) {
+        sortLabel.classList.remove('hidden')
+        document.getElementById('defaultSortTotalCheck').checked = defaultSortTotal
+      } else {
+        sortLabel.classList.add('hidden')
       }
       
       // Update goal filter status
@@ -4124,6 +4155,22 @@ app.get('/api/migrate-useful-sum-pref', async (c) => {
   } catch (e: any) {
     return c.json({ error: e.message }, 500)
   }
+})
+
+app.get('/api/migrate-default-sort', async (c) => {
+  try {
+    await c.env.DB.prepare('ALTER TABLE characters ADD COLUMN default_sort_total INTEGER NOT NULL DEFAULT 0').run()
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
+  }
+})
+
+app.put('/api/characters/:id/default-sort-total', async (c) => {
+  const id = c.req.param('id')
+  const { value } = await c.req.json()
+  await c.env.DB.prepare('UPDATE characters SET default_sort_total = ? WHERE id = ?').bind(value ? 1 : 0, id).run()
+  return c.json({ success: true })
 })
 
 app.get('/api/summary', async (c) => {
