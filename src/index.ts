@@ -1549,8 +1549,34 @@ app.get('/', (c) => {
         }
       }
       
+      // Parse non_enhancive_worn: items that occupy slots but have no enhancives
+      let inNonEnh = false
+      let neCurrentName = null
+      
+      for (const line of lines) {
+        if (line.match(/^non_enhancive_worn:/)) { inNonEnh = true; continue }
+        if (inNonEnh && line.match(/^[a-z_]+:/) && !line.match(/^\\s/)) { inNonEnh = false }
+        if (!inNonEnh) continue
+        
+        const nameMatch = line.match(/^- name:\\s*(.+)/)
+        if (nameMatch) { neCurrentName = nameMatch[1].trim(); continue }
+        
+        const idMatch = line.match(/^\\s+id:\\s*'?(\\d+)'?/)
+        if (idMatch && neCurrentName) {
+          const neId = 'ne_' + idMatch[1]
+          items[neId] = { id: neId, name: neCurrentName, enhancives: [], isBlocker: true }
+          continue
+        }
+        
+        const loc = line.match(/^\\s+location:\\s*(.+)/)
+        if (loc && neCurrentName) {
+          const lastKey = Object.keys(items).pop()
+          if (lastKey && items[lastKey]) items[lastKey].location = loc[1].trim()
+        }
+      }
+      
       // Import items
-      let imported = 0, skipped = 0
+      let imported = 0, skipped = 0, blockers = 0
       for (const item of Object.values(items)) {
         let slot = 'elsewhere'
         if (item.location) {
@@ -1565,15 +1591,19 @@ app.get('/', (c) => {
             item_name: item.name || 'Unknown',
             slot: slot,
             enhancives_json: JSON.stringify(item.enhancives),
-            is_permanent: true
+            is_permanent: true,
+            is_locked: item.isBlocker ? true : false
           })
         })
         
-        if (response.ok) imported++
+        if (response.ok) { imported++; if (item.isBlocker) blockers++ }
         else { console.error('Failed:', item.name); skipped++ }
       }
       
-      alert('Import complete! Imported: ' + imported + ', Skipped: ' + skipped)
+      let msg = 'Import complete! Imported: ' + imported
+      if (blockers > 0) msg += ' (' + blockers + ' slot blockers)'
+      if (skipped > 0) msg += ', Skipped: ' + skipped
+      alert(msg)
       loadInventory()
       loadSummary()
     }
@@ -1799,26 +1829,31 @@ app.get('/', (c) => {
       
       invList.innerHTML = items.map(item => {
         const enhs = JSON.parse(item.enhancives_json)
-        const enhText = enhs.map(e => '+' + e.boost + ' ' + e.ability).join(', ')
-        const lockIcon = item.is_irreplaceable ? '🔒 ' : ''
-        const permanentClass = item.is_permanent ? 'bg-white' : 'bg-yellow-50'
-        const irreplaceableClass = item.is_irreplaceable ? 'border-blue-500 border-2' : ''
+        const enhText = enhs.length > 0 ? enhs.map(e => '+' + e.boost + ' ' + e.ability).join(', ') : '<span class="text-gray-400 italic">No enhancives (slot blocker)<\/span>'
+        const isBlocker = enhs.length === 0
+        const lockIcon = item.is_locked ? '🔒 ' : item.is_irreplaceable ? '📌 ' : ''
+        const bgClass = isBlocker ? 'bg-gray-100' : item.is_permanent ? 'bg-white' : 'bg-yellow-50'
+        const borderClass = item.is_locked ? 'border-red-400 border-2' : item.is_irreplaceable ? 'border-blue-500 border-2' : ''
         const slotDisplay = item.slot.replace(/_/g, ' ')
-        const tempWarning = !item.is_permanent ? '<div class="text-xs text-orange-600 mt-1">⚠ Temporary (will crumble)<\/div>' : ''
-        const checkedAttr = item.is_irreplaceable ? 'checked' : ''
+        const tempWarning = !item.is_permanent && !isBlocker ? '<div class="text-xs text-orange-600 mt-1">⚠ Temporary (will crumble)<\/div>' : ''
+        const irrepChecked = item.is_irreplaceable ? 'checked' : ''
+        const lockedChecked = item.is_locked ? 'checked' : ''
         
         const html = [
-          '<div class="p-3 border rounded ' + permanentClass + ' ' + irreplaceableClass + '">',
+          '<div class="p-3 border rounded ' + bgClass + ' ' + borderClass + '">',
           '<div class="flex justify-between items-start">',
           '<div class="flex-1">',
           '<div class="font-semibold">' + lockIcon + item.item_name + '<\/div>',
           '<div class="text-sm text-gray-600">Slot: ' + slotDisplay + '<\/div>',
           '<div class="text-sm text-gray-700">' + enhText + '<\/div>',
           tempWarning,
-          '<label class="flex items-center gap-1 text-xs text-gray-600 mt-2 cursor-pointer">',
-          '<input type="checkbox" ' + checkedAttr + ' onchange="toggleIrreplaceable(' + item.id + ', this.checked)" class="cursor-pointer">',
-          '<span>Mark as irreplaceable<\/span>',
+          '<div class="flex gap-4 mt-2">',
+          '<label class="flex items-center gap-1 text-xs text-gray-600 cursor-pointer">',
+          '<input type="checkbox" ' + lockedChecked + ' onchange="toggleLocked(' + item.id + ', this.checked)" class="cursor-pointer">',
+          '<span>Locked (won\\\'t remove)<\/span>',
           '<\/label>',
+          isBlocker ? '' : '<label class="flex items-center gap-1 text-xs text-gray-600 cursor-pointer"><input type="checkbox" ' + irrepChecked + ' onchange="toggleIrreplaceable(' + item.id + ', this.checked)" class="cursor-pointer"><span>Irreplaceable<\/span><\/label>',
+          '<\/div>',
           '<\/div>',
           '<div class="flex gap-2">',
           '<button onclick="editInventoryItem(' + item.id + ')" class="text-blue-600 hover:text-blue-800 text-sm">Edit<\/button>',
@@ -1864,6 +1899,20 @@ app.get('/', (c) => {
         await loadInventory()
       } catch (error) {
         console.error('Error toggling irreplaceable:', error)
+        alert('Failed to update item')
+      }
+    }
+
+    window.toggleLocked = async function(id, isLocked) {
+      try {
+        await fetch(API_BASE + '/api/inventory/' + id + '/locked', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_locked: isLocked })
+        })
+        await loadInventory()
+      } catch (error) {
+        console.error('Error toggling locked:', error)
         alert('Failed to update item')
       }
     }
@@ -3063,15 +3112,15 @@ app.get('/api/sets/:id/inventory', async (c) => {
 app.post('/api/sets/:id/inventory', async (c) => {
   try {
     const setId = c.req.param('id')
-    const { item_name, slot, enhancives_json, is_permanent } = await c.req.json()
+    const { item_name, slot, enhancives_json, is_permanent, is_locked } = await c.req.json()
     
     if (!item_name || !slot || !enhancives_json) {
       return c.json({ error: 'item_name, slot, and enhancives_json required' }, 400)
     }
 
     const result = await c.env.DB.prepare(
-      'INSERT INTO set_inventory (set_id, item_name, slot, enhancives_json, is_permanent, created_at) VALUES (?, ?, ?, ?, ?, ?)'
-    ).bind(setId, item_name, slot, enhancives_json, is_permanent ? 1 : 0, new Date().toISOString()).run()
+      'INSERT INTO set_inventory (set_id, item_name, slot, enhancives_json, is_permanent, is_locked, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(setId, item_name, slot, enhancives_json, is_permanent ? 1 : 0, is_locked ? 1 : 0, new Date().toISOString()).run()
 
     return c.json({ success: true, id: result.meta.last_row_id })
   } catch (error) {
@@ -3630,6 +3679,20 @@ app.put('/api/set-inventory/:id', async (c) => {
 app.delete('/api/set-inventory/:id', async (c) => {
   const id = c.req.param('id')
   await c.env.DB.prepare('DELETE FROM set_inventory WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+app.put('/api/inventory/:id/irreplaceable', async (c) => {
+  const id = c.req.param('id')
+  const { is_irreplaceable } = await c.req.json()
+  await c.env.DB.prepare('UPDATE set_inventory SET is_irreplaceable = ? WHERE id = ?').bind(is_irreplaceable ? 1 : 0, id).run()
+  return c.json({ success: true })
+})
+
+app.put('/api/inventory/:id/locked', async (c) => {
+  const id = c.req.param('id')
+  const { is_locked } = await c.req.json()
+  await c.env.DB.prepare('UPDATE set_inventory SET is_locked = ? WHERE id = ?').bind(is_locked ? 1 : 0, id).run()
   return c.json({ success: true })
 })
 

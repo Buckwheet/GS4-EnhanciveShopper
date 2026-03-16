@@ -219,8 +219,11 @@ module EnhExport
 
       if clean_line =~ /^(.*?):$/
         current_loc = $1.strip
-      elsif current_loc && clean_line =~ /^(.*?)\s+\((?:non)?functional\)$/i
+      elsif current_loc && clean_line =~ /^(.*?)\s+\((functional|nonfunctional)\)$/i
         item_name = $1.strip
+        functional = $2.downcase == 'functional'
+        next unless functional  # Only track functional items (they occupy slots)
+        
         item_id = nil
         item_id = $1 if line =~ /exist="(\d+)"/
         
@@ -260,15 +263,10 @@ module EnhExport
     enh_ids = parsed_list.map { |i| i['id'] }.compact.to_set
     enh_names = parsed_list.map { |i| i['name'] }.to_set
 
-    # Filter location data to only include items found in the enhancive list
-    filtered_locations = parsed_location.select do |loc_item|
-      enh_ids.include?(loc_item['id']) || enh_names.include?(loc_item['name'])
-    end
-
-    # Merge location into the main worn_items list and build a grouped map
+    # Merge location into enhancive items
     location_map = {}
     parsed_list.each do |item|
-      loc_match = filtered_locations.find { |l| (l['id'] && l['id'] == item['id']) || l['name'] == item['name'] }
+      loc_match = parsed_location.find { |l| (l['id'] && l['id'] == item['id']) || l['name'] == item['name'] }
       if loc_match
         item['location'] = loc_match['location']
         location_map[item['location']] ||= []
@@ -276,10 +274,16 @@ module EnhExport
       end
     end
 
+    # Collect non-enhancive functional items that still occupy slots
+    non_enhancive_worn = parsed_location.reject do |loc_item|
+      enh_ids.include?(loc_item['id']) || enh_names.include?(loc_item['name'])
+    end
+
     output = {
       'character'              => char_name,
       'generated'              => Time.now.strftime('%Y-%m-%d %H:%M:%S'),
       'worn_items'             => parsed_list,
+      'non_enhancive_worn'     => non_enhancive_worn,
       'enhancives_by_location' => location_map,
       'totals'                 => parsed_detail
     }
