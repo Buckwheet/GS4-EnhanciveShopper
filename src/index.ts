@@ -2215,16 +2215,16 @@ app.get('/', (c) => {
         let color = 'text-red-600'
         if (vals.enhancive >= vals.cap) color = 'text-green-600'
         else if (vals.enhancive >= vals.cap * 0.8) color = 'text-yellow-600'
-        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + '">' + vals.enhancive + '/' + vals.cap + '</span></div>'
+        const itemList = vals.items && vals.items.length ? vals.items.map(i => '+' + i.boost + ' ' + i.name).join('\\n') : 'No items'
+        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + ' cursor-help" title="' + itemList.replace(/"/g, '&quot;') + '">' + vals.enhancive + '/' + vals.cap + '</span></div>'
       }).join('')
       
       skillsSummary.innerHTML = Object.entries(data.skills).map(([name, vals]) => {
         let color = 'text-red-600'
         if (vals.enhancive >= vals.cap) color = 'text-green-600'
         else if (vals.enhancive >= vals.cap * 0.8) color = 'text-yellow-600'
-        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + '">' + vals.enhancive + '/' + vals.cap + '</span></div>'
-        
-        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + '">' + displayText + '</span></div>'
+        const itemList = vals.items && vals.items.length ? vals.items.map(i => '+' + i.boost + ' ' + i.name).join('\\n') : 'No items'
+        return '<div class="flex justify-between items-center p-2 border-b"><span class="font-medium">' + name + ':</span><span class="' + color + ' cursor-help" title="' + itemList.replace(/"/g, '&quot;') + '">' + vals.enhancive + '/' + vals.cap + '</span></div>'
       }).join('')
     }
 
@@ -4275,11 +4275,11 @@ app.get('/api/summary', async (c) => {
   const skillRanks = character?.skill_ranks ? JSON.parse(character.skill_ranks as string) : {}
 
   const { results: items } = await c.env.DB.prepare(
-    'SELECT enhancives_json FROM set_inventory WHERE set_id = ?'
+    'SELECT item_name, enhancives_json FROM set_inventory WHERE set_id = ?'
   ).bind(setId).all()
 
-  const stats: Record<string, { base: number; enhancive: number; total: number; cap: number }> = {}
-  const skills: Record<string, { base: number; enhancive: number; total: number; cap: number }> = {}
+  const stats: Record<string, { base: number; enhancive: number; total: number; cap: number; items: {name: string; boost: number}[] }> = {}
+  const skills: Record<string, { base: number; enhancive: number; total: number; cap: number; items: {name: string; boost: number}[] }> = {}
 
   for (const item of items) {
     const enhancives = JSON.parse(item.enhancives_json as string)
@@ -4296,18 +4296,21 @@ app.get('/api/summary', async (c) => {
       }
       const cleanName = ability.replace(/ (Base|Bonus|Ranks)/g, '').replace(/\s*\([A-Z]+\)/g, '').trim()
       const isStat = ['Strength', 'Constitution', 'Dexterity', 'Agility', 'Discipline', 'Aura', 'Logic', 'Intuition', 'Wisdom', 'Influence'].includes(cleanName)
+      const effectiveBoost = isBonus ? boost * 2 : isRanks ? ranksToBonus(boost, (skillRanks[cleanName] || 0)) : boost
       
       if (isStat) {
-        if (!stats[cleanName]) stats[cleanName] = { base: resolveBase(cleanName), enhancive: 0, total: 0, cap: STAT_CAP }
+        if (!stats[cleanName]) stats[cleanName] = { base: resolveBase(cleanName), enhancive: 0, total: 0, cap: STAT_CAP, items: [] }
         stats[cleanName].enhancive += isBonus ? boost * 2 : boost
+        stats[cleanName].items.push({ name: item.item_name as string, boost: isBonus ? boost * 2 : boost })
       } else {
         const cap = RESOURCE_CAPS[cleanName] || SKILL_CAP
-        if (!skills[cleanName]) skills[cleanName] = { base: skillRanks[cleanName] || 0, enhancive: 0, total: 0, cap: cap }
+        if (!skills[cleanName]) skills[cleanName] = { base: skillRanks[cleanName] || 0, enhancive: 0, total: 0, cap: cap, items: [] }
         if (isRanks) {
           skills[cleanName].enhancive += ranksToBonus(boost, skills[cleanName].base)
         } else {
           skills[cleanName].enhancive += boost
         }
+        skills[cleanName].items.push({ name: item.item_name as string, boost: effectiveBoost })
       }
     }
   }
