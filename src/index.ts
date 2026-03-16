@@ -4059,7 +4059,7 @@ app.get('/api/summary', async (c) => {
       const isBonus = ability.includes('Bonus')
       const isRanks = ability.includes('Ranks')
       
-      const cleanName = ability.replace(/ (Base|Bonus|Ranks)/g, '').trim()
+      const cleanName = ability.replace(/ (Base|Bonus|Ranks)/g, '').replace(/\s*\([A-Z]+\)/g, '').trim()
       const isStat = ['Strength', 'Constitution', 'Dexterity', 'Agility', 'Discipline', 'Aura', 'Logic', 'Intuition', 'Wisdom', 'Influence'].includes(cleanName)
       
       if (isStat) {
