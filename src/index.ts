@@ -3031,19 +3031,23 @@ app.get('/api/goal-sets', async (c) => {
 
 // New API: Get distinct enhancive ability names from shop items
 app.get('/api/ability-names', async (c) => {
-  const { results } = await c.env.DB.prepare('SELECT enhancives_json FROM items LIMIT 10000').all()
-  const names = new Set<string>()
-  for (const row of results) {
-    try {
-      const enhs = JSON.parse(row.enhancives_json as string)
-      for (const e of enhs) {
-        if (!e.ability) continue
-        const clean = e.ability.replace(/ (Base|Bonus|Ranks)$/g, '').replace(/\s*\([A-Z]+\)/g, '').trim()
-        if (clean) names.add(clean)
-      }
-    } catch {}
+  try {
+    const { results } = await c.env.DB.prepare('SELECT enhancives_json FROM items LIMIT 5000').all()
+    const names = new Set<string>()
+    for (const row of results) {
+      try {
+        const enhs = JSON.parse(row.enhancives_json as string)
+        for (const e of enhs) {
+          if (!e || !e.ability) continue
+          const clean = (e.ability as string).replace(/ (Base|Bonus|Ranks)$/g, '').replace(/\s*\([A-Z]+\)/g, '').trim()
+          if (clean) names.add(clean)
+        }
+      } catch {}
+    }
+    return c.json([...names].sort())
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
   }
-  return c.json([...names].sort())
 })
 
 // New API: Get all characters for user
