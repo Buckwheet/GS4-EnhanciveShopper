@@ -1556,10 +1556,10 @@ app.get('/', (c) => {
       
       for (const line of lines) {
         if (line.match(/^non_enhancive_worn:/)) { inNonEnh = true; continue }
-        if (inNonEnh && line.match(/^[a-z_]+:/) && !line.match(/^\\s/)) { inNonEnh = false }
+        if (inNonEnh && line.match(/^[a-z_]+:/) && !line.match(/^ /)) { inNonEnh = false }
         if (!inNonEnh) continue
         
-        const idMatch = line.match(/^- id: *'?(\d+)'?/)
+        const idMatch = line.match(/^- id: *'?([0-9]+)'?/)
         if (idMatch) {
           neCurrentId = 'ne_' + idMatch[1]
           items[neCurrentId] = { id: neCurrentId, name: '', enhancives: [], isBlocker: true }
