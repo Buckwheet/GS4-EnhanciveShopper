@@ -1540,11 +1540,12 @@ app.get('/', (c) => {
       let pendingAmount = null
       
       for (const line of lines) {
-        if (line.includes('totals:')) { inTotals = true; continue }
+        if (line.includes('totals:')) { inTotals = true; console.log('FOUND totals line'); continue }
         if (!inTotals) continue
         
         if (line.match(/^    [A-Z]/)) {
           currentStat = line.split(':')[0].trim()
+          console.log('FOUND stat:', currentStat)
           continue
         }
         
