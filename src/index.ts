@@ -2087,11 +2087,13 @@ app.get('/', (c) => {
       }
       
       const slotCounts = {}
+      const slotNames = {}
       items.forEach(item => {
         const displaySlot = slotMapping[item.slot] || item.slot
         slotCounts[displaySlot] = (slotCounts[displaySlot] || 0) + 1
+        if (!slotNames[displaySlot]) slotNames[displaySlot] = []
+        slotNames[displaySlot].push(item.name)
       })
-      console.log('Slot counts:', slotCounts)
       
       const slotLimits = {
         'F2P': { 'pin': 8, 'head': 1, 'hair': 1, 'single_ear': 1, 'both_ears': 1, 'neck': 3, 'shoulder_slung': 2, 'shoulders_draped': 1, 'chest': 1, 'front': 1, 'chest_slipped': 1, 'back': 1, 'arms': 1, 'wrist': 2, 'hands': 1, 'fingers': 2, 'waist': 1, 'belt': 3, 'legs_pulled': 1, 'legs_attached': 1, 'legs_slipped': 1, 'ankle': 1, 'feet_slipped': 1, 'feet_on': 1, 'locus': 1 },
@@ -2112,8 +2114,10 @@ app.get('/', (c) => {
       const usageText = Object.keys(limits).map(slot => {
         const count = slotCounts[slot] || 0
         const limit = limits[slot]
+        const names = slotNames[slot] || []
+        const tooltip = names.length ? names.join('\\n') : 'Empty'
         const color = count >= limit ? 'text-red-600' : count >= limit * 0.8 ? 'text-yellow-600' : 'text-green-600'
-        return '<span class="' + color + ' font-medium">' + slot.replace(/_/g, ' ').replace(/\bw/g, l => l.toUpperCase()) + ': ' + count + '/' + limit + '</span>'
+        return '<span class="' + color + ' font-medium cursor-help" title="' + tooltip.replace(/"/g, '&quot;') + '">' + slot.replace(/_/g, ' ').replace(/\bw/g, l => l.toUpperCase()) + ': ' + count + '/' + limit + '</span>'
       }).join(' | ')
       
       if (usageText) {
