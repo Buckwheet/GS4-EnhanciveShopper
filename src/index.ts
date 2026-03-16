@@ -1551,11 +1551,12 @@ app.get('/', (c) => {
         
         if (line.includes('amount:') && currentStat) {
           const amountMatch = line.match(/amount:\s*(\d+)/)
-          if (amountMatch) pendingAmount = parseInt(amountMatch[1])
+          if (amountMatch) { pendingAmount = parseInt(amountMatch[1]); console.log('AMOUNT:', pendingAmount, 'for', currentStat) }
         }
         
         if (line.includes('item_name:') && pendingAmount && currentStat) {
           const nameMatch = line.match(/item_name:\s*(.+)/)
+          console.log('ITEM_NAME line found, pendingAmount:', pendingAmount, 'nameMatch:', nameMatch?.[1])
           if (nameMatch) {
             const fullName = nameMatch[1].trim()
             const cleanName = fullName.replace(/<[^>]+>/g, '').trim()
