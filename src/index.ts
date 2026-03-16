@@ -2855,6 +2855,9 @@ app.get('/', (c) => {
           const bSum = showUsefulSum ? calculateUsefulSum(b) : calculateTotalSum(b)
           return bSum - aSum
         })
+      } else {
+        currentSortColumn = null
+        currentSortDirection = 'asc'
       }
 
       renderItems()
