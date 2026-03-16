@@ -2092,7 +2092,7 @@ app.get('/', (c) => {
         const displaySlot = slotMapping[item.slot] || item.slot
         slotCounts[displaySlot] = (slotCounts[displaySlot] || 0) + 1
         if (!slotNames[displaySlot]) slotNames[displaySlot] = []
-        slotNames[displaySlot].push(item.name)
+        slotNames[displaySlot].push(item.item_name)
       })
       
       const slotLimits = {
