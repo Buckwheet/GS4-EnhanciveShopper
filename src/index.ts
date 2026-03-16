@@ -3032,7 +3032,7 @@ app.get('/api/goal-sets', async (c) => {
 // New API: Get distinct enhancive ability names from shop items
 app.get('/api/ability-names', async (c) => {
   try {
-    const { results } = await c.env.DB.prepare('SELECT enhancives_json FROM items LIMIT 5000').all()
+    const { results } = await c.env.DB.prepare('SELECT enhancives_json FROM shop_items WHERE available = 1 LIMIT 5000').all()
     const names = new Set<string>()
     for (const row of results) {
       try {
