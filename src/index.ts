@@ -1492,19 +1492,32 @@ app.get('/', (c) => {
     
     async function processYamlImport(yamlText) {
       const locationSlotMap = {
-        'placed in your hair': 'head', 'on your head': 'head',
-        'slipped over your hands': 'hands', 'on your hands': 'hands',
-        'as a pin': 'pin', 'attached to your wrist': 'wrist',
-        'attached to your arms': 'arms', 'put over your front': 'front',
-        'hung from a single ear': 'ear', 'hung from both ears': 'ears',
-        'attached to your legs': 'legs', 'on your fingers': 'finger',
-        'around your neck': 'neck', 'slung over your shoulder': 'shoulder',
-        'draped over your shoulders': 'shoulders', 'on your chest': 'chest',
-        'slipped onto your chest': 'chest', 'on your back': 'back',
-        'around your waist': 'belt', 'on your belt': 'belt',
-        'pulled over your legs': 'legs', 'slipped onto your legs': 'legs',
-        'around your ankle': 'ankle', 'slipped onto your feet': 'feet',
-        'on your feet': 'feet', 'elsewhere': 'elsewhere'
+        'placed in your hair': 'hair',
+        'on your head': 'head',
+        'slipped over your hands': 'hands',
+        'on your hands': 'hands',
+        'as a pin': 'pin',
+        'attached to your wrist': 'wrist',
+        'attached to your arms': 'arms',
+        'put over your front': 'front',
+        'hung from a single ear': 'single_ear',
+        'hung from both ears': 'both_ears',
+        'attached to your legs': 'legs_attached',
+        'pulled over your legs': 'legs_pulled',
+        'slipped onto your legs': 'legs_slipped',
+        'on your fingers': 'fingers',
+        'around your neck': 'neck',
+        'slung over your shoulder': 'shoulder_slung',
+        'draped over your shoulders': 'shoulders_draped',
+        'on your chest': 'chest',
+        'slipped onto your chest': 'chest_slipped',
+        'on your back': 'back',
+        'around your waist': 'waist',
+        'on your belt': 'belt',
+        'around your ankle': 'ankle',
+        'slipped onto your feet': 'feet_slipped',
+        'on your feet': 'feet_on',
+        'elsewhere': 'locus'
       }
       const lines = yamlText.replace(/\\r/g, '').split('\\n')
       
@@ -1568,12 +1581,11 @@ app.get('/', (c) => {
       // Import items
       let imported = 0, skipped = 0
       for (const item of Object.values(items)) {
-        let slot = null
+        let slot = 'elsewhere'
         if (item.location) {
           const locLower = item.location.toLowerCase()
-          slot = locationSlotMap[locLower] || null
+          slot = locationSlotMap[locLower] || 'elsewhere'
         }
-        if (!slot) { console.log('Skipping (no slot):', item.name, item.location); skipped++; continue }
         
         const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/inventory', {
           method: 'POST',
