@@ -1337,7 +1337,7 @@ app.get('/', (c) => {
         return
       }
       
-      const body: any = {}
+      const body = {}
       if (parsedStatsData) body.base_stats = JSON.stringify(parsedStatsData)
       if (parsedSkillsData) body.skill_ranks = JSON.stringify(parsedSkillsData)
       
