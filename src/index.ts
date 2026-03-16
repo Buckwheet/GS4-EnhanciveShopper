@@ -242,6 +242,7 @@ app.get('/', (c) => {
             <button id="tabCharInfo" class="px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-semibold">Character Info</button>
             <button id="tabCharData" class="px-4 py-2 text-gray-600 hover:text-blue-600">Character Data</button>
             <button id="tabInventory" class="px-4 py-2 text-gray-600 hover:text-blue-600">Inventory</button>
+            <button id="tabUseless" class="px-4 py-2 text-gray-600 hover:text-blue-600">Useless Skills</button>
           </div>
           
           <!-- Tab Content: Character Info -->
@@ -345,6 +346,18 @@ app.get('/', (c) => {
             </div>
             
             <div id="inventoryList" class="space-y-2"></div>
+          </div>
+          
+          <!-- Tab Content: Useless Skills -->
+          <div id="tabContentUseless" class="hidden space-y-4">
+            <p class="text-sm text-gray-600">Skills marked useless are excluded from the "useful sum" calculation and highlighted purple in the shop listing.</p>
+            <div class="flex gap-2">
+              <select id="uselessSkillSelect" class="border p-2 rounded flex-1">
+                <option value="">Loading abilities...</option>
+              </select>
+              <button id="addUselessSkill" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Add</button>
+            </div>
+            <div id="uselessSkillsList" class="space-y-1"></div>
           </div>
           
           <div class="flex justify-end mt-4">
@@ -1052,11 +1065,13 @@ app.get('/', (c) => {
       document.getElementById('tabContentCharInfo').classList.add('hidden')
       document.getElementById('tabContentCharData').classList.add('hidden')
       document.getElementById('tabContentInventory').classList.add('hidden')
+      document.getElementById('tabContentUseless').classList.add('hidden')
       
       // Reset all tab buttons
       document.getElementById('tabCharInfo').className = 'px-4 py-2 text-gray-600 hover:text-blue-600'
       document.getElementById('tabCharData').className = 'px-4 py-2 text-gray-600 hover:text-blue-600'
       document.getElementById('tabInventory').className = 'px-4 py-2 text-gray-600 hover:text-blue-600'
+      document.getElementById('tabUseless').className = 'px-4 py-2 text-gray-600 hover:text-blue-600'
       
       // Show selected tab
       document.getElementById('tabContent' + tabName).classList.remove('hidden')
@@ -1067,12 +1082,15 @@ app.get('/', (c) => {
         loadCharacterDataTab()
       } else if (tabName === 'Inventory') {
         loadInventoryTab()
+      } else if (tabName === 'Useless') {
+        loadUselessSkillsTab()
       }
     }
 
     document.getElementById('tabCharInfo').addEventListener('click', () => switchToTab('CharInfo'))
     document.getElementById('tabCharData').addEventListener('click', () => switchToTab('CharData'))
     document.getElementById('tabInventory').addEventListener('click', () => switchToTab('Inventory'))
+    document.getElementById('tabUseless').addEventListener('click', () => switchToTab('Useless'))
 
     async function loadCharacterDataTab() {
       const response = await fetch(API_BASE + '/api/characters?discord_id=' + currentUser.id)
@@ -1458,6 +1476,45 @@ app.get('/', (c) => {
       }
     })
     
+    // Useless Skills tab
+    let allAbilityNames = []
+    let currentUselessSkills = []
+    
+    async function loadUselessSkillsTab() {
+      if (!allAbilityNames.length) {
+        const res = await fetch(API_BASE + '/api/ability-names')
+        allAbilityNames = await res.json()
+      }
+      const res = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/useless-skills')
+      currentUselessSkills = await res.json()
+      
+      const select = document.getElementById('uselessSkillSelect')
+      const available = allAbilityNames.filter(n => !currentUselessSkills.includes(n))
+      select.innerHTML = available.length
+        ? available.map(n => '<option value="' + n + '">' + n + '</option>').join('')
+        : '<option value="">All skills assigned</option>'
+      
+      const list = document.getElementById('uselessSkillsList')
+      list.innerHTML = currentUselessSkills.length
+        ? currentUselessSkills.map(s => '<div class="flex justify-between items-center bg-purple-50 border border-purple-200 rounded px-3 py-1"><span class="text-purple-700">' + s + '</span><button class="text-red-500 hover:text-red-700 text-sm" onclick="removeUselessSkill(\\'' + s.replace(/'/g, "\\\\'") + '\\')">Remove</button></div>').join('')
+        : '<p class="text-gray-500 text-sm">No useless skills configured. All enhancives count toward total sum.</p>'
+    }
+    
+    window.removeUselessSkill = async function(skill) {
+      await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/useless-skills/' + encodeURIComponent(skill), { method: 'DELETE' })
+      loadUselessSkillsTab()
+    }
+    
+    document.getElementById('addUselessSkill').addEventListener('click', async () => {
+      const select = document.getElementById('uselessSkillSelect')
+      if (!select.value) return
+      await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/useless-skills', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skill_name: select.value })
+      })
+      loadUselessSkillsTab()
+    })
+
     async function processYamlImport(yamlText) {
       const locationSlotMap = {
         'placed in your hair': 'hair',
@@ -2972,7 +3029,22 @@ app.get('/api/goal-sets', async (c) => {
   return c.json({ sets: [...sets] })
 })
 
-// New API: Get character sets
+// New API: Get distinct enhancive ability names from shop items
+app.get('/api/ability-names', async (c) => {
+  const { results } = await c.env.DB.prepare('SELECT DISTINCT enhancives_json FROM items').all()
+  const names = new Set<string>()
+  for (const row of results) {
+    try {
+      const enhs = JSON.parse(row.enhancives_json as string)
+      for (const e of enhs) {
+        const clean = e.ability.replace(/ (Base|Bonus|Ranks)$/g, '').replace(/\s*\([A-Z]+\)/g, '').trim()
+        if (clean) names.add(clean)
+      }
+    } catch {}
+  }
+  return c.json([...names].sort())
+})
+
 // New API: Get all characters for user
 app.get('/api/characters', async (c) => {
   const discordId = c.req.query('discord_id')
