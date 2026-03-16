@@ -1551,27 +1551,29 @@ app.get('/', (c) => {
       
       // Parse non_enhancive_worn: items that occupy slots but have no enhancives
       let inNonEnh = false
-      let neCurrentName = null
+      let neCurrentId = null
       
       for (const line of lines) {
         if (line.match(/^non_enhancive_worn:/)) { inNonEnh = true; continue }
         if (inNonEnh && line.match(/^[a-z_]+:/) && !line.match(/^\\s/)) { inNonEnh = false }
         if (!inNonEnh) continue
         
-        const nameMatch = line.match(/^- name:\\s*(.+)/)
-        if (nameMatch) { neCurrentName = nameMatch[1].trim(); continue }
+        const idMatch = line.match(/^- id:\\s*'?(\\d+)'?/)
+        if (idMatch) {
+          neCurrentId = 'ne_' + idMatch[1]
+          items[neCurrentId] = { id: neCurrentId, name: '', enhancives: [], isBlocker: true }
+          continue
+        }
         
-        const idMatch = line.match(/^\\s+id:\\s*'?(\\d+)'?/)
-        if (idMatch && neCurrentName) {
-          const neId = 'ne_' + idMatch[1]
-          items[neId] = { id: neId, name: neCurrentName, enhancives: [], isBlocker: true }
+        const nameMatch = line.match(/^\\s+name:\\s*(.+)/)
+        if (nameMatch && neCurrentId && items[neCurrentId]) {
+          items[neCurrentId].name = nameMatch[1].trim()
           continue
         }
         
         const loc = line.match(/^\\s+location:\\s*(.+)/)
-        if (loc && neCurrentName) {
-          const lastKey = Object.keys(items).pop()
-          if (lastKey && items[lastKey]) items[lastKey].location = loc[1].trim()
+        if (loc && neCurrentId && items[neCurrentId]) {
+          items[neCurrentId].location = loc[1].trim()
         }
       }
       
