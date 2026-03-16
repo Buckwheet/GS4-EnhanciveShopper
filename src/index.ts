@@ -29,6 +29,48 @@ app.get('/', (c) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GS4 Enhancive Shopper</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <style>
+    .dark body, .dark { background-color: #1a1a2e; color: #e0e0e0; }
+    .dark .bg-white { background-color: #16213e !important; }
+    .dark .bg-gray-100 { background-color: #1a1a2e !important; }
+    .dark .bg-gray-50 { background-color: #1a1a2e !important; }
+    .dark .bg-blue-50 { background-color: #1a2744 !important; }
+    .dark .bg-green-50 { background-color: #1a2e1a !important; }
+    .dark .bg-yellow-50 { background-color: #2e2a1a !important; }
+    .dark .bg-red-50 { background-color: #2e1a1a !important; }
+    .dark .bg-purple-50 { background-color: #251a2e !important; }
+    .dark .text-gray-800 { color: #e0e0e0 !important; }
+    .dark .text-gray-700 { color: #d0d0d0 !important; }
+    .dark .text-gray-600 { color: #b0b0b0 !important; }
+    .dark .text-gray-500 { color: #909090 !important; }
+    .dark .text-gray-400 { color: #808080 !important; }
+    .dark .border { border-color: #2a2a4a !important; }
+    .dark .border-gray-200 { border-color: #2a2a4a !important; }
+    .dark .border-gray-300 { border-color: #2a2a4a !important; }
+    .dark .shadow-md { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.4) !important; }
+    .dark input, .dark select, .dark textarea { background-color: #0f3460 !important; color: #e0e0e0 !important; border-color: #2a2a4a !important; }
+    .dark table { border-color: #2a2a4a; }
+    .dark th { background-color: #0f3460 !important; color: #e0e0e0 !important; border-color: #2a2a4a !important; }
+    .dark td { border-color: #2a2a4a !important; }
+    .dark tr:hover td { background-color: #1a2744 !important; }
+    .dark .bg-indigo-600 { background-color: #4338ca !important; }
+    .dark a { color: #818cf8; }
+    .dark .text-indigo-600 { color: #818cf8 !important; }
+    .dark .text-blue-600 { color: #60a5fa !important; }
+    .dark .text-red-600 { color: #f87171 !important; }
+    .dark .text-green-600 { color: #4ade80 !important; }
+    .dark .text-yellow-600 { color: #facc15 !important; }
+    .dark .rounded-lg, .dark .rounded { border-color: #2a2a4a; }
+    .dark .divide-gray-200 > * + * { border-color: #2a2a4a !important; }
+    .dark .bg-gray-200 { background-color: #2a2a4a !important; }
+    .dark .bg-gray-100 { background-color: #1a1a2e !important; }
+    .dark .bg-gray-800 { background-color: #0a0a1a !important; }
+    .dark .hover\\:bg-gray-100:hover { background-color: #1a2744 !important; }
+    .dark .hover\\:bg-gray-50:hover { background-color: #1a2744 !important; }
+    .dark [style*="background-color: #f0f0f0"] { background-color: #2a2a4a !important; }
+    .dark [style*="background: #f8f8f8"] { background: #1a2744 !important; }
+  </style>
 </head>
 <body class="bg-gray-100">
   <div class="container mx-auto px-4 py-8">
@@ -40,12 +82,18 @@ app.get('/', (c) => {
         </button>
         <div id="userInfo" class="hidden flex items-center gap-3">
           <span class="text-gray-700">Welcome, <span id="username" class="font-bold"></span>! <span id="discordId" class="text-xs text-gray-500"></span></span>
-          <button id="settingsBtn" class="text-gray-600 hover:text-gray-800" title="Settings">
+          <button id="settingsBtn" class="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white" title="Settings">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
             </svg>
           </button>
+          <button id="darkModeBtn" class="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white" title="Toggle Dark Mode (beta)">
+            <svg id="darkModeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+            </svg>
+          </button>
+          <span id="darkModeBeta" class="text-xs text-gray-400 dark:text-gray-500">(beta)</span>
           <button id="logoutBtn" class="text-sm text-gray-600 hover:text-gray-800">Logout</button>
         </div>
       </div>
@@ -736,6 +784,24 @@ app.get('/', (c) => {
       currentUser = null
       hideUserInfo()
     })
+
+    // Dark mode toggle
+    document.getElementById('darkModeBtn').addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark')
+      const isDark = document.documentElement.classList.contains('dark')
+      localStorage.setItem('darkMode', isDark ? '1' : '0')
+      const icon = document.getElementById('darkModeIcon')
+      icon.innerHTML = isDark
+        ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"><\\/path>'
+        : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"><\\/path>'
+    })
+
+    // Restore dark mode from localStorage
+    if (localStorage.getItem('darkMode') === '1') {
+      document.documentElement.classList.add('dark')
+      const icon = document.getElementById('darkModeIcon')
+      icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"><\\/path>'
+    }
 
     document.getElementById('settingsBtn').addEventListener('click', async () => {
       const response = await fetch(API_BASE + '/api/user/settings?discord_id=' + currentUser.id)
