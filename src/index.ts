@@ -613,6 +613,7 @@ app.get('/', (c) => {
     let currentCharacterId = null
     let currentCharacterName = ''
     let currentCharacterSkills = null
+    let currentUselessSkills = []
     let currentSetId = null
     let currentSetName = 'Default'
     let currentGoalSet = 'Default'
@@ -865,6 +866,8 @@ app.get('/', (c) => {
           currentCharacterName = data.characters[0].character_name
           const char = data.characters[0]
           currentCharacterSkills = char && char.skill_ranks ? JSON.parse(char.skill_ranks) : null
+          const usRes = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/useless-skills')
+          currentUselessSkills = await usRes.json()
         }
         
         selector.value = currentCharacterId
@@ -953,8 +956,11 @@ app.get('/', (c) => {
         const data = await res.json()
         const char = data.characters.find(c => c.id == currentCharacterId)
         currentCharacterSkills = char && char.skill_ranks ? JSON.parse(char.skill_ranks) : null
+        const usRes = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/useless-skills')
+        currentUselessSkills = await usRes.json()
       } else {
         currentCharacterSkills = null
+        currentUselessSkills = []
       }
       
       await loadSets()
@@ -1053,11 +1059,16 @@ app.get('/', (c) => {
       }
     })
 
-    document.getElementById('manageCharacterClose').addEventListener('click', () => {
+    document.getElementById('manageCharacterClose').addEventListener('click', async () => {
       document.getElementById('manageCharacterModal').classList.add('hidden')
-      // Refresh displays after closing
+      // Refresh useless skills and displays after closing
+      if (currentCharacterId) {
+        const usRes = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/useless-skills')
+        currentUselessSkills = await usRes.json()
+      }
       loadSlotUsage()
       loadSummary()
+      renderItems()
     })
 
     function switchToTab(tabName) {
@@ -1478,7 +1489,6 @@ app.get('/', (c) => {
     
     // Useless Skills tab
     let allAbilityNames = []
-    let currentUselessSkills = []
     
     async function loadUselessSkillsTab() {
       if (!allAbilityNames.length) {
@@ -2655,6 +2665,38 @@ app.get('/', (c) => {
       }
     }
 
+    function cleanAbilityName(ability) {
+      return ability.replace(/ (Base|Bonus|Ranks)$/g, '').replace(/\s*\([A-Z]+\)/g, '').trim()
+    }
+
+    function isUselessAbility(ability) {
+      if (!currentUselessSkills.length) return false
+      const clean = cleanAbilityName(ability)
+      return currentUselessSkills.includes(clean)
+    }
+
+    function calculateUsefulSum(item) {
+      try {
+        const enhancives = JSON.parse(item.enhancives_json)
+        let sum = 0
+        for (const enh of enhancives) {
+          if (isUselessAbility(enh.ability)) continue
+          const ability = enh.ability.toLowerCase()
+          if (ability.includes('ranks')) {
+            const skillName = enh.ability.replace(/s+ranks$/i, '').trim()
+            const currentRanks = currentCharacterSkills ? (currentCharacterSkills[skillName] || 0) : 0
+            sum += calculateSkillRankBonus(currentRanks, enh.boost)
+            continue
+          }
+          const statBonuses = ['strength bonus', 'constitution bonus', 'dexterity bonus', 'agility bonus',
+                               'discipline bonus', 'aura bonus', 'logic bonus', 'intuition bonus',
+                               'wisdom bonus', 'influence bonus']
+          sum += statBonuses.some(s => ability.includes(s)) ? enh.boost * 2 : enh.boost
+        }
+        return sum
+      } catch { return 0 }
+    }
+
     function filterItems() {
       const searchName = document.getElementById('searchName').value.toLowerCase()
       const filterTown = document.getElementById('filterTown').value
@@ -2770,7 +2812,11 @@ app.get('/', (c) => {
         let enhancivesText = ''
         try {
           const enhancives = JSON.parse(item.enhancives_json)
-          enhancivesText = enhancives.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
+          enhancivesText = enhancives.map(e => {
+            const useless = isUselessAbility(e.ability)
+            const cls = useless ? 'color: #9333ea' : ''
+            return '<span style="' + cls + '">+' + e.boost + ' ' + e.ability + '</span>'
+          }).join(', ')
         } catch {
           enhancivesText = 'Error parsing'
         }
@@ -2779,7 +2825,11 @@ app.get('/', (c) => {
         const matchSumDisplay = matchSum > 0 ? matchSum : '-'
         
         const totalSum = calculateTotalSum(item)
+        const usefulSum = calculateUsefulSum(item)
+        const hasUseless = currentUselessSkills.length > 0 && usefulSum !== totalSum
         const totalSumDisplay = totalSum > 0 ? totalSum : '-'
+        const hoverText = hasUseless ? 'Useful: ' + usefulSum + ' / Total: ' + totalSum : 'Total: ' + totalSum
+        const sumColor = hasUseless ? 'text-blue-600' : 'text-blue-600'
         
         // Override slot for crossbows (Nugget items)
         let displaySlot = item.worn || 'N/A'
@@ -2806,7 +2856,7 @@ app.get('/', (c) => {
           <td class="px-4 py-3 text-right">\${displayCost ? displayCost.toLocaleString() : 'N/A'}\${costLabel}</td>
           <td class="px-4 py-3">\${displaySlot}</td>
           <td class="px-4 py-3 text-right font-semibold \${matchSum > 0 ? 'text-green-600' : 'text-gray-400'}">\${matchSumDisplay}</td>
-          <td class="px-4 py-3 text-right font-semibold text-blue-600">\${totalSumDisplay}</td>
+          <td class="px-4 py-3 text-right font-semibold \${sumColor}" title="\${hoverText}">\${totalSumDisplay}</td>
           <td class="px-4 py-3 text-sm">\${enhancivesText}</td>
         \`
         tbody.appendChild(tr)
