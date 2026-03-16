@@ -619,6 +619,7 @@ app.get('/', (c) => {
     let currentCharacterSkills = null
     let currentUselessSkills = []
     let showUsefulSum = false
+    let modalDirty = false
     let currentSetId = null
     let currentSetName = 'Default'
     let currentGoalSet = 'Default'
@@ -1061,6 +1062,9 @@ app.get('/', (c) => {
       if (char) {
         document.getElementById('editCharacterName').value = char.character_name
         document.getElementById('manageCharacterModal').classList.remove('hidden')
+        modalDirty = false
+        document.getElementById('manageCharacterClose').textContent = 'Close'
+        document.getElementById('manageCharacterClose').className = 'bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded'
         
         // Show Character Info tab by default
         switchToTab('CharInfo')
@@ -1078,6 +1082,14 @@ app.get('/', (c) => {
       loadSummary()
       renderItems()
     })
+
+    function markModalDirty() {
+      if (!modalDirty) {
+        modalDirty = true
+        document.getElementById('manageCharacterClose').textContent = 'Save and Close'
+        document.getElementById('manageCharacterClose').className = 'bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded'
+      }
+    }
 
     function switchToTab(tabName) {
       // Hide all tabs
@@ -1521,6 +1533,7 @@ app.get('/', (c) => {
     
     window.removeUselessSkill = async function(skill) {
       await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/useless-skills/' + encodeURIComponent(skill), { method: 'DELETE' })
+      markModalDirty()
       loadUselessSkillsTab()
     }
     
@@ -1531,6 +1544,7 @@ app.get('/', (c) => {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ skill_name: select.value })
       })
+      markModalDirty()
       loadUselessSkillsTab()
     })
 
@@ -1540,6 +1554,7 @@ app.get('/', (c) => {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ value: showUsefulSum })
       })
+      markModalDirty()
     })
 
     async function processYamlImport(yamlText) {
