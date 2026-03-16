@@ -76,7 +76,13 @@ app.get('/', (c) => {
   <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-4xl font-bold text-gray-800">GS4 Enhancive Shopper</h1>
-      <div id="authSection">
+      <div id="authSection" class="flex items-center gap-3">
+        <button id="darkModeBtn" class="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white" title="Toggle Dark Mode (beta)">
+          <svg id="darkModeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        </button>
+        <span class="text-xs text-gray-400 dark:text-gray-500">(beta)</span>
         <button id="loginBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-semibold">
           Login with Discord
         </button>
@@ -88,12 +94,6 @@ app.get('/', (c) => {
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
             </svg>
           </button>
-          <button id="darkModeBtn" class="text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white" title="Toggle Dark Mode (beta)">
-            <svg id="darkModeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-            </svg>
-          </button>
-          <span id="darkModeBeta" class="text-xs text-gray-400 dark:text-gray-500">(beta)</span>
           <button id="logoutBtn" class="text-sm text-gray-600 hover:text-gray-800">Logout</button>
         </div>
       </div>
