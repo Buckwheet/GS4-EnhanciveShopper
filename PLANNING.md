@@ -166,3 +166,10 @@ Create a web application that monitors GemStone IV player shop listings and aler
 4. Build scraper with smart update detection (only scrape when source changes)
 5. Create basic API endpoints
 6. Build simple frontend for user registration and goal setting
+
+## TODO
+
+### YAML Import Improvements
+- **Enhancive matching by item_id**: The YAML `totals` section has `item_id` on every enhancive source, and `worn_items` has matching `id`. Use ID-based matching instead of fragile name-string matching.
+- **Lich script: export worn location**: The script currently doesn't export what slot each item occupies. If we add that, we can eliminate the noun-to-slot guessing entirely. Until then, the noun reverse-walk approach is a workaround.
+- **Current state (March 2026)**: Noun extraction walks backwards through item name words to find a recognized noun in the slotMap. Works for most items but is inherently fragile for items with descriptive suffixes.
