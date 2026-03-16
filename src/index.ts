@@ -1503,7 +1503,7 @@ app.get('/', (c) => {
         'gloves': 'hands', 'hairpin': 'pin', 'stickpin': 'pin', 'torc': 'neck',
         'armor': 'armor', 'harness': 'container', 'scales': 'armor', 'moonstones': 'armor'
       }
-      const lines = yamlText.split('\\n')
+      const lines = yamlText.replace(/\\r/g, '').split('\\n')
       const items = []
       let inWornItems = false
       let currentItem = null
@@ -1539,9 +1539,12 @@ app.get('/', (c) => {
       let currentStat = null
       let pendingAmount = null
       
+      let totalsLineCount = 0
       for (const line of lines) {
-        if (line.includes('totals:')) { inTotals = true; console.log('FOUND totals line'); continue }
+        if (line.includes('totals:')) { inTotals = true; continue }
         if (!inTotals) continue
+        totalsLineCount++
+        if (totalsLineCount <= 10) console.log('TOTALS LINE ' + totalsLineCount + ':', JSON.stringify(line))
         
         if (line.match(/^    [A-Z]/)) {
           currentStat = line.split(':')[0].trim()
