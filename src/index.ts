@@ -4045,6 +4045,12 @@ app.get('/api/summary', async (c) => {
   ).bind(set.character_id).first()
 
   const baseStats = character?.base_stats ? JSON.parse(character.base_stats as string) : {}
+  const statAbbrevMap: Record<string, string> = {
+    'Strength': 'STR', 'Constitution': 'CON', 'Dexterity': 'DEX', 'Agility': 'AGI',
+    'Discipline': 'DIS', 'Aura': 'AUR', 'Logic': 'LOG', 'Intuition': 'INT',
+    'Wisdom': 'WIS', 'Influence': 'INF'
+  }
+  const resolveBase = (name: string) => baseStats[name] || baseStats[statAbbrevMap[name]] || 0
   const skillRanks = character?.skill_ranks ? JSON.parse(character.skill_ranks as string) : {}
 
   const { results: items } = await c.env.DB.prepare(
@@ -4071,7 +4077,7 @@ app.get('/api/summary', async (c) => {
       const isStat = ['Strength', 'Constitution', 'Dexterity', 'Agility', 'Discipline', 'Aura', 'Logic', 'Intuition', 'Wisdom', 'Influence'].includes(cleanName)
       
       if (isStat) {
-        if (!stats[cleanName]) stats[cleanName] = { base: baseStats[cleanName] || 0, enhancive: 0, total: 0, cap: STAT_CAP }
+        if (!stats[cleanName]) stats[cleanName] = { base: resolveBase(cleanName), enhancive: 0, total: 0, cap: STAT_CAP }
         stats[cleanName].enhancive += isBonus ? boost * 2 : boost
       } else {
         const cap = RESOURCE_CAPS[cleanName] || SKILL_CAP
