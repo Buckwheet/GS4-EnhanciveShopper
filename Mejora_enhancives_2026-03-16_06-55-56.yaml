@@ -1,0 +1,358 @@
+---
+character: Mejora
+generated: '2026-03-16 06:55:57'
+worn_items:
+- name: an oval bloodstone barrette
+  id: '243437113'
+  charge_info:
+    type: counter
+    current: 88
+    max: 100
+  location: Placed in your hair
+- name: some black ora gauntlets
+  id: '243437115'
+  charge_info:
+  location: Slipped over your hands
+- name: a scorched bronze stickpin
+  id: '243437117'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:22:54 CDT
+  location: As a pin
+- name: a lead-bound rat hide badge
+  id: '243437119'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:22:54 CDT
+  location: As a pin
+- name: a delicate lily tattoo
+  id: '243437121'
+  charge_info:
+    type: counter
+    current: 86
+    max: 100
+- name: a garnet-set ora bracer
+  id: '243437122'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:22:54 CDT
+  location: Attached to your wrist
+- name: a chased platinum bracelet
+  id: '243437123'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:22:55 CDT
+  location: Attached to your wrist
+- name: some ornate imflass arm greaves
+  id: '243437124'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:22:55 CDT
+  location: Attached to your arms
+- name: an enruned pink topaz bracer
+  id: '243437127'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:22:56 CDT
+  location: Attached to your wrist
+- name: a rune-etched golden apron
+  id: '243437128'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:22:57 CDT
+  location: Put over your front
+- name: a round-cut firestone earring
+  id: '243437129'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:22:58 CDT
+  location: Hung from a single ear
+- name: a glaes pin
+  id: '243437130'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:22:58 CDT
+  location: As a pin
+- name: some thick glaes leg greaves
+  id: '243437131'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:22:59 CDT
+  location: Attached to your legs
+- name: a flame-cut white starstone earcuff
+  id: '243437132'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:22:59 CDT
+  location: Hung from a single ear
+- name: a jade-inlaid white starstone crown
+  id: '243437133'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:22:59 CDT
+  location: On your head
+- name: a glyph-etched copper band
+  id: '243437134'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:22:59 CDT
+  location: On your fingers
+- name: a jade-inlaid pink dreamstone pin
+  id: '243437135'
+  charge_info:
+    type: timed
+    expiry: 3/16/2026 10:23:00 CDT
+  location: As a pin
+- name: a gilded locus
+  id: '243437137'
+  charge_info:
+    type: timed
+    expiry: 6/23/2029 17:57:11 CDT
+  location: Elsewhere
+enhancives_by_location:
+  Placed in your hair:
+  - id: '243437113'
+    name: an oval bloodstone barrette
+  Slipped over your hands:
+  - id: '243437115'
+    name: some black ora gauntlets
+  As a pin:
+  - id: '243437117'
+    name: a scorched bronze stickpin
+  - id: '243437119'
+    name: a lead-bound rat hide badge
+  - id: '243437130'
+    name: a glaes pin
+  - id: '243437135'
+    name: a jade-inlaid pink dreamstone pin
+  Attached to your wrist:
+  - id: '243437122'
+    name: a garnet-set ora bracer
+  - id: '243437123'
+    name: a chased platinum bracelet
+  - id: '243437127'
+    name: an enruned pink topaz bracer
+  Attached to your arms:
+  - id: '243437124'
+    name: some ornate imflass arm greaves
+  Put over your front:
+  - id: '243437128'
+    name: a rune-etched golden apron
+  Hung from a single ear:
+  - id: '243437129'
+    name: a round-cut firestone earring
+  - id: '243437132'
+    name: a flame-cut white starstone earcuff
+  Attached to your legs:
+  - id: '243437131'
+    name: some thick glaes leg greaves
+  On your head:
+  - id: '243437133'
+    name: a jade-inlaid white starstone crown
+  On your fingers:
+  - id: '243437134'
+    name: a glyph-etched copper band
+  Elsewhere:
+  - id: '243437137'
+    name: a gilded locus
+totals:
+  stats:
+    Discipline (DIS):
+      current: 40
+      cap: 40
+      sources:
+      - amount: 10
+        item_id: '243437119'
+        item_name: a lead-bound rat hide badge
+      - amount: 8
+        item_id: '243437121'
+        item_name: a delicate lily tattoo
+      - amount: 6
+        item_id: '243437122'
+        item_name: a garnet-set ora bracer
+      - amount: 6
+        item_id: '243437123'
+        item_name: a chased platinum bracelet
+      - amount: 10
+        item_id: '243437124'
+        item_name: some ornate imflass arm greaves
+    Aura (AUR):
+      current: 5
+      cap: 40
+      sources:
+      - amount: 5
+        item_id: '243437117'
+        item_name: a scorched bronze stickpin
+    Logic (LOG):
+      current: 40
+      cap: 40
+      sources:
+      - amount: 8
+        item_id: '243437128'
+        item_name: a rune-etched golden apron
+      - amount: 7
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 12
+        item_id: '243437130'
+        item_name: a glaes pin
+      - amount: 2
+        item_id: '243437130'
+        item_name: a glaes pin
+      - amount: 5
+        item_id: '243437117'
+        item_name: a scorched bronze stickpin
+      - amount: 6
+        item_id: '243437137'
+        item_name: a gilded locus
+    Wisdom (WIS):
+      current: 40
+      cap: 40
+      sources:
+      - amount: 6
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 4
+        item_id: '243437127'
+        item_name: an enruned pink topaz bracer
+      - amount: 4
+        item_id: '243437132'
+        item_name: a flame-cut white starstone earcuff
+      - amount: 6
+        item_id: '243437133'
+        item_name: a jade-inlaid white starstone crown
+      - amount: 4
+        item_id: '243437134'
+        item_name: a glyph-etched copper band
+      - amount: 5
+        item_id: '243437135'
+        item_name: a jade-inlaid pink dreamstone pin
+      - amount: 11
+        item_id: '243437137'
+        item_name: a gilded locus
+  skills:
+    Physical Fitness Ranks:
+      current: 2
+      cap: 50
+      sources:
+      - amount: 2
+        item_id: '243437135'
+        item_name: a jade-inlaid pink dreamstone pin
+    Arcane Symbols Ranks:
+      current: 4
+      cap: 50
+      sources:
+      - amount: 2
+        item_id: '243437133'
+        item_name: a jade-inlaid white starstone crown
+      - amount: 2
+        item_id: '243437134'
+        item_name: a glyph-etched copper band
+    Spell Aiming Ranks:
+      current: 4
+      cap: 50
+      sources:
+      - amount: 4
+        item_id: '243437130'
+        item_name: a glaes pin
+    Blunt Weapons Bonus:
+      current: 8
+      cap: 50
+      sources:
+      - amount: 8
+        item_id: '243437128'
+        item_name: a rune-etched golden apron
+    Spell Aiming Bonus:
+      current: 13
+      cap: 50
+      sources:
+      - amount: 13
+        item_id: '243437131'
+        item_name: some thick glaes leg greaves
+    Elemental Mana Control Bonus:
+      current: 6
+      cap: 50
+      sources:
+      - amount: 6
+        item_id: '243437123'
+        item_name: a chased platinum bracelet
+    Spirit Mana Control Bonus:
+      current: 10
+      cap: 50
+      sources:
+      - amount: 10
+        item_id: '243437124'
+        item_name: some ornate imflass arm greaves
+    Spiritual Lore - Summoning Bonus:
+      current: 3
+      cap: 50
+      sources:
+      - amount: 3
+        item_id: '243437122'
+        item_name: a garnet-set ora bracer
+  resources:
+    Max Mana:
+      current: 62
+      cap: 600
+      sources:
+      - amount: 50
+        item_id: '243437113'
+        item_name: an oval bloodstone barrette
+      - amount: 4
+        item_id: '243437117'
+        item_name: a scorched bronze stickpin
+      - amount: 8
+        item_id: '243437137'
+        item_name: a gilded locus
+    Max Health:
+      current: 124
+      cap: 300
+      sources:
+      - amount: 2
+        item_id: '243437117'
+        item_name: a scorched bronze stickpin
+      - amount: 100
+        item_id: '243437113'
+        item_name: an oval bloodstone barrette
+      - amount: 22
+        item_id: '243437130'
+        item_name: a glaes pin
+    Max Stamina:
+      current: 25
+      cap: 300
+      sources:
+      - amount: 25
+        item_id: '243437113'
+        item_name: an oval bloodstone barrette
+    Mana Recovery:
+      current: 13
+      cap: 50
+      sources:
+      - amount: 2
+        item_id:
+        item_name: an unknown source (needs loresong)
+      - amount: 10
+        item_id: '243437113'
+        item_name: an oval bloodstone barrette
+      - amount: 1
+        item_id: '243437124'
+        item_name: some ornate imflass arm greaves
+    Health Recovery:
+      current: 20
+      cap: 50
+      sources:
+      - amount: 20
+        item_id: '243437113'
+        item_name: an oval bloodstone barrette
+    Stamina Recovery:
+      current: 5
+      cap: 50
+      sources:
+      - amount: 5
+        item_id: '243437113'
+        item_name: an oval bloodstone barrette
+  self_knowledge: {}
+  summary:
+    Enhancive Items: '18'
+    Enhancive Properties: '41'
+    Total Enhancive Amount: '423'

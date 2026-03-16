@@ -3136,12 +3136,15 @@ app.post('/api/characters', async (c) => {
 // New API: Update character
 app.put('/api/characters/:id', async (c) => {
   const id = c.req.param('id')
-  const { character_name, base_stats, skill_ranks } = await c.req.json()
-
-  await c.env.DB.prepare(
-    'UPDATE characters SET character_name = ?, base_stats = ?, skill_ranks = ? WHERE id = ?'
-  ).bind(character_name, base_stats || null, skill_ranks || null, id).run()
-
+  const body = await c.req.json()
+  const updates: string[] = []
+  const values: any[] = []
+  if (body.character_name !== undefined) { updates.push('character_name = ?'); values.push(body.character_name) }
+  if (body.base_stats !== undefined) { updates.push('base_stats = ?'); values.push(body.base_stats || null) }
+  if (body.skill_ranks !== undefined) { updates.push('skill_ranks = ?'); values.push(body.skill_ranks || null) }
+  if (updates.length === 0) return c.json({ success: false, error: 'No fields to update' }, 400)
+  values.push(id)
+  await c.env.DB.prepare(`UPDATE characters SET ${updates.join(', ')} WHERE id = ?`).bind(...values).run()
   return c.json({ success: true })
 })
 

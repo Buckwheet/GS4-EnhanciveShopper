@@ -204,41 +204,90 @@ module EnhExport
     result
   end
 
+  # ---------------------------------------------------------------------------
+  # Parser: inv location
+  # Returns an array of hashes: [{id:, name:, location:}, ...]
+  # ---------------------------------------------------------------------------
+  def self.parse_location(lines)
+    locations = []
+    current_loc = nil
+
+    lines.each do |line|
+      # Remove XML tags for header detection
+      clean_line = line.gsub(/<[^>]*>/, '').strip
+      next if clean_line.empty? || clean_line =~ /You are currently wearing/i
+
+      if clean_line =~ /^(.*?):$/
+        current_loc = $1.strip
+      elsif current_loc && clean_line =~ /^(.*?)\s+\((?:non)?functional\)$/i
+        item_name = $1.strip
+        item_id = nil
+        item_id = $1 if line =~ /exist="(\d+)"/
+        
+        locations << { 'id' => item_id, 'name' => item_name, 'location' => current_loc }
+      end
+    end
+    locations
+  end
+
   def self.run
     hide_me
     char_name = XMLData.name
     timestamp = Time.now.strftime('%Y-%m-%d_%H-%M-%S')
-    data_dir  = File.join(LICH_DIR, 'data') # Use LICH_DIR constant for reliability
+    data_dir  = File.join(LICH_DIR, 'data')
     
     FileUtils.mkdir_p(data_dir) unless File.exist?(data_dir)
     out_file = File.join(data_dir, "#{char_name}_enhancives_#{timestamp}.yaml")
 
-    Lich::Messaging.msg("info", "Collecting enhancive XML data for #{char_name}...")
+    Lich::Messaging.msg("info", "Collecting enhancive and location data for #{char_name}...")
 
-    # Capture commands with XML tagging
-    # Using specific start patterns to avoid premature matching
-    list_lines   = self.capture_command('inv enh list',         /You are (?:wearing|not holding)/i, /<prompt/)
-    detail_lines = self.capture_command('inv enh total detail', /Stats:|Inventory Enhancive Totals/i,      /<prompt/)
+    # Capture commands
+    list_lines     = self.capture_command('inv enh list',          /You are (?:wearing|not holding)/i,    /<prompt/)
+    detail_lines   = self.capture_command('inv enh total detail',  /Stats:|Inventory Enhancive Totals/i,      /<prompt/)
+    location_lines = self.capture_command('inv location',          /You are currently wearing:|not wearing/i, /<prompt/)
 
     if list_lines.empty? && detail_lines.empty?
-      Lich::Messaging.msg("error", "Failed to capture any output. Ensure you are logged in and responding.")
+      Lich::Messaging.msg("error", "Failed to capture any output. Ensure you are logged in.")
       return
     end
 
-    parsed_list   = self.parse_enh_list(list_lines)
-    parsed_detail = self.parse_enh_detail(detail_lines)
+    # Parse primary lists
+    parsed_list     = self.parse_enh_list(list_lines)
+    parsed_detail   = self.parse_enh_detail(detail_lines)
+    parsed_location = self.parse_location(location_lines)
+
+    # Cross-reference locations with enhancives
+    enh_ids = parsed_list.map { |i| i['id'] }.compact.to_set
+    enh_names = parsed_list.map { |i| i['name'] }.to_set
+
+    # Filter location data to only include items found in the enhancive list
+    filtered_locations = parsed_location.select do |loc_item|
+      enh_ids.include?(loc_item['id']) || enh_names.include?(loc_item['name'])
+    end
+
+    # Merge location into the main worn_items list and build a grouped map
+    location_map = {}
+    parsed_list.each do |item|
+      loc_match = filtered_locations.find { |l| (l['id'] && l['id'] == item['id']) || l['name'] == item['name'] }
+      if loc_match
+        item['location'] = loc_match['location']
+        location_map[item['location']] ||= []
+        location_map[item['location']] << { 'id' => item['id'], 'name' => item['name'] }
+      end
+    end
 
     output = {
-      'character'   => char_name,
-      'generated'   => Time.now.strftime('%Y-%m-%d %H:%M:%S'),
-      'worn_items'  => parsed_list,
-      'totals'      => parsed_detail
+      'character'              => char_name,
+      'generated'              => Time.now.strftime('%Y-%m-%d %H:%M:%S'),
+      'worn_items'             => parsed_list,
+      'enhancives_by_location' => location_map,
+      'totals'                 => parsed_detail
     }
 
     begin
       File.open(out_file, 'w') { |f| f.write(output.to_yaml) }
       
-      Lich::Messaging.msg("success", "Enhancive data export complete!")
+      Lich::Messaging.msg("success", "Enhancive and location export complete!")
       Lich::Messaging.msg("info", "YAML file saved to: #{out_file}")
     rescue => e
       Lich::Messaging.msg("error", "Failed to write YAML file: #{e.message}")
