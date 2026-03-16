@@ -165,7 +165,6 @@ app.get('/', (c) => {
             <button id="editSetBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">Edit Set</button>
             <button id="deleteSetBtn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm">Delete Set</button>
           </div>
-        </div>
         
         <div id="noCharacterWarning" class="mb-4 p-3 bg-red-50 border border-red-200 rounded hidden">
           <p class="text-red-700 text-sm font-semibold">⚠ Create a character first</p>
@@ -175,7 +174,7 @@ app.get('/', (c) => {
           <p class="text-red-700 text-sm font-semibold">⚠ Create a set for this character first</p>
         </div>
         
-        <div class="mb-4">
+        <div class="mt-6 mb-4">
           <button id="addGoalBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" disabled>
             + Add Goal to Current Set
           </button>
