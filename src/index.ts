@@ -1559,20 +1559,20 @@ app.get('/', (c) => {
         if (inNonEnh && line.match(/^[a-z_]+:/) && !line.match(/^\\s/)) { inNonEnh = false }
         if (!inNonEnh) continue
         
-        const idMatch = line.match(/^- id:\\s*'?(\\d+)'?/)
+        const idMatch = line.match(/^- id: *'?(\d+)'?/)
         if (idMatch) {
           neCurrentId = 'ne_' + idMatch[1]
           items[neCurrentId] = { id: neCurrentId, name: '', enhancives: [], isBlocker: true }
           continue
         }
         
-        const nameMatch = line.match(/^\\s+name:\\s*(.+)/)
+        const nameMatch = line.match(/^ +name: *(.+)/)
         if (nameMatch && neCurrentId && items[neCurrentId]) {
           items[neCurrentId].name = nameMatch[1].trim()
           continue
         }
         
-        const loc = line.match(/^\\s+location:\\s*(.+)/)
+        const loc = line.match(/^ +location: *(.+)/)
         if (loc && neCurrentId && items[neCurrentId]) {
           items[neCurrentId].location = loc[1].trim()
         }
