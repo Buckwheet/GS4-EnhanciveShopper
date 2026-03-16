@@ -1506,7 +1506,7 @@ app.get('/', (c) => {
       
       const list = document.getElementById('uselessSkillsList')
       list.innerHTML = currentUselessSkills.length
-        ? currentUselessSkills.map(s => '<div class="flex justify-between items-center bg-purple-50 border border-purple-200 rounded px-3 py-1"><span class="text-purple-700">' + s + '</span><button class="text-red-500 hover:text-red-700 text-sm" onclick="removeUselessSkill(\\'' + s.replace(/'/g, "\\\\'") + '\\')">Remove</button></div>').join('')
+        ? currentUselessSkills.map(s => '<div class="flex justify-between items-center bg-gray-50 border border-gray-200 rounded px-3 py-1"><span>' + s + '</span><button class="text-red-500 hover:text-red-700 text-sm" onclick="removeUselessSkill(\\'' + s.replace(/'/g, "\\\\'") + '\\')">Remove</button></div>').join('')
         : '<p class="text-gray-500 text-sm">No useless skills configured. All enhancives count toward total sum.</p>'
     }
     
