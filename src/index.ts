@@ -1572,6 +1572,9 @@ app.get('/', (c) => {
         if (line.includes('item_name:') && pendingAmount && currentStat) {
           if (pendingItemId && items[pendingItemId]) {
             items[pendingItemId].enhancives.push({ ability: currentStat, boost: pendingAmount })
+          } else {
+            if (!items['unknown']) items['unknown'] = { id: 'unknown', name: 'Unknown source (needs loresong)', location: 'Elsewhere', enhancives: [] }
+            items['unknown'].enhancives.push({ ability: currentStat, boost: pendingAmount })
           }
           pendingAmount = null
           pendingItemId = null
@@ -4059,6 +4062,11 @@ app.get('/api/summary', async (c) => {
       const isBonus = ability.includes('Bonus')
       const isRanks = ability.includes('Ranks')
       
+      const RESOURCE_CAPS: Record<string, number> = {
+        'Max Mana': 600, 'Max Health': 300, 'Max Stamina': 300,
+        'Mana Recovery': 50, 'Health Recovery': 50, 'Stamina Recovery': 50,
+        'Spirit Recovery': 3
+      }
       const cleanName = ability.replace(/ (Base|Bonus|Ranks)/g, '').replace(/\s*\([A-Z]+\)/g, '').trim()
       const isStat = ['Strength', 'Constitution', 'Dexterity', 'Agility', 'Discipline', 'Aura', 'Logic', 'Intuition', 'Wisdom', 'Influence'].includes(cleanName)
       
@@ -4066,7 +4074,8 @@ app.get('/api/summary', async (c) => {
         if (!stats[cleanName]) stats[cleanName] = { base: baseStats[cleanName] || 0, enhancive: 0, total: 0, cap: STAT_CAP }
         stats[cleanName].enhancive += isBonus ? boost * 2 : boost
       } else {
-        if (!skills[cleanName]) skills[cleanName] = { base: skillRanks[cleanName] || 0, enhancive: 0, total: 0, cap: SKILL_CAP }
+        const cap = RESOURCE_CAPS[cleanName] || SKILL_CAP
+        if (!skills[cleanName]) skills[cleanName] = { base: skillRanks[cleanName] || 0, enhancive: 0, total: 0, cap: cap }
         if (isRanks) {
           skills[cleanName].enhancive += ranksToBonus(boost, skills[cleanName].base)
         } else {
