@@ -192,6 +192,9 @@ Create a web application that monitors GemStone IV player shop listings and aler
 - **Configurable nugget threshold**: The 25M silver threshold for flagging weapons/runestaves as "nuggets" is hardcoded. Expose as a UI slider so users can find budget-friendly nuggets too.
 - **Vectorized match calculation**: Match score recalculates on every table re-render/filter change across ~5,700 items × character stats. Refactor to treat stats as a single array for batch comparison instead of per-item iteration.
 
+### Summary Display
+- **Richer stat display**: Currently showing simple X/Y. Future: show base stat bonus + enhancive bonus = total stat value. Requires understanding that base_stats stores bonus values, not actual stat totals (e.g., WIS bonus 30 → actual stat ~100). Need to either store actual stat totals or calculate from bonus.
+
 ### Cleanup
 - **Lint warnings**: Unused params in recommendation-engine.ts, unused `countSlotUsage` in index.ts, useLiteralKeys. Non-blocking.
 - **Remove YAML files from repo**: Mejora/Shollindal YAML files and `.Zone.Identifier` files accidentally committed. Add to .gitignore.
