@@ -1491,107 +1491,97 @@ app.get('/', (c) => {
     })
     
     async function processYamlImport(yamlText) {
-      const slotMap = {
-        'locus': 'elsewhere', 'helm': 'head', 'barrette': 'pin', 'earcuff': 'ear',
-        'bracelet': 'wrist', 'wristchain': 'wrist', 'chain': 'neck', 'socks': 'socks',
-        'earrings': 'ears', 'ring': 'finger', 'handflowers': 'hands', 'anklet': 'ankle',
-        'pants': 'leggings', 'pendant': 'neck', 'necklace': 'neck', 'pectoral': 'front',
-        'undershirt': 'undershirt', 'armbands': 'arms', 'aventail': 'neck', 'clasp': 'shoulder',
-        'charm': 'neck', 'badge': 'pin', 'pin': 'pin', 'greaves': 'legs', 'tattoo': 'elsewhere',
-        'apron': 'front', 'band': 'finger', 'belt': 'belt', 'bracer': 'wrist',
-        'cloak': 'cloak', 'crown': 'head', 'earring': 'ear', 'gauntlets': 'hands',
-        'gloves': 'hands', 'hairpin': 'pin', 'stickpin': 'pin', 'torc': 'neck',
-        'armor': 'armor', 'harness': 'container', 'scales': 'armor', 'moonstones': 'armor'
+      const locationSlotMap = {
+        'placed in your hair': 'head', 'on your head': 'head',
+        'slipped over your hands': 'hands', 'on your hands': 'hands',
+        'as a pin': 'pin', 'attached to your wrist': 'wrist',
+        'attached to your arms': 'arms', 'put over your front': 'front',
+        'hung from a single ear': 'ear', 'hung from both ears': 'ears',
+        'attached to your legs': 'legs', 'on your fingers': 'finger',
+        'around your neck': 'neck', 'slung over your shoulder': 'shoulder',
+        'draped over your shoulders': 'shoulders', 'on your chest': 'chest',
+        'slipped onto your chest': 'chest', 'on your back': 'back',
+        'around your waist': 'belt', 'on your belt': 'belt',
+        'pulled over your legs': 'legs', 'slipped onto your legs': 'legs',
+        'around your ankle': 'ankle', 'slipped onto your feet': 'feet',
+        'on your feet': 'feet', 'elsewhere': 'elsewhere'
       }
       const lines = yamlText.replace(/\\r/g, '').split('\\n')
-      const items = []
+      
+      // Parse worn_items: id, name, location
+      const items = {}
       let inWornItems = false
-      let currentItem = null
+      let currentId = null
+      let currentName = null
       
       for (const line of lines) {
-        if (line.includes('worn_items:')) {
-          inWornItems = true
-          continue
-        }
-        if (inWornItems && line.match(/^[a-z_]+:/)) {
-          inWornItems = false
-        }
+        if (line.match(/^worn_items:/)) { inWornItems = true; continue }
+        if (inWornItems && line.match(/^[a-z_]+:/) && !line.match(/^\\s/)) { inWornItems = false }
         if (!inWornItems) continue
         
-        if (line.match(/^- name:/)) {
-          if (currentItem) items.push(currentItem)
-          const nameMatch = line.match(/name:\s*(.+)/)
-          if (nameMatch) {
-            const fullName = nameMatch[1].trim()
-            const idMatch = fullName.match(/exist="(\d+)"/)
-            const nounMatch = fullName.match(/noun="([^"]+)"/)
-            const cleanName = fullName.replace(/<[^>]+>/g, '').trim()
-            const words = cleanName.split(' ')
-            const noun = nounMatch?.[1] || words.reverse().find(w => slotMap[w.toLowerCase()]) || words[0]
-            currentItem = { name: cleanName, id: idMatch?.[1], noun: noun }
-          }
+        const nameMatch = line.match(/^- name:\\s*(.+)/)
+        if (nameMatch) { currentName = nameMatch[1].trim(); currentId = null; continue }
+        
+        const idMatch = line.match(/^\\s+id:\\s*'?(\\d+)'?/)
+        if (idMatch && currentName) {
+          currentId = idMatch[1]
+          items[currentId] = { id: currentId, name: currentName, enhancives: [] }
+          continue
+        }
+        
+        const loc = line.match(/^\\s+location:\\s*(.+)/)
+        if (loc && currentId && items[currentId]) {
+          items[currentId].location = loc[1].trim()
         }
       }
-      if (currentItem) items.push(currentItem)
       
-      const enhMap = {}
+      // Parse totals: map item_id -> [{ability, boost}]
       let inTotals = false
       let currentStat = null
       let pendingAmount = null
+      let pendingItemId = null
       
-      let totalsLineCount = 0
       for (const line of lines) {
-        if (line.includes('totals:')) { inTotals = true; continue }
+        if (line.match(/^totals:/)) { inTotals = true; continue }
         if (!inTotals) continue
-        totalsLineCount++
-        if (totalsLineCount <= 10) console.log('TOTALS LINE ' + totalsLineCount + ':', JSON.stringify(line))
         
         if (line.match(/^    [A-Z]/)) {
           currentStat = line.split(':')[0].trim()
-          console.log('FOUND stat:', currentStat)
           continue
         }
         
-        if (line.includes('amount:') && currentStat) {
-          const amountMatch = line.match(/amount:\s*(\d+)/)
-          if (amountMatch) { pendingAmount = parseInt(amountMatch[1]); console.log('AMOUNT:', pendingAmount, 'for', currentStat) }
-        }
+        const amountMatch = line.match(/amount:\\s*(\\d+)/)
+        if (amountMatch && currentStat) { pendingAmount = parseInt(amountMatch[1]) }
+        
+        const itemIdMatch = line.match(/item_id:\\s*'?(\\d+)'?/)
+        if (itemIdMatch) { pendingItemId = itemIdMatch[1] }
         
         if (line.includes('item_name:') && pendingAmount && currentStat) {
-          const nameMatch = line.match(/item_name:\s*(.+)/)
-          console.log('ITEM_NAME line found, pendingAmount:', pendingAmount, 'nameMatch:', nameMatch?.[1])
-          if (nameMatch) {
-            const fullName = nameMatch[1].trim()
-            const cleanName = fullName.replace(/<[^>]+>/g, '').trim()
-            if (!enhMap[cleanName]) enhMap[cleanName] = []
-            enhMap[cleanName].push({ ability: currentStat, boost: pendingAmount })
-            pendingAmount = null
+          if (pendingItemId && items[pendingItemId]) {
+            items[pendingItemId].enhancives.push({ ability: currentStat, boost: pendingAmount })
           }
+          pendingAmount = null
+          pendingItemId = null
         }
       }
       
+      // Import items
       let imported = 0, skipped = 0
-      console.log('enhMap keys:', Object.keys(enhMap))
-      console.log('enhMap entries:', JSON.stringify(enhMap).substring(0, 500))
-      console.log('items:', items.map(i => i.name))
-      
-      for (const item of items) {
-        const slot = item.noun ? slotMap[item.noun.toLowerCase()] : null
-        if (!slot) {
-          console.log('Skipping (no slot):', item.name)
-          skipped++
-          continue
+      for (const item of Object.values(items)) {
+        let slot = null
+        if (item.location) {
+          const locLower = item.location.toLowerCase()
+          slot = locationSlotMap[locLower] || null
         }
-        
-        const enhancives = enhMap[item.name] || []
+        if (!slot) { console.log('Skipping (no slot):', item.name, item.location); skipped++; continue }
         
         const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/inventory', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            item_name: item.name,
+            item_name: item.name || 'Unknown',
             slot: slot,
-            enhancives_json: JSON.stringify(enhancives),
+            enhancives_json: JSON.stringify(item.enhancives),
             is_permanent: true
           })
         })
@@ -1600,11 +1590,9 @@ app.get('/', (c) => {
         else { console.error('Failed:', item.name); skipped++ }
       }
       
-      var yamlMsg = 'Import complete! Imported: ' + imported + ' items. Skipped: ' + skipped + ' items'
-      alert(yamlMsg)
-      document.getElementById('bulkImportForm').classList.add('hidden')
-      document.getElementById('bulkEnhanciveDetail').value = ''
+      alert('Import complete! Imported: ' + imported + ', Skipped: ' + skipped)
       loadInventory()
+      loadSummary()
     }
 
     document.getElementById('processBulkImport').addEventListener('click', async () => {
