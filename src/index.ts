@@ -2666,7 +2666,7 @@ app.get('/', (c) => {
     }
 
     function cleanAbilityName(ability) {
-      return ability.replace(/ (Base|Bonus|Ranks)$/g, '').replace(/\s*\([A-Z]+\)/g, '').trim()
+      return ability.replace(/ (Base|Bonus|Ranks)$/g, '').replace(/ *\\([A-Z]+\\)/g, '').trim()
     }
 
     function isUselessAbility(ability) {
