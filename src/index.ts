@@ -351,6 +351,10 @@ app.get('/', (c) => {
           <!-- Tab Content: Useless Skills -->
           <div id="tabContentUseless" class="hidden space-y-4">
             <p class="text-sm text-gray-600">Skills marked useless are excluded from the "useful sum" calculation and highlighted purple in the shop listing.</p>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" id="showUsefulSumCheck">
+              Show Useful Sum as primary in Total Sum column
+            </label>
             <div class="flex gap-2">
               <select id="uselessSkillSelect" class="border p-2 rounded flex-1">
                 <option value="">Loading abilities...</option>
@@ -614,6 +618,7 @@ app.get('/', (c) => {
     let currentCharacterName = ''
     let currentCharacterSkills = null
     let currentUselessSkills = []
+    let showUsefulSum = false
     let currentSetId = null
     let currentSetName = 'Default'
     let currentGoalSet = 'Default'
@@ -866,6 +871,7 @@ app.get('/', (c) => {
           currentCharacterName = data.characters[0].character_name
           const char = data.characters[0]
           currentCharacterSkills = char && char.skill_ranks ? JSON.parse(char.skill_ranks) : null
+          showUsefulSum = !!char.show_useful_sum
           const usRes = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/useless-skills')
           currentUselessSkills = await usRes.json()
         }
@@ -956,11 +962,13 @@ app.get('/', (c) => {
         const data = await res.json()
         const char = data.characters.find(c => c.id == currentCharacterId)
         currentCharacterSkills = char && char.skill_ranks ? JSON.parse(char.skill_ranks) : null
+        showUsefulSum = !!(char && char.show_useful_sum)
         const usRes = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/useless-skills')
         currentUselessSkills = await usRes.json()
       } else {
         currentCharacterSkills = null
         currentUselessSkills = []
+        showUsefulSum = false
       }
       
       await loadSets()
@@ -1495,6 +1503,7 @@ app.get('/', (c) => {
         const res = await fetch(API_BASE + '/api/ability-names')
         allAbilityNames = await res.json()
       }
+      document.getElementById('showUsefulSumCheck').checked = showUsefulSum
       const res = await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/useless-skills')
       currentUselessSkills = await res.json()
       
@@ -1523,6 +1532,14 @@ app.get('/', (c) => {
         body: JSON.stringify({ skill_name: select.value })
       })
       loadUselessSkillsTab()
+    })
+
+    document.getElementById('showUsefulSumCheck').addEventListener('change', async (e) => {
+      showUsefulSum = e.target.checked
+      await fetch(API_BASE + '/api/characters/' + currentCharacterId + '/show-useful-sum', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: showUsefulSum })
+      })
     })
 
     async function processYamlImport(yamlText) {
@@ -2827,9 +2844,11 @@ app.get('/', (c) => {
         const totalSum = calculateTotalSum(item)
         const usefulSum = calculateUsefulSum(item)
         const hasUseless = currentUselessSkills.length > 0 && usefulSum !== totalSum
-        const totalSumDisplay = totalSum > 0 ? totalSum : '-'
-        const hoverText = hasUseless ? 'Useful: ' + usefulSum + ' / Total: ' + totalSum : 'Total: ' + totalSum
-        const sumColor = hasUseless ? 'text-blue-600' : 'text-blue-600'
+        const primarySum = (showUsefulSum && hasUseless) ? usefulSum : totalSum
+        const totalSumDisplay = primarySum > 0 ? primarySum : '-'
+        const hoverText = hasUseless
+          ? (showUsefulSum ? 'Total: ' + totalSum : 'Useful: ' + usefulSum)
+          : 'Total: ' + totalSum
         
         // Override slot for crossbows (Nugget items)
         let displaySlot = item.worn || 'N/A'
@@ -2856,7 +2875,7 @@ app.get('/', (c) => {
           <td class="px-4 py-3 text-right">\${displayCost ? displayCost.toLocaleString() : 'N/A'}\${costLabel}</td>
           <td class="px-4 py-3">\${displaySlot}</td>
           <td class="px-4 py-3 text-right font-semibold \${matchSum > 0 ? 'text-green-600' : 'text-gray-400'}">\${matchSumDisplay}</td>
-          <td class="px-4 py-3 text-right font-semibold \${sumColor}" title="\${hoverText}">\${totalSumDisplay}</td>
+          <td class="px-4 py-3 text-right font-semibold text-blue-600" title="\${hoverText}">\${totalSumDisplay}</td>
           <td class="px-4 py-3 text-sm">\${enhancivesText}</td>
         \`
         tbody.appendChild(tr)
@@ -3146,6 +3165,13 @@ app.put('/api/characters/:id', async (c) => {
 app.delete('/api/characters/:id', async (c) => {
   const id = c.req.param('id')
   await c.env.DB.prepare('DELETE FROM characters WHERE id = ?').bind(id).run()
+  return c.json({ success: true })
+})
+
+app.put('/api/characters/:id/show-useful-sum', async (c) => {
+  const id = c.req.param('id')
+  const { value } = await c.req.json()
+  await c.env.DB.prepare('UPDATE characters SET show_useful_sum = ? WHERE id = ?').bind(value ? 1 : 0, id).run()
   return c.json({ success: true })
 })
 
@@ -4049,6 +4075,15 @@ app.get('/api/migrate-useless-skills', async (c) => {
     return c.json({ success: true, message: 'character_useless_skills table created' })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+app.get('/api/migrate-useful-sum-pref', async (c) => {
+  try {
+    await c.env.DB.prepare('ALTER TABLE characters ADD COLUMN show_useful_sum INTEGER NOT NULL DEFAULT 0').run()
+    return c.json({ success: true })
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500)
   }
 })
 
