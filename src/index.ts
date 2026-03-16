@@ -1491,6 +1491,18 @@ app.get('/', (c) => {
     })
     
     async function processYamlImport(yamlText) {
+      const slotMap = {
+        'locus': 'elsewhere', 'helm': 'head', 'barrette': 'pin', 'earcuff': 'ear',
+        'bracelet': 'wrist', 'wristchain': 'wrist', 'chain': 'neck', 'socks': 'socks',
+        'earrings': 'ears', 'ring': 'finger', 'handflowers': 'hands', 'anklet': 'ankle',
+        'pants': 'leggings', 'pendant': 'neck', 'necklace': 'neck', 'pectoral': 'front',
+        'undershirt': 'undershirt', 'armbands': 'arms', 'aventail': 'neck', 'clasp': 'shoulder',
+        'charm': 'neck', 'badge': 'pin', 'pin': 'pin', 'greaves': 'legs', 'tattoo': 'elsewhere',
+        'apron': 'front', 'band': 'finger', 'belt': 'belt', 'bracer': 'wrist',
+        'cloak': 'cloak', 'crown': 'head', 'earring': 'ear', 'gauntlets': 'hands',
+        'gloves': 'hands', 'hairpin': 'pin', 'stickpin': 'pin', 'torc': 'neck',
+        'armor': 'armor', 'harness': 'container', 'scales': 'armor', 'moonstones': 'armor'
+      }
       const lines = yamlText.split('\\n')
       const items = []
       let inWornItems = false
@@ -1551,19 +1563,6 @@ app.get('/', (c) => {
             pendingAmount = null
           }
         }
-      }
-      
-      const slotMap = {
-        'locus': 'elsewhere', 'helm': 'head', 'barrette': 'pin', 'earcuff': 'ear',
-        'bracelet': 'wrist', 'wristchain': 'wrist', 'chain': 'neck', 'socks': 'socks',
-        'earrings': 'ears', 'ring': 'finger', 'handflowers': 'hands', 'anklet': 'ankle',
-        'pants': 'leggings', 'pendant': 'neck', 'necklace': 'neck', 'pectoral': 'front',
-        'undershirt': 'undershirt', 'armbands': 'arms', 'aventail': 'neck', 'clasp': 'shoulder',
-        'charm': 'neck', 'badge': 'pin', 'pin': 'pin', 'greaves': 'legs', 'tattoo': 'elsewhere',
-        'apron': 'front', 'band': 'finger', 'belt': 'belt', 'bracer': 'wrist',
-        'cloak': 'cloak', 'crown': 'head', 'earring': 'ear', 'gauntlets': 'hands',
-        'gloves': 'hands', 'hairpin': 'pin', 'stickpin': 'pin', 'torc': 'neck',
-        'armor': 'armor', 'harness': 'container', 'scales': 'armor', 'moonstones': 'armor'
       }
       
       let imported = 0, skipped = 0
