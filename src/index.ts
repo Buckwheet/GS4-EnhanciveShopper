@@ -1474,17 +1474,18 @@ app.get('/', (c) => {
         'pulled over your legs': 'legs_pulled',
         'slipped onto your legs': 'legs_slipped',
         'on your fingers': 'fingers',
-        'around your neck': 'neck',
+        'hung around your neck': 'neck',
         'slung over your shoulder': 'shoulder_slung',
         'draped over your shoulders': 'shoulders_draped',
-        'on your chest': 'chest',
-        'slipped onto your chest': 'chest_slipped',
+        'over your chest': 'chest',
+        'slipped into, on your chest': 'chest_slipped',
         'on your back': 'back',
         'around your waist': 'waist',
-        'on your belt': 'belt',
+        'attached to your belt': 'belt',
         'around your ankle': 'ankle',
-        'slipped onto your feet': 'feet_slipped',
+        'slipped on your feet': 'feet_slipped',
         'on your feet': 'feet_on',
+        'as a battle standard': 'locus',
         'elsewhere': 'locus'
       }
       const lines = yamlText.replace(/\\r/g, '').split('\\n')
