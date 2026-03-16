@@ -288,7 +288,7 @@ app.get('/', (c) => {
             
             <div class="mb-4">
               <button id="addItemBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded mr-2">+ Add Enhancive Item</button>
-              <button id="bulkImportBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mr-2">Bulk Import</button>
+              <!-- Bulk text import disabled — use YAML Import File instead. TODO: re-enable with improved parser -->
               <button id="yamlImportBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded mr-2">YAML Import File</button>
               <a href="/enh_export.lic" download class="inline-block bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded mr-2">Download Lich Script</a>
               <button id="copyInventoryBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded mr-2">Copy from Set</button>
@@ -309,25 +309,7 @@ app.get('/', (c) => {
               </div>
             </div>
             
-            <div id="bulkImportForm" class="hidden mb-6 p-4 border rounded bg-gray-50">
-              <h3 class="font-semibold mb-3">Bulk Import Inventory</h3>
-              <p class="text-sm text-gray-600 mb-3">Paste your inventory data below:</p>
-              
-              <div class="mb-4">
-                <label class="block font-medium mb-1">Inventory Enhancive Detail</label>
-                <textarea id="bulkEnhanciveDetail" rows="10" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste inventory enhancive detail here..."></textarea>
-              </div>
-              
-              <div class="mb-4">
-                <label class="block font-medium mb-1">Inventory Location</label>
-                <textarea id="bulkInventoryLocation" rows="10" class="border p-2 rounded w-full font-mono text-sm" placeholder="Paste inventory location here..."></textarea>
-              </div>
-              
-              <div class="flex gap-2">
-                <button id="processBulkImport" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Process Import</button>
-                <button id="cancelBulkImport" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded">Cancel</button>
-              </div>
-            </div>
+            <!-- Bulk text import form removed — YAML file import is the supported path -->
             
             <div id="addItemForm" class="hidden mb-6 p-4 border rounded bg-gray-50">
               <h3 class="font-semibold mb-3">Add New Item</h3>
@@ -1378,7 +1360,6 @@ app.get('/', (c) => {
 
     document.getElementById('addItemBtn').addEventListener('click', () => {
       document.getElementById('addItemForm').classList.remove('hidden')
-      document.getElementById('bulkImportForm').classList.add('hidden')
     })
     
     document.getElementById('yamlImportBtn').addEventListener('click', () => {
@@ -1392,12 +1373,6 @@ app.get('/', (c) => {
       const text = await file.text()
       await processYamlImport(text)
       e.target.value = ''
-    })
-    
-    document.getElementById('bulkImportBtn').addEventListener('click', () => {
-      document.getElementById('bulkImportForm').classList.remove('hidden')
-      document.getElementById('addItemForm').classList.add('hidden')
-      document.getElementById('copyInventoryForm').classList.add('hidden')
     })
     
     document.getElementById('copyInventoryBtn').addEventListener('click', async () => {
@@ -1415,7 +1390,6 @@ app.get('/', (c) => {
       
       document.getElementById('copyInventoryForm').classList.remove('hidden')
       document.getElementById('addItemForm').classList.add('hidden')
-      document.getElementById('bulkImportForm').classList.add('hidden')
     })
     
     document.getElementById('cancelCopyInventory').addEventListener('click', () => {
@@ -1482,12 +1456,6 @@ app.get('/', (c) => {
         console.error('Delete all error:', error)
         alert('Error deleting inventory')
       }
-    })
-    
-    document.getElementById('cancelBulkImport').addEventListener('click', () => {
-      document.getElementById('bulkImportForm').classList.add('hidden')
-      document.getElementById('bulkEnhanciveDetail').value = ''
-      document.getElementById('bulkInventoryLocation').value = ''
     })
     
     async function processYamlImport(yamlText) {
@@ -1609,160 +1577,6 @@ app.get('/', (c) => {
       loadInventory()
       loadSummary()
     }
-
-    document.getElementById('processBulkImport').addEventListener('click', async () => {
-      const enhanciveDetail = document.getElementById('bulkEnhanciveDetail').value
-      const inventoryLocation = document.getElementById('bulkInventoryLocation').value
-      
-      if (!enhanciveDetail.trim()) {
-        alert('Please provide enhancive data')
-        return
-      }
-      
-      try {
-        // Check if input is YAML format
-        if (enhanciveDetail.trim().startsWith('---') || enhanciveDetail.includes('worn_items:')) {
-          await processYamlImport(enhanciveDetail)
-          return
-        }
-        
-        if (!inventoryLocation.trim()) {
-          alert('Please provide both inventory enhancive detail and inventory location')
-          return
-        }
-        // Parse enhancive detail to extract items and their enhancives
-        const itemEnhancives = {}
-        const detailLines = enhanciveDetail.split('\\n')
-        let currentStat = null
-        
-        for (const line of detailLines) {
-          const trimmed = line.trim()
-          if (!trimmed || trimmed.startsWith('Stats:') || trimmed.startsWith('Skills:') || 
-              trimmed.startsWith('Resources:') || trimmed.startsWith('Statistics:') || 
-              trimmed.startsWith('For fewer') || trimmed.startsWith('Enhancive') ||
-              trimmed.startsWith('Self Knowledge Spells:')) continue
-          
-          // Check if it's a stat/skill/resource header (e.g., "Discipline (DIS): 40/40")
-          if (trimmed.match(/^[A-Za-z -]+(?:\\([A-Z]+\\))?:\\s*\\d+\\/\\d+/)) {
-            const match = trimmed.match(/^([^:]+?)(?:\\s*\\([A-Z]+\\))?:/)
-            if (match) currentStat = match[1].trim()
-            continue
-          }
-          
-          // Check if it's an item line (starts with +/- and has "a/an/some")
-          const itemMatch = trimmed.match(/^([+-]\\d+):\\s+((?:a|an|some|the)\\s+.+?)(?:\\s*\\(|$)/)
-          if (itemMatch && currentStat) {
-            const boost = parseInt(itemMatch[1])
-            const itemName = itemMatch[2].trim()
-            
-            // Skip unknown sources
-            if (itemName.includes('unknown source')) continue
-            
-            if (!itemEnhancives[itemName]) {
-              itemEnhancives[itemName] = []
-            }
-            itemEnhancives[itemName].push({ ability: currentStat, boost: boost })
-          }
-        }
-        
-        // Parse inventory location to map items to slots
-        const itemSlots = {}
-        const locationLines = inventoryLocation.split('\\n')
-        let currentSlot = null
-        
-        for (const line of locationLines) {
-          const trimmed = line.trim()
-          if (!trimmed || trimmed.startsWith('You are currently') || trimmed.match(/^\\(\\d+ items/)) continue
-          
-          // Check if it's a slot header (ends with colon)
-          if (trimmed.endsWith(':')) {
-            // Map slot descriptions to our slot names
-            const slotMap = {
-              'As a pin': 'pin',
-              'On your head': 'head',
-              'Placed in your hair': 'hair',
-              'Hung from a single ear': 'ear',
-              'Hung from both ears': 'ears',
-              'Hung around your neck': 'neck',
-              'Slung over your shoulder': 'shoulder',
-              'Draped over your shoulders': 'shoulders',
-              'On your back': 'back',
-              'Over your chest': 'torso',
-              'Put over your front': 'front',
-              'Slipped into, on your chest': 'undershirt',
-              'Attached to your arms': 'arms',
-              'Attached to your wrist': 'wrist',
-              'Slipped over your hands': 'hands',
-              'On your fingers': 'finger',
-              'Around your waist': 'waist',
-              'Attached to your belt': 'belt',
-              'Pulled over your legs': 'leggings',
-              'Attached to your legs': 'legs',
-              'Attached to your ankle': 'ankle',
-              'On your feet': 'feet',
-              'Slipped on your feet': 'socks',
-              'As a battle standard': 'nugget',
-              'Elsewhere': 'elsewhere'
-            }
-            const slotDesc = trimmed.slice(0, -1)
-            currentSlot = slotMap[slotDesc] || 'nugget'
-            continue
-          }
-          
-          // Extract item name from line (remove functional/nonfunctional)
-          const itemMatch = trimmed.match(/^((?:a|an|some|the)\\s+.+?)\\s*\\((functional|nonfunctional)\\)/)
-          if (itemMatch && currentSlot) {
-            const itemName = itemMatch[1].trim()
-            const isFunctional = itemMatch[2] === 'functional'
-            if (isFunctional) {
-              itemSlots[itemName] = currentSlot
-            }
-          }
-        }
-        
-        // Match items and create inventory entries
-        let imported = 0
-        let skipped = 0
-        
-        for (const [itemName, enhancives] of Object.entries(itemEnhancives)) {
-          const slot = itemSlots[itemName]
-          if (!slot) {
-            console.log('Skipping item (no slot found):', itemName)
-            skipped++
-            continue
-          }
-          
-          // Add to inventory
-          const response = await fetch(API_BASE + '/api/sets/' + currentSetId + '/inventory', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              item_name: itemName,
-              slot: slot,
-              enhancives_json: JSON.stringify(enhancives),
-              is_permanent: true
-            })
-          })
-          
-          if (response.ok) {
-            imported++
-          } else {
-            console.error('Failed to import:', itemName)
-            skipped++
-          }
-        }
-        
-        alert('Import complete!\\n\\nImported: ' + imported + ' items\\nSkipped: ' + skipped + ' items')
-        document.getElementById('bulkImportForm').classList.add('hidden')
-        document.getElementById('bulkEnhanciveDetail').value = ''
-        document.getElementById('bulkInventoryLocation').value = ''
-        loadInventory()
-        
-      } catch (error) {
-        console.error('Bulk import error:', error)
-        alert('Error processing bulk import. Check console for details.')
-      }
-    })
 
     document.getElementById('cancelAddItem').addEventListener('click', () => {
       document.getElementById('addItemForm').classList.add('hidden')

@@ -196,5 +196,6 @@ Create a web application that monitors GemStone IV player shop listings and aler
 - **Richer stat display**: Currently showing simple X/Y. Future: show base stat bonus + enhancive bonus = total stat value. Requires understanding that base_stats stores bonus values, not actual stat totals (e.g., WIS bonus 30 → actual stat ~100). Need to either store actual stat totals or calculate from bonus.
 
 ### Cleanup
+- **Re-enable bulk text import**: The old two-textarea bulk import (paste enhancive detail + inventory location) was disabled because the YAML file import is more reliable. Re-enable later with an improved parser that handles edge cases better.
 - **Lint warnings**: Unused params in recommendation-engine.ts, unused `countSlotUsage` in index.ts, useLiteralKeys. Non-blocking.
 - **Remove YAML files from repo**: Mejora/Shollindal YAML files and `.Zone.Identifier` files accidentally committed. Add to .gitignore.
