@@ -1570,6 +1570,7 @@ app.get('/', (c) => {
         body: JSON.stringify({ value: showUsefulSum })
       })
       checkModalDirty()
+      renderItems()
     })
 
     async function processYamlImport(yamlText) {
