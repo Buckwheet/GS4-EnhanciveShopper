@@ -188,6 +188,10 @@ Create a web application that monitors GemStone IV player shop listings and aler
 ### Goal Analysis
 - **"What-if" / Wishlist**: Auto-identify marketplace items that bridge the largest gaps in a character's current build. Related to the deferred set-builder optimization in the Future Vision section above.
 
+### Nugget/Swatch Engine (from deep review, March 2026)
+- **Configurable nugget threshold**: The 25M silver threshold for flagging weapons/runestaves as "nuggets" is hardcoded. Expose as a UI slider so users can find budget-friendly nuggets too.
+- **Vectorized match calculation**: Match score recalculates on every table re-render/filter change across ~5,700 items × character stats. Refactor to treat stats as a single array for batch comparison instead of per-item iteration.
+
 ### Cleanup
 - **Lint warnings**: Unused params in recommendation-engine.ts, unused `countSlotUsage` in index.ts, useLiteralKeys. Non-blocking.
 - **Remove YAML files from repo**: Mejora/Shollindal YAML files and `.Zone.Identifier` files accidentally committed. Add to .gitignore.
