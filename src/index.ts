@@ -4072,8 +4072,16 @@ app.get('/api/recommend/:setId', async (c) => {
 
   const goals = resolveGoals(uniqueAbilities)
 
-  // TODO: calculate available slots dynamically
-  const availableSlots = 14
+  // Calculate available slots from set's account type
+  const setRow = await c.env.DB.prepare('SELECT account_type FROM sets WHERE id = ?').bind(setId).first() as { account_type: string } | null
+  if (!setRow) return c.json({ error: 'Set not found' }, 404)
+  const slotLimits = SLOT_LIMITS[setRow.account_type as keyof typeof SLOT_LIMITS] || SLOT_LIMITS['F2P']
+  const invSlots = (inventory as any[]).map(i => i.slot).filter(s => s && s !== 'locus' && s !== 'elsewhere')
+  let availableSlots = 0
+  for (const [slot, limit] of Object.entries(slotLimits)) {
+    const used = invSlots.filter(s => s === slot).length
+    availableSlots += Math.max(0, limit - used)
+  }
 
   const start = Date.now()
   const result = runRecommendation(goals, inventory as any[], enrichedItems, availableSlots, alpha)
