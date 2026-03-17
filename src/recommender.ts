@@ -89,20 +89,56 @@ export function runRecommendation(
       if (usedIds.has(item.id)) continue
 
       // Calculate contributions to each goal
+      // Key constraint: when multiple goals share a group (e.g. Religion + Blessings
+      // both in Lores), the group's total points must be SPLIT, not double-counted.
+      // Each enhancive can only be swapped to one target ability.
       const contributions: Record<string, number> = {}
       let weightedScore = 0
 
+      // Group goals by their group to handle shared-group allocation
+      const goalsByGroup: Record<string, { key: string; gap: number }[]> = {}
       for (const goal of goals) {
         const key = goal.group + ':' + goal.ability
         const gap = gaps[key]
         if (gap <= 0) continue
-
         const groupTotal = item.group_totals[goal.group]
         if (!groupTotal) continue
+        if (!goalsByGroup[goal.group]) goalsByGroup[goal.group] = []
+        goalsByGroup[goal.group].push({ key, gap })
+      }
 
-        const contribution = Math.min(groupTotal, gap)
-        contributions[key] = contribution
-        weightedScore += contribution / gap
+      for (const [group, groupGoals] of Object.entries(goalsByGroup)) {
+        const pool = item.group_totals[group]
+        if (groupGoals.length === 1) {
+          // Single goal for this group — straightforward
+          const g = groupGoals[0]
+          const contribution = Math.min(pool, g.gap)
+          contributions[g.key] = contribution
+          weightedScore += contribution / g.gap
+        } else {
+          // Multiple goals share this group — allocate proportionally by gap
+          const totalGapInGroup = groupGoals.reduce((s, g) => s + g.gap, 0)
+          let remaining = pool
+          for (const g of groupGoals) {
+            const share = Math.min(Math.floor(pool * g.gap / totalGapInGroup), g.gap, remaining)
+            if (share > 0) {
+              contributions[g.key] = share
+              weightedScore += share / g.gap
+              remaining -= share
+            }
+          }
+          // Distribute any leftover from rounding to first goal with room
+          for (const g of groupGoals) {
+            if (remaining <= 0) break
+            const current = contributions[g.key] || 0
+            const extra = Math.min(remaining, g.gap - current)
+            if (extra > 0) {
+              contributions[g.key] = current + extra
+              weightedScore += extra / g.gap
+              remaining -= extra
+            }
+          }
+        }
       }
 
       if (weightedScore <= 0) continue
@@ -117,15 +153,30 @@ export function runRecommendation(
         trueCost = item.true_costs.wearable_nonperm
       }
 
-      // Add swap costs: for each goal group this item contributes to,
-      // add the swap cost for the target ability
+      // Add swap costs: for each GROUP this item contributes to, add swap cost once.
+      // When multiple goals share a group (e.g. Religion + Blessings), the swap cost
+      // is for the most expensive target (worst case — some enhancives go to each).
       let swapCost = 0
+      const groupsSeen = new Set<string>()
       for (const goal of goals) {
         const key = goal.group + ':' + goal.ability
         if (!contributions[key]) continue
+        if (groupsSeen.has(goal.group)) continue
+        groupsSeen.add(goal.group)
         const groupSwapCosts = item.swap_costs[goal.group]
         if (groupSwapCosts) {
-          swapCost += groupSwapCosts[goal.ability] || 0
+          // Use the cheapest target's swap cost as baseline (best case allocation)
+          const relevantGoals = goals.filter(g => g.group === goal.group && contributions[g.group + ':' + g.ability])
+          if (relevantGoals.length === 1) {
+            swapCost += groupSwapCosts[relevantGoals[0].ability] || 0
+          } else {
+            // Multiple targets in same group: each enhancive swaps to one target.
+            // Count of enhancives that don't match ANY target = swaps needed.
+            const targetSet = new Set(relevantGoals.map(g => g.ability))
+            const itemAbilities = item.abilities.filter(a => a.group === goal.group)
+            const swapsNeeded = itemAbilities.filter(a => !targetSet.has(a.name)).length
+            swapCost += swapsNeeded * 10_000_000
+          }
         }
       }
       trueCost += swapCost
