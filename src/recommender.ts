@@ -277,14 +277,22 @@ export function runRecommendation(
   }
   picks.sort((a, b) => b.value_score - a.value_score)
 
-  // Recalculate gaps after pruning
-  for (const goal of goals) {
-    gaps[goal.group + ':' + goal.ability] = totalGapInitial[goal.group + ':' + goal.ability]
-  }
+  // Recalculate gaps after pruning using group_totals (same logic as prune check)
+  const finalGroupPoints: Record<string, number> = {}
   for (const pick of picks) {
-    for (const [key, c] of Object.entries(pick.contributions)) {
-      if (gaps[key] !== undefined) gaps[key] = Math.max(0, gaps[key] - c)
+    for (const [group, total] of Object.entries(pick.item.group_totals)) {
+      finalGroupPoints[group] = (finalGroupPoints[group] || 0) + total
     }
+  }
+  for (const goal of goals) {
+    const key = goal.group + ':' + goal.ability
+    const fromInv = currentBoosts[goal.ability] || 0
+    const goalsInGroup = goals.filter(g => g.group === goal.group)
+    const pool = finalGroupPoints[goal.group] || 0
+    const totalNeed = goalsInGroup.reduce((s, g) => s + Math.max(0, g.target - (currentBoosts[g.ability] || 0)), 0)
+    const myNeed = Math.max(0, goal.target - fromInv)
+    const myShare = totalNeed > 0 ? pool * myNeed / totalNeed : pool
+    gaps[key] = Math.max(0, myNeed - myShare)
   }
 
   // Calculate summary
