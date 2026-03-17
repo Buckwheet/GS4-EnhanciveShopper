@@ -186,6 +186,43 @@ for each round:
   // FREE replacements may change — re-classify next round
 ```
 
+## Unique Item Constraints (Bloodstone Problem)
+
+Some items are mutually exclusive — only one can be active at a time. Example: the oval bloodstone set (barrette, pendant, etc.) all share the same enhancive loadout and only one can be worn. If the user already owns one variant, the engine must filter out all other variants.
+
+Implementation options:
+1. **Manual exclusion list** — maintain a known set of mutually exclusive item families (bloodstone, etc.)
+2. **Inventory duplicate detection** — if an item's enhancives_json exactly matches an inventory item, flag it
+3. **User-reported** — let users mark items as "already owned" or "incompatible with X"
+
+Option 1 is most reliable but requires game knowledge. Option 2 catches exact dupes but not variants. Probably need option 1 + 3 as fallback.
+
+Known exclusive families:
+- Oval bloodstone set (barrette, pendant, ring, etc.) — Max Mana 50, Max Health 100, Max Stamina 25, Mana Recovery 10, Health Recovery 20, Stamina Recovery 5
+
+## Hybrid Shopping Strategy (Middle Ground)
+
+Pure max-score is too expensive. Pure efficiency can't close premium gaps (MC especially). The hybrid:
+
+```
+Phase 1 — Cheap wins (efficiency >= THRESHOLD):
+  Pick items by efficiency until:
+    - No items above threshold remain, OR
+    - All slots consumed
+  
+Phase 2 — Gap closers (max score):
+  For remaining gaps, switch to raw score ranking
+  These are the expensive items that actually carry MC/Lores
+  Only buy what's needed to close remaining gaps
+
+THRESHOLD tuning:
+  - 50/M is a reasonable starting point
+  - Could be user-configurable ("budget mode" vs "aggressive mode")
+  - Or auto-calculated: median efficiency of all useful items
+```
+
+This gives the user the best of both: cheap Recovery/Weapons/Lores items first, then targeted expensive MC items only for what's left.
+
 ## Slot Types Encountered in Shop Data
 - `nugget` — weapon/runestaff, needs nugget service (25M) to wear
 - `neck` — necklace/torc/pendant, wearable
