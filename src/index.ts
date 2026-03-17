@@ -2363,55 +2363,14 @@ app.get('/', (c) => {
         alert('Please log in first')
         return
       }
-      if (!currentSetName) {
+      if (!currentSetId) {
         alert('Please select a character set first')
         return
       }
-      const response = await fetch(API_BASE + '/api/my-matches?discord_id=' + currentUser.id + '&set_name=' + encodeURIComponent(currentSetName))
-      const data = await response.json()
       
-      const availableDiv = document.getElementById('availableMatches')
-      const soldDiv = document.getElementById('soldMatches')
-      
-      if (data.available.length === 0) {
-        availableDiv.innerHTML = '<p class="text-gray-500">No available matches yet</p>'
-      } else {
-        availableDiv.innerHTML = data.available.map(item => {
-          const enhs = JSON.parse(item.enhancives_json)
-          const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
-          const isNugget = !item.worn || item.worn === 'N/A'
-          const displayCost = (isNugget && shouldShowNuggetPrice(item)) ? (item.cost || 0) + 25000000 : item.cost
-          return \`
-            <div class="p-3 border rounded bg-green-50">
-              <div class="font-semibold">\${item.name}</div>
-              <div class="text-sm text-gray-600">\${item.town} - \${item.shop} - \${displayCost?.toLocaleString()} silvers</div>
-              <div class="text-sm text-gray-700">\${enhText}</div>
-            </div>
-          \`
-        }).join('')
-      }
-      
-      if (data.recentlySold.length === 0) {
-        soldDiv.innerHTML = '<p class="text-gray-500">No recently sold items</p>'
-      } else {
-        soldDiv.innerHTML = data.recentlySold.map(item => {
-          const enhs = JSON.parse(item.enhancives_json)
-          const enhText = enhs.map(e => \`+\${e.boost} \${e.ability}\`).join(', ')
-          const soldDate = new Date(item.unavailable_since).toLocaleString()
-          const isNugget = !item.worn || item.worn === 'N/A'
-          const displayCost = (isNugget && shouldShowNuggetPrice(item)) ? (item.cost || 0) + 25000000 : item.cost
-          return \`
-            <div class="p-3 border rounded bg-gray-100">
-              <div class="font-semibold text-gray-600">\${item.name}</div>
-              <div class="text-sm text-gray-500">\${item.town} - \${item.shop} - \${displayCost?.toLocaleString()} silvers</div>
-              <div class="text-sm text-gray-600">\${enhText}</div>
-              <div class="text-xs text-gray-500 mt-1">Sold: \${soldDate}</div>
-            </div>
-          \`
-        }).join('')
-      }
-      
+      document.getElementById('availableMatches').innerHTML = '<p class="text-gray-500">Loading recommendations...</p>'
       document.getElementById('myMatchesModal').classList.remove('hidden')
+      await loadRecommendations()
     })
 
     document.getElementById('closeMatchesBtn').addEventListener('click', () => {
