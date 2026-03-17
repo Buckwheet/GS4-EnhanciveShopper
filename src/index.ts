@@ -2491,21 +2491,35 @@ app.get('/', (c) => {
     })
 
     async function loadRecommendations() {
-      if (!currentUser || !currentSetName) return
+      if (!currentSetId) return
       
-      const response = await fetch(API_BASE + '/api/recommendations/' + currentUser.id + '/' + encodeURIComponent(currentSetName))
+      const response = await fetch(API_BASE + '/api/recommend/' + currentSetId)
       const data = await response.json()
       
-      const renderRec = (rec) => {
-        const enhs = JSON.parse(rec.item.enhancives_json)
-        const enhText = enhs.map(e => '+' + e.boost + ' ' + e.ability).join(', ')
-        return '<div class="p-3 border rounded bg-white"><div class="font-semibold">' + rec.item.item_name + '<\/div><div class="text-sm text-gray-600">Cost: ' + rec.totalCost.toLocaleString() + ' silvers<\/div><div class="text-sm text-gray-700">' + enhText + '<\/div><div class="text-xs text-blue-600 mt-1">' + rec.explanation + '<\/div><\/div>'
+      if (data.error) {
+        document.getElementById('directRecList').innerHTML = '<p class="text-gray-500">' + data.error + '</p>'
+        return
       }
-      
-      document.getElementById('directRecList').innerHTML = data.direct?.length ? data.direct.map(renderRec).join('') : '<p class="text-gray-500">No direct matches found<\/p>'
-      document.getElementById('nuggetRecList').innerHTML = data.nuggets?.length ? data.nuggets.map(renderRec).join('') : '<p class="text-gray-500">No nugget opportunities<\/p>'
-      document.getElementById('swatchRecList').innerHTML = data.swatches?.length ? data.swatches.map(renderRec).join('') : '<p class="text-gray-500">No swatch opportunities<\/p>'
-      document.getElementById('swapRecList').innerHTML = data.swaps?.length ? data.swaps.map(renderRec).join('') : '<p class="text-gray-500">No swap recommendations<\/p>'
+
+      const summary = '<div class="p-3 mb-3 bg-blue-50 rounded text-sm"><strong>' + data.slots_used + ' items</strong> · ' + data.total_cost_display + ' total · ' + data.fill_pct + ' goals filled</div>'
+
+      const renderPick = (p) => {
+        const enhText = p.abilities.map(a => '+' + a.boost + ' ' + a.name).join(', ')
+        const contribs = Object.entries(p.contributions).map(([k, v]) => k.split(':')[1] + ' +' + v).join(', ')
+        const costs = []
+        if (p.swap_cost > 0) costs.push('Swap: ' + (p.swap_cost / 1e6).toFixed(0) + 'M')
+        const costNote = costs.length ? ' · ' + costs.join(', ') : ''
+        return '<div class="p-3 border rounded bg-white mb-2"><div class="font-semibold">' + p.name + '</div><div class="text-sm text-gray-600">' + p.town + ' · ' + p.shop + ' · ' + (p.cost ? p.cost.toLocaleString() : 'N/A') + ' silvers · ' + (p.slot || 'nugget') + costNote + '</div><div class="text-sm text-gray-700">' + enhText + '</div><div class="text-xs text-green-600 mt-1">Fills: ' + contribs + '</div></div>'
+      }
+
+      const direct = data.picks.filter(p => p.slot && p.slot !== 'nugget' && !p.is_permanent === false)
+      const nuggets = data.picks.filter(p => !p.slot || p.slot === 'nugget')
+      const wearable = data.picks.filter(p => p.slot && p.slot !== 'nugget')
+
+      document.getElementById('directRecList').innerHTML = summary + (wearable.length ? wearable.map(renderPick).join('') : '<p class="text-gray-500">No direct matches</p>')
+      document.getElementById('nuggetRecList').innerHTML = summary + (nuggets.length ? nuggets.map(renderPick).join('') : '<p class="text-gray-500">No nugget opportunities</p>')
+      document.getElementById('swatchRecList').innerHTML = '<p class="text-gray-500">Coming soon</p>'
+      document.getElementById('swapRecList').innerHTML = '<p class="text-gray-500">Coming soon</p>'
     }
 
     document.getElementById('aiChatBtn').addEventListener('click', () => {
