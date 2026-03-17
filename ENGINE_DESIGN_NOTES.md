@@ -162,6 +162,24 @@ These 4 items give Mejora 16 slots instead of 12. The Wisdom surplus is 45-40=5,
 
 **Key insight: re-evaluate replaceability after each swap decision.** The surplus changes as you remove items. This is why the greedy loop must re-score AND re-classify after each pick.
 
+### Critical Bug Found in Simulation
+
+The simulation was treating ALL over-cap Wisdom items as free replacements upfront by adding them to OPEN_SLOTS. This is wrong. Wisdom surplus is only 5, so:
+
+- Removing bracer (-4): surplus 5→1 ✓ free
+- Removing earcuff (-4): surplus 1→-3 ✗ BREAKS goal
+- Removing crown (-6): surplus 5→-1 ✗ BREAKS goal (even if first)
+
+Only ONE Wisdom item can be freely replaced (the one with boost ≤ surplus). After that, the surplus is consumed and remaining items become conditional.
+
+**Correct approach:** Do NOT pre-populate replaceable slots. Instead, during each greedy round:
+1. Compute current surpluses for all met goals
+2. For each inventory item, check if ALL its group contributions are ≤ their respective surpluses
+3. Only items passing that check are "free" this round
+4. After picking a replacement, surpluses change — re-evaluate next round
+
+The head slot (crown with +6 Wisdom) is NEVER a free replacement because 6 > surplus of 5. It's conditional from the start — any replacement must provide ≥1 Stat A to compensate.
+
 ### Step 5: Integration with Greedy Algorithm
 
 ```
