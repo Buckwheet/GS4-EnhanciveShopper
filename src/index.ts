@@ -253,8 +253,7 @@ app.get('/', (c) => {
             <input type="number" id="goalBoost" placeholder="Min Boost (leave blank for max)" class="border p-2 rounded">
             <input type="number" id="goalMaxCost" placeholder="Max Cost (optional)" class="border p-2 rounded col-span-2">
           </div>
-          <div class="mb-3">
-            <label class="font-semibold mb-2 block">Preferred Slots (optional):</label>
+          <div class="mb-3 hidden">
             <div class="grid grid-cols-3 md:grid-cols-5 gap-2">
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="ankle" class="mr-1"> ankle</label>
               <label class="flex items-center"><input type="checkbox" name="goalSlot" value="arms" class="mr-1"> arms</label>
