@@ -216,7 +216,8 @@ app.get('/', (c) => {
                 <option>Magic Item Use</option><option>Arcane Symbols</option>
               </optgroup>
             </select>
-            <input type="number" id="goalBoost" placeholder="Min Boost (e.g., 5)" class="border p-2 rounded">
+            <input type="number" id="goalBoost" placeholder="Min Boost (leave blank for max)" class="border p-2 rounded">
+            <span id="goalBoostHint" class="text-xs text-gray-500 hidden"></span>
             <input type="number" id="goalMaxCost" placeholder="Max Cost (optional)" class="border p-2 rounded col-span-2">
           </div>
           <div class="mb-3">
@@ -2499,6 +2500,7 @@ app.get('/', (c) => {
       // Clear form for new goal
       document.getElementById('goalStat').value = ''
       document.getElementById('goalBoost').value = ''
+      document.getElementById('goalBoostHint').classList.add('hidden')
       document.getElementById('goalMaxCost').value = ''
       document.querySelectorAll('input[name="goalSlot"]').forEach(cb => cb.checked = false)
       document.getElementById('nuggetPriceOption').classList.add('hidden')
@@ -2512,6 +2514,16 @@ app.get('/', (c) => {
       document.getElementById('addGoalForm').classList.add('hidden')
       editingGoalId = null
       document.getElementById('saveGoalBtn').textContent = 'Save Goal'
+    })
+
+    const STAT_ABILITIES = ['Strength','Constitution','Dexterity','Agility','Discipline','Aura','Logic','Intuition','Wisdom','Influence']
+    document.getElementById('goalStat').addEventListener('change', (e) => {
+      const hint = document.getElementById('goalBoostHint')
+      const val = e.target.value
+      if (!val) { hint.classList.add('hidden'); return }
+      const cap = STAT_ABILITIES.includes(val) ? 40 : 50
+      hint.textContent = 'Default: ' + cap + ' (max enhancive cap)'
+      hint.classList.remove('hidden')
     })
 
     document.getElementById('goalNuggetCheckbox').addEventListener('change', (e) => {
@@ -2533,8 +2545,8 @@ app.get('/', (c) => {
         .map(cb => cb.value)
         .join(',')
 
-      if (!stat || !boost) {
-        alert('Stat and Min Boost are required')
+      if (!stat) {
+        alert('Ability is required')
         return
       }
 
@@ -2544,7 +2556,7 @@ app.get('/', (c) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             stat,
-            min_boost: parseInt(boost),
+            min_boost: boost ? parseInt(boost) : null,
             max_cost: maxCost ? parseInt(maxCost) : null,
             preferred_slots: selectedSlots || null,
             include_nugget_price: includeNuggetPrice
@@ -2563,7 +2575,7 @@ app.get('/', (c) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             stat,
-            min_boost: parseInt(boost),
+            min_boost: boost ? parseInt(boost) : null,
             max_cost: maxCost ? parseInt(maxCost) : null,
             preferred_slots: selectedSlots || null,
             include_nugget_price: includeNuggetPrice
@@ -3474,8 +3486,8 @@ app.post('/api/sets/:id/goals', async (c) => {
     const setId = c.req.param('id')
     const { stat, min_boost, max_cost, preferred_slots, include_nugget_price } = await c.req.json()
     
-    if (!stat || min_boost === undefined || min_boost === null) {
-      return c.json({ error: 'stat and min_boost required' }, 400)
+    if (!stat) {
+      return c.json({ error: 'stat required' }, 400)
     }
 
     const result = await c.env.DB.prepare(
