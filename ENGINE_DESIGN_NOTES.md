@@ -294,7 +294,18 @@ for each enhancive on item:
 trueCost = itemPrice + nuggetCost + pellCost + swapCost
 ```
 
-**Note:** If the user doesn't care WHICH ability within the group (just wants the group total), no swap is needed. Swap cost only applies when the user needs a specific ability. For now, assume swap groups are fungible and no swap cost — revisit when goal model tracks specific abilities vs group totals.
+**Note:** Swap cost depends on how many enhancives within the group are NOT the target ability. For a Spirit MC goal, an item with +10 SMC, +10 EMC, +10 MMC scores 30 but costs 20M in swaps (EMC and MMC each need 10M swap to become SMC). The SMC enhancive is free.
+
+**For multi-goal groups (e.g., Lores with Religion + Blessings goals):**
+When assigning an item's lore contribution to a goal, the engine should pick the assignment that minimizes swap cost. An item with +8 Summoning and +7 Blessings assigned to the Blessings goal only needs 1 swap (Summoning→Blessings = 10M), not 2.
+
+**Engine true cost formula:**
+```
+trueCost = itemPrice + nuggetCost + pellCost + (numSwapsNeeded * 10_000_000)
+
+where numSwapsNeeded = count of enhancives in the goal's group
+                       whose ability != the goal's target ability
+```
 
 ## Missing Feature: Inventory Swap Recommendations
 
