@@ -645,7 +645,10 @@ app.get('/', (c) => {
     </div>
 
     <div id="itemsContainer" class="bg-white rounded-lg shadow-md overflow-hidden hidden">
-      <table class="min-w-full">
+      <table class="min-w-full table-fixed">
+        <colgroup>
+          <col style="width:22%"><col style="width:8%"><col style="width:8%"><col style="width:10%"><col style="width:7%"><col style="width:5%"><col style="width:5%"><col style="width:35%">
+        </colgroup>
         <thead class="bg-gray-800 text-white sticky top-0 z-10">
           <tr>
             <th class="px-4 py-3 text-left cursor-pointer hover:bg-gray-700" onclick="sortItems('name')">Name ↕</th>
@@ -660,7 +663,10 @@ app.get('/', (c) => {
         </thead>
       </table>
       <div id="tableScroller" class="overflow-auto" style="max-height: 70vh;">
-        <table class="min-w-full">
+        <table class="min-w-full table-fixed">
+          <colgroup>
+            <col style="width:22%"><col style="width:8%"><col style="width:8%"><col style="width:10%"><col style="width:7%"><col style="width:5%"><col style="width:5%"><col style="width:35%">
+          </colgroup>
           <tbody id="itemsTable" class="divide-y divide-gray-200">
           </tbody>
         </table>
