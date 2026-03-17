@@ -2516,8 +2516,9 @@ app.get('/', (c) => {
       const nuggets = data.picks.filter(p => !p.slot || p.slot === 'nugget')
       const wearable = data.picks.filter(p => p.slot && p.slot !== 'nugget')
 
-      document.getElementById('directRecList').innerHTML = summary + (wearable.length ? wearable.map(renderPick).join('') : '<p class="text-gray-500">No direct matches</p>')
-      document.getElementById('nuggetRecList').innerHTML = summary + (nuggets.length ? nuggets.map(renderPick).join('') : '<p class="text-gray-500">No nugget opportunities</p>')
+      document.getElementById('availableMatches').innerHTML = summary + data.picks.map(renderPick).join('')
+      document.getElementById('directRecList').innerHTML = '<p class="text-gray-500">Coming soon</p>'
+      document.getElementById('nuggetRecList').innerHTML = '<p class="text-gray-500">Coming soon</p>'
       document.getElementById('swatchRecList').innerHTML = '<p class="text-gray-500">Coming soon</p>'
       document.getElementById('swapRecList').innerHTML = '<p class="text-gray-500">Coming soon</p>'
     }
