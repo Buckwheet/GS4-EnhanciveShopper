@@ -278,9 +278,23 @@ This gives the user the best of both: cheap Recovery/Weapons/Lores items first, 
 
 ## Enhancive Swap Service (Sylinara) Cost
 
-The swap service converts one ability to another within the same swap group (e.g., Intuition → Logic). Costs soul shards. For engine purposes, treat soul shards as 1:1 silver — effectively free. No cost adjustment needed for swap group scoring.
+The swap service converts one ability to another within the same swap group (e.g., Intuition → Logic). Costs 10,000 soul shards per swap = 10M silver per swap. Flat fee regardless of boost value.
 
-The engine already handles this correctly: any ability in a swap group counts toward any goal in that group at full value.
+**Impact on scoring:** An item with +8 Intuition counts toward a Logic goal, but if the user specifically needs Logic (not Intuition), the true cost includes +10M for the swap. An item with 3 abilities all needing swaps = +30M in swap fees.
+
+**Engine implementation:**
+```
+swapCost = 0
+for each enhancive on item:
+  group = getSwapGroup(enhancive.ability)
+  if group and group in userGoals:
+    goalAbility = userGoals[group].targetAbility  // e.g., "Logic"
+    if enhancive.ability != goalAbility:
+      swapCost += 10_000_000  // needs sylinara swap
+trueCost = itemPrice + nuggetCost + pellCost + swapCost
+```
+
+**Note:** If the user doesn't care WHICH ability within the group (just wants the group total), no swap is needed. Swap cost only applies when the user needs a specific ability. For now, assume swap groups are fungible and no swap cost — revisit when goal model tracks specific abilities vs group totals.
 
 ## Missing Feature: Inventory Swap Recommendations
 
