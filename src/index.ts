@@ -519,6 +519,15 @@ app.get('/', (c) => {
                 <option value="Platinum">Platinum</option>
               </select>
             </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Budget Strategy</label>
+              <select id="newSetAlpha" class="border p-2 rounded w-full">
+                <option value="1.0">💰 Cash Flush — Fewest items, highest value per slot</option>
+                <option value="1.5" selected>⚖️ Balanced — Best mix of value and cost</option>
+                <option value="2.0">🪙 Budget — More items, lower cost each</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">Controls how the recommendation engine weighs item cost vs enhancive value</p>
+            </div>
             <div class="flex gap-2">
               <button id="createSetConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1">Create</button>
               <button id="createSetCancel" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded flex-1">Cancel</button>
@@ -542,6 +551,15 @@ app.get('/', (c) => {
                 <option value="Premium">Premium</option>
                 <option value="Platinum">Platinum</option>
               </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">Budget Strategy</label>
+              <select id="editSetAlpha" class="border p-2 rounded w-full">
+                <option value="1.0">💰 Cash Flush — Fewest items, highest value per slot</option>
+                <option value="1.5">⚖️ Balanced — Best mix of value and cost</option>
+                <option value="2.0">🪙 Budget — More items, lower cost each</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">Controls how the recommendation engine weighs item cost vs enhancive value</p>
             </div>
             <div class="flex gap-2">
               <button id="editSetConfirm" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex-1">Save</button>
@@ -1373,6 +1391,7 @@ app.get('/', (c) => {
     document.getElementById('createSetConfirm').addEventListener('click', async () => {
       const setName = document.getElementById('newSetName').value.trim()
       const accountType = document.getElementById('newSetAccountType').value
+      const alpha = document.getElementById('newSetAlpha').value
       
       if (!setName) {
         alert('Please enter a set name')
@@ -1389,7 +1408,8 @@ app.get('/', (c) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           set_name: setName,
-          account_type: accountType
+          account_type: accountType,
+          alpha: parseFloat(alpha)
         })
       })
       
@@ -1433,6 +1453,7 @@ app.get('/', (c) => {
       
       document.getElementById('editSetName').value = activeSet.set_name
       document.getElementById('editSetAccountType').value = activeSet.account_type || 'F2P'
+      document.getElementById('editSetAlpha').value = activeSet.alpha || '1.5'
       document.getElementById('editSetModal').classList.remove('hidden')
     })
 
@@ -1443,6 +1464,7 @@ app.get('/', (c) => {
     document.getElementById('editSetConfirm').addEventListener('click', async () => {
       const newName = document.getElementById('editSetName').value.trim()
       const newAccountType = document.getElementById('editSetAccountType').value
+      const newAlpha = document.getElementById('editSetAlpha').value
       
       if (!newName || !currentSetId) {
         alert('Please enter a set name')
@@ -1454,7 +1476,8 @@ app.get('/', (c) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           set_name: newName,
-          account_type: newAccountType
+          account_type: newAccountType,
+          alpha: parseFloat(newAlpha)
         })
       })
       
@@ -3537,15 +3560,15 @@ app.get('/api/characters/:id/sets', async (c) => {
 // New API: Create set for character
 app.post('/api/characters/:id/sets', async (c) => {
   const characterId = c.req.param('id')
-  const { set_name, account_type } = await c.req.json()
+  const { set_name, account_type, alpha } = await c.req.json()
   
   if (!set_name) {
     return c.json({ error: 'set_name required' }, 400)
   }
 
   const result = await c.env.DB.prepare(
-    'INSERT INTO sets (character_id, set_name, account_type, created_at) VALUES (?, ?, ?, ?)'
-  ).bind(characterId, set_name, account_type || 'F2P', new Date().toISOString()).run()
+    'INSERT INTO sets (character_id, set_name, account_type, alpha, created_at) VALUES (?, ?, ?, ?, ?)'
+  ).bind(characterId, set_name, account_type || 'F2P', alpha || 1.5, new Date().toISOString()).run()
 
   return c.json({ success: true, id: result.meta.last_row_id })
 })
@@ -3553,11 +3576,11 @@ app.post('/api/characters/:id/sets', async (c) => {
 // New API: Update set
 app.put('/api/sets/:id', async (c) => {
   const id = c.req.param('id')
-  const { set_name, account_type } = await c.req.json()
+  const { set_name, account_type, alpha } = await c.req.json()
 
   await c.env.DB.prepare(
-    'UPDATE sets SET set_name = ?, account_type = ? WHERE id = ?'
-  ).bind(set_name, account_type, id).run()
+    'UPDATE sets SET set_name = ?, account_type = ?, alpha = ? WHERE id = ?'
+  ).bind(set_name, account_type, alpha || 1.5, id).run()
 
   return c.json({ success: true })
 })
@@ -4044,7 +4067,7 @@ app.post('/api/test-dm', async (c) => {
 
 app.get('/api/recommend/:setId', async (c) => {
   const setId = parseInt(c.req.param('setId'))
-  const alpha = parseFloat(c.req.query('alpha') || '1.5')
+  const alphaOverride = c.req.query('alpha')
 
   // Load enriched items from R2
   const obj = await c.env.ITEMS_BUCKET.get('items_enriched.json')
@@ -4073,8 +4096,9 @@ app.get('/api/recommend/:setId', async (c) => {
   const goals = resolveGoals(uniqueAbilities)
 
   // Calculate available slots from set's account type
-  const setRow = await c.env.DB.prepare('SELECT account_type FROM sets WHERE id = ?').bind(setId).first() as { account_type: string } | null
+  const setRow = await c.env.DB.prepare('SELECT account_type, alpha FROM sets WHERE id = ?').bind(setId).first() as { account_type: string; alpha: number | null } | null
   if (!setRow) return c.json({ error: 'Set not found' }, 404)
+  const alpha = alphaOverride ? parseFloat(alphaOverride) : (setRow.alpha || 1.5)
   const slotLimits = SLOT_LIMITS[setRow.account_type as keyof typeof SLOT_LIMITS] || SLOT_LIMITS['F2P']
   const invSlots = (inventory as any[]).map(i => i.slot).filter(s => s && s !== 'locus' && s !== 'elsewhere')
   const openSlots: Record<string, number> = {}
@@ -4451,6 +4475,15 @@ app.get('/api/migrate-schema', async (c) => {
     return c.json({ success: true, message: 'Migration completed' })
   } catch (error: any) {
     return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+app.get('/api/migrate-alpha', async (c) => {
+  try {
+    await c.env.DB.prepare(`ALTER TABLE sets ADD COLUMN alpha REAL DEFAULT 1.5`).run()
+    return c.json({ success: true })
+  } catch (e) {
+    return c.json({ message: (e as Error).message })
   }
 })
 
