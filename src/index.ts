@@ -182,6 +182,7 @@ app.get('/', (c) => {
           </h2>
           <div class="flex items-center gap-3">
             <span id="goalsSummary" class="text-sm text-gray-500 hidden"></span>
+            <span id="goalsCharSummary" class="text-sm font-medium text-gray-700 hidden"></span>
             <div class="flex gap-2">
             <button id="myMatchesBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
               My Matches
@@ -1117,6 +1118,7 @@ app.get('/', (c) => {
 
       // Update collapsed summary
       const summary = document.getElementById('goalsSummary')
+      document.getElementById('goalsCharSummary').textContent = (currentCharacterName || '') + (currentSetName ? ' / ' + currentSetName : '')
       if (data.goals.length === 0) {
         summary.textContent = 'No goals'
       } else {
@@ -3234,6 +3236,7 @@ app.get('/', (c) => {
       body.classList.toggle('hidden')
       chevron.classList.toggle('rotate-180')
       summary.classList.toggle('hidden')
+      document.getElementById('goalsCharSummary').classList.toggle('hidden')
     })
     document.querySelectorAll('input[name="filterSlot"]').forEach(cb => cb.addEventListener('change', filterItems))
     document.getElementById('enhanciveSearch').addEventListener('input', filterItems)
