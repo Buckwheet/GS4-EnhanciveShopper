@@ -327,7 +327,7 @@ All HTML is in the template literal in `src/index.ts`. Search for section names,
 
 ### High Priority
 - Tailwind CSS production build (dev CDN ~2MB → purged ~50KB)
-- Intelligent Goal Optimization / Set Builder (see `FUTURE_ENHANCEMENT_DECISION_MATRIX.md`)
+- **Swap Group-Aware Recommendation Engine** (see `DecisionBrain.md` for full logic, `SWAP_GROUP_ENGINE.md` for swap group definitions)
 - Separate filters for item types (worn/weapons/containers)
 
 ### Medium Priority
