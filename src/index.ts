@@ -128,7 +128,41 @@ app.get('/', (c) => {
           <input type="checkbox" id="useAdvancedSkillCalc" class="mr-2">
           <span class="text-sm text-gray-700">Use advanced skill rank calculation</span>
         </label>
+        <button id="advancedSearchToggle" class="text-sm text-blue-600 hover:underline">Advanced Search ▼</button>
         <span id="goalFilterStatus" class="text-sm text-gray-500 hidden"></span>
+      </div>
+      <div id="advancedSearchPanel" class="hidden mt-3 p-3 border rounded bg-gray-50">
+        <label class="font-semibold mb-2 block text-sm">Filter by Slot:</label>
+        <div class="grid grid-cols-4 md:grid-cols-7 gap-1 text-sm">
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="ankle" class="mr-1"> ankle</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="arms" class="mr-1"> arms</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="back" class="mr-1"> back</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="belt" class="mr-1"> belt</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="chest" class="mr-1"> chest</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="cloak" class="mr-1"> cloak</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="ear" class="mr-1"> ear</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="ears" class="mr-1"> ears</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="elsewhere" class="mr-1"> elsewhere</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="feet" class="mr-1"> feet</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="finger" class="mr-1"> finger</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="front" class="mr-1"> front</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="hair" class="mr-1"> hair</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="hands" class="mr-1"> hands</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="head" class="mr-1"> head</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="leggings" class="mr-1"> leggings</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="legs" class="mr-1"> legs</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="neck" class="mr-1"> neck</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="nugget" class="mr-1"> nugget</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="pants" class="mr-1"> pants</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="pin" class="mr-1"> pin</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="shoulder" class="mr-1"> shoulder</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="shoulders" class="mr-1"> shoulders</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="socks" class="mr-1"> socks</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="torso" class="mr-1"> torso</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="undershirt" class="mr-1"> undershirt</label>
+          <label class="flex items-center"><input type="checkbox" name="filterSlot" value="wrist" class="mr-1"> wrist</label>
+        </div>
+        <button id="clearSlotFilters" class="text-xs text-red-600 hover:underline mt-2">Clear all</button>
       </div>
       </div>
     </div>
@@ -2902,6 +2936,16 @@ app.get('/', (c) => {
         if (filterPermanentOnly && !item.is_permanent) return false
         if (filterTown && item.town !== filterTown) return false
         
+        // Advanced search: slot checkboxes
+        const selectedSlots = Array.from(document.querySelectorAll('input[name="filterSlot"]:checked')).map(cb => cb.value)
+        if (selectedSlots.length > 0) {
+          let itemSlot = item.worn || ''
+          if (item.name.toLowerCase().includes('crossbow') || !item.worn || item.worn.trim() === '' || item.worn === 'N/A') {
+            itemSlot = 'nugget'
+          }
+          if (!selectedSlots.includes(itemSlot)) return false
+        }
+        
         // Handle nugget slot filter
         if (filterWorn) {
           let itemSlot = item.worn || ''
@@ -3138,6 +3182,18 @@ app.get('/', (c) => {
     document.getElementById('filterPermanentOnly').addEventListener('change', (e) => {
       filterPermanentOnly = e.target.checked
       localStorage.setItem('filterPermanentOnly', filterPermanentOnly)
+      filterItems()
+    })
+
+    document.getElementById('advancedSearchToggle').addEventListener('click', () => {
+      const panel = document.getElementById('advancedSearchPanel')
+      const btn = document.getElementById('advancedSearchToggle')
+      panel.classList.toggle('hidden')
+      btn.textContent = panel.classList.contains('hidden') ? 'Advanced Search ▼' : 'Advanced Search ▲'
+    })
+    document.querySelectorAll('input[name="filterSlot"]').forEach(cb => cb.addEventListener('change', filterItems))
+    document.getElementById('clearSlotFilters').addEventListener('click', () => {
+      document.querySelectorAll('input[name="filterSlot"]').forEach(cb => cb.checked = false)
       filterItems()
     })
     
