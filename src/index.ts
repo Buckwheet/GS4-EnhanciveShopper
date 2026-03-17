@@ -163,6 +163,11 @@ app.get('/', (c) => {
           <label class="flex items-center"><input type="checkbox" name="filterSlot" value="wrist" class="mr-1"> wrist</label>
         </div>
         <button id="clearSlotFilters" class="text-xs text-red-600 hover:underline mt-2">Clear all</button>
+        <div class="mt-3">
+          <label class="font-semibold mb-1 block text-sm">Enhancive Search:</label>
+          <input type="text" id="enhanciveSearch" placeholder="e.g. lore 10, wisdom 5, mana control" class="border p-2 rounded w-full text-sm">
+          <span class="text-xs text-gray-500">Type ability name and optional min boost</span>
+        </div>
       </div>
       </div>
     </div>
@@ -2944,6 +2949,18 @@ app.get('/', (c) => {
           }
           if (!selectedSlots.includes(itemSlot)) return false
         }
+
+        // Advanced search: enhancive text search (e.g. "lore 10")
+        const enhSearch = document.getElementById('enhanciveSearch').value.trim().toLowerCase()
+        if (enhSearch) {
+          const match = enhSearch.match(/^(.+?) ([0-9]+)$/)
+          const searchTerm = match ? match[1] : enhSearch
+          const minBoost = match ? parseInt(match[2]) : 0
+          try {
+            const enhancives = JSON.parse(item.enhancives_json)
+            if (!enhancives.some(e => e.ability.toLowerCase().includes(searchTerm) && e.boost >= minBoost)) return false
+          } catch { return false }
+        }
         
         // Handle nugget slot filter
         if (filterWorn) {
@@ -3191,6 +3208,7 @@ app.get('/', (c) => {
       btn.textContent = panel.classList.contains('hidden') ? 'Advanced Search ▼' : 'Advanced Search ▲'
     })
     document.querySelectorAll('input[name="filterSlot"]').forEach(cb => cb.addEventListener('change', filterItems))
+    document.getElementById('enhanciveSearch').addEventListener('input', filterItems)
     document.getElementById('clearSlotFilters').addEventListener('click', () => {
       document.querySelectorAll('input[name="filterSlot"]').forEach(cb => cb.checked = false)
       filterItems()
