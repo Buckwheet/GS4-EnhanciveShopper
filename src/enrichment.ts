@@ -1,7 +1,7 @@
 import type { EnhanciveItem } from './types'
 
 // Swap groups: abilities that can be swapped into each other via Sylinara
-const SWAP_GROUPS: Record<string, string[]> = {
+export const SWAP_GROUPS: Record<string, string[]> = {
   'Stat A': ['Strength', 'Wisdom', 'Aura'],
   'Stat B': ['Constitution', 'Dexterity', 'Agility', 'Discipline'],
   'Stat C': ['Logic', 'Intuition', 'Influence'],
@@ -13,7 +13,7 @@ const SWAP_GROUPS: Record<string, string[]> = {
 }
 
 // Reverse lookup: ability name → group name
-const ABILITY_TO_GROUP: Record<string, string> = {}
+export const ABILITY_TO_GROUP: Record<string, string> = {}
 for (const [group, abilities] of Object.entries(SWAP_GROUPS)) {
   for (const ability of abilities) {
     ABILITY_TO_GROUP[ability] = group
@@ -21,7 +21,7 @@ for (const [group, abilities] of Object.entries(SWAP_GROUPS)) {
 }
 
 // Normalize ability name: strip " Bonus", " Ranks", " Base" suffixes
-function normalizeAbility(raw: string): string {
+export function normalizeAbility(raw: string): string {
   return raw.replace(/ (Bonus|Ranks|Base)$/i, '')
 }
 

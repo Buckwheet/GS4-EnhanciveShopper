@@ -7,6 +7,7 @@ import { enrichItems } from './enrichment'
 import { STAT_CAP, SKILL_CAP, SLOT_LIMITS } from './constants'
 import { ranksToBonus } from './parser'
 import { findDirectMatches, findNuggetOpportunities, findSwatchOpportunities, findSimpleSwaps } from './recommendation-engine'
+import { runRecommendation, resolveGoals } from './recommender'
 import type { Env } from './types'
 
 const ADMIN_DISCORD_ID = '411322973920821258'
@@ -3883,6 +3884,68 @@ app.post('/api/test-dm', async (c) => {
     console.error('Test DM error:', error)
     return c.json({ error: String(error) }, 500)
   }
+})
+
+app.get('/api/recommend/:setId', async (c) => {
+  const setId = parseInt(c.req.param('setId'))
+  const alpha = parseFloat(c.req.query('alpha') || '1.5')
+
+  // Load enriched items from R2
+  const obj = await c.env.ITEMS_BUCKET.get('items_enriched.json')
+  if (!obj) return c.json({ error: 'No enriched items in R2. Run scrape first.' }, 500)
+  const enrichedItems = await obj.json() as any[]
+
+  // Load inventory for this set
+  const { results: inventory } = await c.env.DB.prepare(
+    'SELECT enhancives_json, slot, is_locked FROM set_inventory WHERE set_id = ?'
+  ).bind(setId).all()
+
+  // Hardcoded goals for Mejora Hunting set (set_id=4) — phase 1 test
+  // TODO: Replace with DB-driven goals using exact ability names
+  const goalAbilities = setId === 4
+    ? ['Spirit Mana Control', 'Spiritual Lore - Religion', 'Spiritual Lore - Blessings']
+    : []
+
+  if (goalAbilities.length === 0) return c.json({ error: 'No goals configured for this set' }, 400)
+
+  const goals = resolveGoals(goalAbilities)
+
+  // Count available slots: total slots for account type minus locked items
+  // For Mejora: 14 open slots (12 open + 2 free replacements)
+  const availableSlots = setId === 4 ? 14 : 10 // TODO: calculate dynamically
+
+  const start = Date.now()
+  const result = runRecommendation(goals, inventory as any[], enrichedItems, availableSlots, alpha)
+  const duration = Date.now() - start
+
+  // Write to R2
+  await c.env.ITEMS_BUCKET.put(`recommendations/${setId}.json`, JSON.stringify(result), {
+    httpMetadata: { contentType: 'application/json' },
+  })
+
+  // Return summary + picks
+  return c.json({
+    duration_ms: duration,
+    alpha: result.alpha,
+    total_cost: result.total_cost,
+    total_cost_display: (result.total_cost / 1_000_000).toFixed(1) + 'M',
+    fill_pct: result.fill_pct.toFixed(1) + '%',
+    slots_used: result.slots_used,
+    gaps_remaining: result.gaps_remaining,
+    picks: result.picks.map(p => ({
+      name: p.item.name,
+      town: p.item.town,
+      shop: p.item.shop,
+      cost: p.item.cost,
+      slot: p.item.slot,
+      is_permanent: p.item.is_permanent,
+      true_cost: p.true_cost,
+      swap_cost: p.swap_cost,
+      value_score: p.value_score.toFixed(4),
+      contributions: p.contributions,
+      abilities: p.item.abilities,
+    })),
+  })
 })
 
 app.get('/api/debug/enriched', async (c) => {
