@@ -124,7 +124,7 @@ app.get('/', (c) => {
           <input type="checkbox" id="filterPermanentOnly" class="mr-2">
           <span class="text-sm text-gray-700">Only show permanent items</span>
         </label>
-        <label class="flex items-center cursor-pointer">
+        <label class="flex items-center cursor-pointer hidden">
           <input type="checkbox" id="useAdvancedSkillCalc" class="mr-2">
           <span class="text-sm text-gray-700">Use advanced skill rank calculation</span>
         </label>
