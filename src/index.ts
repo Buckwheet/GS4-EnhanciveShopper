@@ -3492,7 +3492,7 @@ app.post('/api/sets/:id/goals', async (c) => {
 
     const result = await c.env.DB.prepare(
       'INSERT INTO set_goals (set_id, stat, min_boost, max_cost, preferred_slots, include_nugget_price, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(setId, stat, min_boost, max_cost || null, preferred_slots || null, include_nugget_price || 0, new Date().toISOString()).run()
+    ).bind(setId, stat, min_boost ?? 0, max_cost || null, preferred_slots || null, include_nugget_price || 0, new Date().toISOString()).run()
 
     return c.json({ success: true, id: result.meta.last_row_id })
   } catch (error) {
