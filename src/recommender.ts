@@ -236,3 +236,12 @@ export function resolveGoals(abilities: string[]): Goal[] {
     target: STATS.has(ability) ? STAT_CAP : SKILL_CAP,
   }))
 }
+
+// Map fuzzy DB goal stat (e.g. "lore", "mana control") to exact ability names
+// Returns all matching abilities from ABILITY_TO_GROUP keys
+export function resolveGoalStat(stat: string): string[] {
+  const lower = stat.toLowerCase()
+  return Object.keys(ABILITY_TO_GROUP).filter(ability =>
+    ability.toLowerCase().includes(lower)
+  )
+}

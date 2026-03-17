@@ -7,7 +7,7 @@ import { enrichItems } from './enrichment'
 import { STAT_CAP, SKILL_CAP, SLOT_LIMITS } from './constants'
 import { ranksToBonus } from './parser'
 import { findDirectMatches, findNuggetOpportunities, findSwatchOpportunities, findSimpleSwaps } from './recommendation-engine'
-import { runRecommendation, resolveGoals } from './recommender'
+import { runRecommendation, resolveGoals, resolveGoalStat } from './recommender'
 import type { Env } from './types'
 
 const ADMIN_DISCORD_ID = '411322973920821258'
@@ -185,7 +185,37 @@ app.get('/', (c) => {
         <div id="addGoalForm" class="hidden mb-4 p-4 border rounded bg-gray-50">
           <h3 class="font-semibold mb-3">Create Alert Goal</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-            <input type="text" id="goalStat" placeholder="Stat (e.g., Strength)" class="border p-2 rounded">
+            <select id="goalStat" class="border p-2 rounded">
+              <option value="">-- Select Ability --</option>
+              <optgroup label="Stats">
+                <option>Strength</option><option>Constitution</option><option>Dexterity</option>
+                <option>Agility</option><option>Discipline</option><option>Aura</option>
+                <option>Logic</option><option>Intuition</option><option>Wisdom</option><option>Influence</option>
+              </optgroup>
+              <optgroup label="Mana Controls">
+                <option>Elemental Mana Control</option><option>Spirit Mana Control</option><option>Mental Mana Control</option>
+              </optgroup>
+              <optgroup label="Lores">
+                <option>Elemental Lore - Air</option><option>Elemental Lore - Earth</option>
+                <option>Elemental Lore - Fire</option><option>Elemental Lore - Water</option>
+                <option>Spiritual Lore - Blessings</option><option>Spiritual Lore - Religion</option>
+                <option>Spiritual Lore - Summoning</option><option>Sorcerous Lore - Demonology</option>
+                <option>Sorcerous Lore - Necromancy</option><option>Mental Lore - Divination</option>
+                <option>Mental Lore - Manipulation</option><option>Mental Lore - Telepathy</option>
+                <option>Mental Lore - Transformation</option>
+              </optgroup>
+              <optgroup label="Weapons">
+                <option>Edged Weapons</option><option>Blunt Weapons</option><option>Ranged Weapons</option>
+                <option>Thrown Weapons</option><option>Polearm Weapons</option><option>Two-Handed Weapons</option>
+                <option>Brawling</option><option>Spell Aiming</option>
+              </optgroup>
+              <optgroup label="Recovery">
+                <option>Mana Recovery</option><option>Stamina Recovery</option><option>Health Recovery</option>
+              </optgroup>
+              <optgroup label="Other">
+                <option>Magic Item Use</option><option>Arcane Symbols</option>
+              </optgroup>
+            </select>
             <input type="number" id="goalBoost" placeholder="Min Boost (e.g., 5)" class="border p-2 rounded">
             <input type="number" id="goalMaxCost" placeholder="Max Cost (optional)" class="border p-2 rounded col-span-2">
           </div>
@@ -3914,19 +3944,24 @@ app.get('/api/recommend/:setId', async (c) => {
     'SELECT enhancives_json, slot, is_locked FROM set_inventory WHERE set_id = ?'
   ).bind(setId).all()
 
-  // Hardcoded goals for Mejora Hunting set (set_id=4) — phase 1 test
-  // TODO: Replace with DB-driven goals using exact ability names
-  const goalAbilities = setId === 4
-    ? ['Spirit Mana Control', 'Spiritual Lore - Religion', 'Spiritual Lore - Blessings']
-    : []
+  // Load goals from DB and resolve fuzzy stat names to exact abilities
+  const { results: dbGoals } = await c.env.DB.prepare(
+    'SELECT stat FROM set_goals WHERE set_id = ?'
+  ).bind(setId).all()
 
-  if (goalAbilities.length === 0) return c.json({ error: 'No goals configured for this set' }, 400)
+  const goalAbilities: string[] = []
+  for (const g of dbGoals) {
+    goalAbilities.push(...resolveGoalStat(g.stat as string))
+  }
+  // Deduplicate
+  const uniqueAbilities = [...new Set(goalAbilities)]
 
-  const goals = resolveGoals(goalAbilities)
+  if (uniqueAbilities.length === 0) return c.json({ error: 'No goals configured for this set' }, 400)
 
-  // Count available slots: total slots for account type minus locked items
-  // For Mejora: 14 open slots (12 open + 2 free replacements)
-  const availableSlots = setId === 4 ? 14 : 10 // TODO: calculate dynamically
+  const goals = resolveGoals(uniqueAbilities)
+
+  // TODO: calculate available slots dynamically
+  const availableSlots = 14
 
   const start = Date.now()
   const result = runRecommendation(goals, inventory as any[], enrichedItems, availableSlots, alpha)
