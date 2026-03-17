@@ -2522,7 +2522,7 @@ app.get('/', (c) => {
       const val = e.target.value
       if (!val) { hint.classList.add('hidden'); return }
       const cap = STAT_ABILITIES.includes(val) ? 40 : 50
-      hint.textContent = 'Default: ' + cap + ' (max enhancive cap)'
+      hint.textContent = 'Leave blank for ' + cap
       hint.classList.remove('hidden')
     })
 
