@@ -217,7 +217,6 @@ app.get('/', (c) => {
               </optgroup>
             </select>
             <input type="number" id="goalBoost" placeholder="Min Boost (leave blank for max)" class="border p-2 rounded">
-            <span id="goalBoostHint" class="text-xs text-gray-500 hidden"></span>
             <input type="number" id="goalMaxCost" placeholder="Max Cost (optional)" class="border p-2 rounded col-span-2">
           </div>
           <div class="mb-3">
@@ -2500,7 +2499,6 @@ app.get('/', (c) => {
       // Clear form for new goal
       document.getElementById('goalStat').value = ''
       document.getElementById('goalBoost').value = ''
-      document.getElementById('goalBoostHint').classList.add('hidden')
       document.getElementById('goalMaxCost').value = ''
       document.querySelectorAll('input[name="goalSlot"]').forEach(cb => cb.checked = false)
       document.getElementById('nuggetPriceOption').classList.add('hidden')
@@ -2518,12 +2516,9 @@ app.get('/', (c) => {
 
     const STAT_ABILITIES = ['Strength','Constitution','Dexterity','Agility','Discipline','Aura','Logic','Intuition','Wisdom','Influence']
     document.getElementById('goalStat').addEventListener('change', (e) => {
-      const hint = document.getElementById('goalBoostHint')
       const val = e.target.value
-      if (!val) { hint.classList.add('hidden'); return }
       const cap = STAT_ABILITIES.includes(val) ? 40 : 50
-      hint.textContent = 'Leave blank for ' + cap
-      hint.classList.remove('hidden')
+      document.getElementById('goalBoost').placeholder = val ? 'Leave blank for ' + cap : 'Min Boost (leave blank for max)'
     })
 
     document.getElementById('goalNuggetCheckbox').addEventListener('change', (e) => {
