@@ -186,6 +186,41 @@ for each round:
   // FREE replacements may change — re-classify next round
 ```
 
+## Cost Penalty Formula: `log10(cost)^alpha`
+
+### Why log10 with alpha exponent
+
+We tested two approaches to penalizing expensive items:
+
+**Option 1: `cost^alpha`** — Failed. The spread between cheap (50K) and expensive (500M) items is too extreme (15x to 631x depending on alpha). This causes the algorithm to obsessively grab cheap +2/+3 junk, burn all slots, then be forced into expensive nuggets anyway. Total cost barely changes.
+
+**Option 2: `log10(cost)^alpha`** — Works. Log compresses the price range first (50K→4.7, 500M→8.7), then alpha stretches or squishes that compressed range. The spread is gentle (1.9x to 3.4x) so the algorithm never goes crazy on junk, but alpha meaningfully changes which items get picked.
+
+### Alpha as User Preference
+
+| Alpha | Label | Spread (500M vs 50K) | Behavior |
+|-------|-------|---------------------|----------|
+| 1.0 | Cash flush | 1.9x | Picks best single item per gap, willing to spend |
+| 1.5 | Balanced | 2.5x | Looks for deals but doesn't obsess |
+| 2.0 | Cash adverse | 3.4x | Finds multi-goal wearables first, nuggets only when forced |
+
+### Mejora Test Results (5 goals, 178 total gap, 17 slots)
+
+| Alpha | Items | Cost | Slots Left | Nuggets |
+|-------|-------|------|------------|---------|
+| 1.0 | 14 | 337M | 3 | 9 |
+| 1.5 | 14 | 290M | 3 | 9 |
+| 2.0 | 13 | 258M | 4 | 8 |
+
+Alpha 2.0 saved 79M over 1.0 by finding cheap multi-goal wearables (1.5M crown for Recovery+10/Weapons+5) instead of expensive single-purpose items (85M full leather for Weapons+24).
+
+### Default: alpha = 1.5 (balanced)
+
+Recommended as the default. Users can adjust via a preference setting:
+- "Budget" = alpha 2.0
+- "Balanced" = alpha 1.5  
+- "Aggressive" = alpha 1.0
+
 ## Unique Item Constraints (Bloodstone Problem)
 
 Some items are mutually exclusive — only one can be active at a time. Example: the oval bloodstone set (barrette, pendant, etc.) all share the same enhancive loadout and only one can be worn. If the user already owns one variant, the engine must filter out all other variants.
