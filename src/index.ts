@@ -2676,8 +2676,8 @@ app.get('/', (c) => {
             bVal = calculateMatchSum(b)
             break
           case 'totalSum':
-            aVal = showUsefulSum ? calculateUsefulSum(a) : calculateTotalSum(a)
-            bVal = showUsefulSum ? calculateUsefulSum(b) : calculateTotalSum(b)
+            aVal = showUsefulSum ? simpleUsefulSum(a) : simpleSum(a)
+            bVal = showUsefulSum ? simpleUsefulSum(b) : simpleSum(b)
             break
           default:
             return 0
@@ -2776,6 +2776,13 @@ app.get('/', (c) => {
       }
     }
     
+    function simpleSum(item) {
+      try { return JSON.parse(item.enhancives_json).reduce((s, e) => s + e.boost, 0) } catch { return 0 }
+    }
+    function simpleUsefulSum(item) {
+      try { return JSON.parse(item.enhancives_json).filter(e => !isUselessAbility(e.ability)).reduce((s, e) => s + e.boost, 0) } catch { return 0 }
+    }
+
     // Calculate total sum of ALL enhancives on an item
     function calculateTotalSum(item) {
       try {
@@ -2930,8 +2937,8 @@ app.get('/', (c) => {
         currentSortColumn = 'totalSum'
         currentSortDirection = 'desc'
         filteredItems.sort((a, b) => {
-          const aSum = showUsefulSum ? calculateUsefulSum(a) : calculateTotalSum(a)
-          const bSum = showUsefulSum ? calculateUsefulSum(b) : calculateTotalSum(b)
+          const aSum = showUsefulSum ? simpleUsefulSum(a) : simpleSum(a)
+          const bSum = showUsefulSum ? simpleUsefulSum(b) : simpleSum(b)
           return bSum - aSum
         })
       } else if (filterByGoalsEnabled && userGoals.length > 0) {
@@ -3008,8 +3015,15 @@ app.get('/', (c) => {
       const matchSum = calculateMatchSum(item)
       const matchSumDisplay = matchSum > 0 ? matchSum : '-'
       
-      const totalSum = calculateTotalSum(item)
-      const usefulSum = calculateUsefulSum(item)
+      let totalSum = 0
+      let usefulSum = 0
+      try {
+        const enhs = JSON.parse(item.enhancives_json)
+        for (const e of enhs) {
+          totalSum += e.boost
+          if (!isUselessAbility(e.ability)) usefulSum += e.boost
+        }
+      } catch {}
       const hasUseless = currentUselessSkills.length > 0 && usefulSum !== totalSum
       const primarySum = (showUsefulSum && hasUseless) ? usefulSum : totalSum
       const totalSumDisplay = primarySum > 0 ? primarySum : '-'
