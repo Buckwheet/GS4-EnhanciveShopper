@@ -4077,14 +4077,15 @@ app.get('/api/recommend/:setId', async (c) => {
   if (!setRow) return c.json({ error: 'Set not found' }, 404)
   const slotLimits = SLOT_LIMITS[setRow.account_type as keyof typeof SLOT_LIMITS] || SLOT_LIMITS['F2P']
   const invSlots = (inventory as any[]).map(i => i.slot).filter(s => s && s !== 'locus' && s !== 'elsewhere')
-  let availableSlots = 0
+  const openSlots: Record<string, number> = {}
   for (const [slot, limit] of Object.entries(slotLimits)) {
     const used = invSlots.filter(s => s === slot).length
-    availableSlots += Math.max(0, limit - used)
+    const open = Math.max(0, limit - used)
+    if (open > 0) openSlots[slot] = open
   }
 
   const start = Date.now()
-  const result = runRecommendation(goals, inventory as any[], enrichedItems, availableSlots, alpha)
+  const result = runRecommendation(goals, inventory as any[], enrichedItems, openSlots, alpha)
   const duration = Date.now() - start
 
   // Write to R2

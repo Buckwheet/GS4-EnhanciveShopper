@@ -34,11 +34,16 @@ export interface Pick {
 // Excluded shops
 const EXCLUDED_SHOPS = new Set(['Yakushi'])
 
+const SWATCH_COST = 25_000_000
+
+// Nugget transmute can produce these slots
+const NUGGET_SLOTS = new Set(['pin', 'head', 'hair', 'single_ear', 'both_ears', 'neck', 'arms', 'wrist', 'fingers', 'waist', 'ankle'])
+
 export function runRecommendation(
   goals: Goal[],
   inventory: { enhancives_json: string; slot: string; is_locked: number }[],
   enrichedItems: EnrichedItem[],
-  availableSlots: number,
+  openSlots: Record<string, number>,
   alpha: number = 1.5,
 ): RecommendationResult {
   // 1. Calculate current boosts from inventory
@@ -72,9 +77,10 @@ export function runRecommendation(
   // 4. Greedy loop
   const picks: Pick[] = []
   const usedIds = new Set<string>()
-  let slotsLeft = availableSlots
+  const slotsAvail = { ...openSlots }
+  const totalOpen = () => Object.values(slotsAvail).reduce((s, v) => s + v, 0)
 
-  while (slotsLeft > 0) {
+  while (totalOpen() > 0) {
     // Check if all gaps are filled
     const totalGap = Object.values(gaps).reduce((s, v) => s + v, 0)
     if (totalGap <= 0) break
@@ -145,13 +151,22 @@ export function runRecommendation(
 
       // Calculate true cost for this item
       let trueCost = item.cost || 0
+      let slotCost = 0
       if (item.is_nugget) {
         trueCost = item.true_costs.nugget
+        // Nugget transmute: check if any transmute-target slot is open (no swatch needed)
+        const hasDirectSlot = [...NUGGET_SLOTS].some(s => (slotsAvail[s] || 0) > 0)
+        if (!hasDirectSlot) slotCost = SWATCH_COST // need swatch after transmute
       } else if (item.is_permanent) {
         trueCost = item.true_costs.wearable_perm
+        const nativeSlot = item.slot || ''
+        if ((slotsAvail[nativeSlot] || 0) <= 0) slotCost = SWATCH_COST
       } else {
         trueCost = item.true_costs.wearable_nonperm
+        const nativeSlot = item.slot || ''
+        if ((slotsAvail[nativeSlot] || 0) <= 0) slotCost = SWATCH_COST
       }
+      trueCost += slotCost
 
       // Add swap costs: for each GROUP this item contributes to, add swap cost once.
       // When multiple goals share a group (e.g. Religion + Blessings), the swap cost
@@ -194,9 +209,28 @@ export function runRecommendation(
 
     if (!bestItem) break
 
-    // Pick this item
+    // Pick this item — consume a slot
     usedIds.add(bestItem.id)
-    slotsLeft--
+
+    // Find best slot to consume: native slot if open, else any open slot
+    const nativeSlot = bestItem.is_nugget ? null : bestItem.slot
+    if (nativeSlot && (slotsAvail[nativeSlot] || 0) > 0) {
+      slotsAvail[nativeSlot]--
+    } else if (bestItem.is_nugget) {
+      // Try a nugget-transmute slot first
+      const directSlot = [...NUGGET_SLOTS].find(s => (slotsAvail[s] || 0) > 0)
+      if (directSlot) {
+        slotsAvail[directSlot]--
+      } else {
+        // Any open slot (swatch needed, already costed)
+        const anySlot = Object.keys(slotsAvail).find(s => slotsAvail[s] > 0)
+        if (anySlot) slotsAvail[anySlot]--
+      }
+    } else {
+      // Wearable needing swatch — any open slot
+      const anySlot = Object.keys(slotsAvail).find(s => slotsAvail[s] > 0)
+      if (anySlot) slotsAvail[anySlot]--
+    }
 
     // Update gaps
     for (const [key, contribution] of Object.entries(bestContributions)) {
