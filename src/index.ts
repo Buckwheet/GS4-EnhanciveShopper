@@ -1064,7 +1064,8 @@ app.get('/', (c) => {
         list.innerHTML = data.goals.map(g => {
           const slots = g.preferred_slots ? ' (slots: ' + g.preferred_slots + ')' : ''
           const cost = g.max_cost ? ' under ' + g.max_cost.toLocaleString() + ' silvers' : ''
-          return '<div class="flex justify-between items-center p-2 border-b"><span>' + g.stat + ' +' + g.min_boost + cost + slots + '</span><div><button onclick="editGoal(' + g.id + ')" class="text-blue-600 hover:underline mr-2">Edit</button><button onclick="deleteGoal(' + g.id + ')" class="text-red-600 hover:underline">Delete</button></div></div>'
+          const boost = g.min_boost || (STAT_ABILITIES.includes(g.stat) ? 40 : 50)
+          return '<div class="flex justify-between items-center p-2 border-b"><span>' + g.stat + ' +' + boost + cost + slots + '</span><div><button onclick="editGoal(' + g.id + ')" class="text-blue-600 hover:underline mr-2">Edit</button><button onclick="deleteGoal(' + g.id + ')" class="text-red-600 hover:underline">Delete</button></div></div>'
         }).join('')
       }
     }
