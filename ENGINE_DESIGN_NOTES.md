@@ -276,6 +276,49 @@ THRESHOLD tuning:
 
 This gives the user the best of both: cheap Recovery/Weapons/Lores items first, then targeted expensive MC items only for what's left.
 
+## Enhancive Swap Service (Sylinara) Cost
+
+The swap service converts one ability to another within the same swap group (e.g., Intuition → Logic). Costs soul shards. For engine purposes, treat soul shards as 1:1 silver — effectively free. No cost adjustment needed for swap group scoring.
+
+The engine already handles this correctly: any ability in a swap group counts toward any goal in that group at full value.
+
+## Missing Feature: Inventory Swap Recommendations
+
+The greedy algorithm currently only considers:
+- Open slots (pure addition)
+- Pre-classified free replacements
+
+It does NOT evaluate whether swapping an existing inventory item for a shop item would produce a net positive. This is a significant gap.
+
+### Example
+Chased platinum bracelet (wrist): +6 Discipline, +6 Elemental MC
+- Discipline is at exactly 40 (cap) — the +6 DIS is critical
+- The +6 EMC contributes to MC goal (16/50)
+- If a shop item exists with +6 DIS and +12 MC for wrist slot, the swap is net +6 MC with zero loss
+
+### Implementation Required
+Each greedy round should evaluate swaps alongside open-slot placements:
+
+```
+for each non-locked inventory item:
+  lostByGroup = item's contributions to each goal group
+  for each shop item that fits this slot:
+    gainedByGroup = shop item's contributions to each goal group
+    
+    // Check safety: would any met goal break?
+    for each goal where current >= target:
+      if current - lost[group] + gained[group] < target:
+        REJECT this swap
+    
+    // Net score = sum of positive net contributions toward gap goals
+    netScore = sum(min(max(0, gained[g] - lost[g]), gap[g]) for each gap goal g)
+    
+    // Compare against best open-slot placement
+    // Pick whichever (open slot or swap) scores highest this round
+```
+
+After a swap is picked, update inventory, recalculate all totals and surpluses.
+
 ## Slot Types Encountered in Shop Data
 - `nugget` — weapon/runestaff, needs nugget service (25M) to wear
 - `neck` — necklace/torc/pendant, wearable
