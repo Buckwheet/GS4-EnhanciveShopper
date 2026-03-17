@@ -246,6 +246,47 @@ export function runRecommendation(
     })
   }
 
+  // 5. Prune: remove redundant picks (worst value first)
+  picks.sort((a, b) => a.value_score - b.value_score)
+  let pruned = true
+  while (pruned) {
+    pruned = false
+    for (let i = 0; i < picks.length; i++) {
+      const remaining = picks.filter((_, j) => j !== i)
+      const groupPoints: Record<string, number> = {}
+      for (const pick of remaining) {
+        for (const [group, total] of Object.entries(pick.item.group_totals)) {
+          groupPoints[group] = (groupPoints[group] || 0) + total
+        }
+      }
+      const allMet = goals.every(g => {
+        const fromInv = currentBoosts[g.ability] || 0
+        const goalsInGroup = goals.filter(gg => gg.group === g.group)
+        const pool = groupPoints[g.group] || 0
+        const totalNeed = goalsInGroup.reduce((s, gg) => s + Math.max(0, gg.target - (currentBoosts[gg.ability] || 0)), 0)
+        const myNeed = Math.max(0, g.target - fromInv)
+        const myShare = totalNeed > 0 ? pool * myNeed / totalNeed : pool
+        return fromInv + myShare >= g.target
+      })
+      if (allMet) {
+        picks.splice(i, 1)
+        pruned = true
+        break
+      }
+    }
+  }
+  picks.sort((a, b) => b.value_score - a.value_score)
+
+  // Recalculate gaps after pruning
+  for (const goal of goals) {
+    gaps[goal.group + ':' + goal.ability] = totalGapInitial[goal.group + ':' + goal.ability]
+  }
+  for (const pick of picks) {
+    for (const [key, c] of Object.entries(pick.contributions)) {
+      if (gaps[key] !== undefined) gaps[key] = Math.max(0, gaps[key] - c)
+    }
+  }
+
   // Calculate summary
   const totalCost = picks.reduce((s, p) => s + p.true_cost, 0)
   const totalInitialGap = Object.values(totalGapInitial).reduce((s, v) => s + v, 0)
