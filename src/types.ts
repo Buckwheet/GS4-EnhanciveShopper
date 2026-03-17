@@ -18,6 +18,7 @@ export interface EnhanciveItem {
 
 export interface Env {
   DB: D1Database
+  ITEMS_BUCKET: R2Bucket
   AI: any
   DISCORD_CLIENT_ID: string
   DISCORD_CLIENT_SECRET: string

@@ -3,6 +3,7 @@ import { cors } from 'hono/cors'
 import { scrapeEnhancives, getLastUpdated } from './scraper'
 import { checkMatches } from './matcher'
 import { sendDiscordDM } from './discord'
+import { enrichItems } from './enrichment'
 import { STAT_CAP, SKILL_CAP, SLOT_LIMITS } from './constants'
 import { ranksToBonus } from './parser'
 import { findDirectMatches, findNuggetOpportunities, findSwatchOpportunities, findSimpleSwaps } from './recommendation-engine'
@@ -3884,6 +3885,28 @@ app.post('/api/test-dm', async (c) => {
   }
 })
 
+app.get('/api/debug/enriched', async (c) => {
+  // Read from R2
+  const obj = await c.env.ITEMS_BUCKET.get('items_enriched.json')
+  if (!obj) {
+    // Generate on the fly from D1
+    const { results } = await c.env.DB.prepare('SELECT * FROM shop_items WHERE available = 1').all()
+    const items = results.map((r: any) => ({
+      id: r.id, name: r.name, town: r.town, shop: r.shop,
+      cost: r.cost, enchant: r.enchant, worn: r.worn,
+      enhancives: JSON.parse(r.enhancives_json || '[]'),
+      is_permanent: !!r.is_permanent,
+    }))
+    const enriched = enrichItems(items)
+    await c.env.ITEMS_BUCKET.put('items_enriched.json', JSON.stringify(enriched), {
+      httpMetadata: { contentType: 'application/json' },
+    })
+    return c.json({ source: 'generated', count: enriched.length, sample: enriched.slice(0, 3) })
+  }
+  const enriched = await obj.json() as any[]
+  return c.json({ source: 'r2', count: enriched.length, sample: enriched.slice(0, 3) })
+})
+
 app.get('/api/debug/alerts', async (c) => {
   const discordId = c.req.query('discord_id')
   if (!discordId) return c.json({ error: 'discord_id required' }, 400)
@@ -4534,6 +4557,13 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
     }
 
     await checkMatches(env, newItems)
+
+    // Enrich all items and write to R2
+    const enriched = enrichItems(items)
+    await env.ITEMS_BUCKET.put('items_enriched.json', JSON.stringify(enriched), {
+      httpMetadata: { contentType: 'application/json' },
+    })
+    console.log(`Wrote ${enriched.length} enriched items to R2`)
 
     await env.DB.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)')
       .bind('last_updated', lastUpdated).run()

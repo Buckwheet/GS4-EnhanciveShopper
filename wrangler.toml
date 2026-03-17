@@ -6,6 +6,10 @@ account_id = "0a33eb8c3f8d91e6eb1e78918b74bf12"
 [triggers]
 crons = ["0 * * * *"]
 
+[[r2_buckets]]
+bucket_name = "enhancive-items"
+binding = "ITEMS_BUCKET"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "enhancive-db"
