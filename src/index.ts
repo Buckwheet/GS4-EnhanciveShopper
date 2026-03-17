@@ -176,8 +176,13 @@ app.get('/', (c) => {
     <div id="goalsSection" class="hidden mb-6">
       <div class="bg-white p-6 rounded-lg shadow-md">
         <div class="flex justify-between items-center mb-4">
-          <h2 class="text-2xl font-semibold">My Alert Goals</h2>
-          <div class="flex gap-2">
+          <h2 class="text-2xl font-semibold cursor-pointer flex items-center gap-2" id="goalsToggle">
+            My Alert Goals
+            <svg id="goalsChevron" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+          </h2>
+          <div class="flex items-center gap-3">
+            <span id="goalsSummary" class="text-sm text-gray-500 hidden"></span>
+            <div class="flex gap-2">
             <button id="myMatchesBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
               My Matches
             </button>
@@ -185,8 +190,10 @@ app.get('/', (c) => {
               🤖 AI Assistant
             </button>
           </div>
+          </div>
         </div>
         
+        <div id="goalsBody">
         <div class="flex gap-2 items-center mb-4">
             <label class="text-sm text-gray-600">Character:</label>
             <select id="characterSelector" class="border p-2 rounded">
@@ -307,6 +314,7 @@ app.get('/', (c) => {
 
         <div id="goalsList" class="space-y-2">
           <p class="text-gray-500">No goals yet. Add one to get started!</p>
+        </div>
         </div>
       </div>
       
@@ -1105,6 +1113,17 @@ app.get('/', (c) => {
           const boost = g.min_boost || (STAT_ABILITIES.includes(g.stat) ? 40 : 50)
           return '<div class="flex justify-between items-center p-2 border-b"><span>' + g.stat + ' +' + boost + cost + slots + '</span><div><button onclick="editGoal(' + g.id + ')" class="text-blue-600 hover:underline mr-2">Edit</button><button onclick="deleteGoal(' + g.id + ')" class="text-red-600 hover:underline">Delete</button></div></div>'
         }).join('')
+      }
+
+      // Update collapsed summary
+      const summary = document.getElementById('goalsSummary')
+      if (data.goals.length === 0) {
+        summary.textContent = 'No goals'
+      } else {
+        summary.textContent = data.goals.map(g => {
+          const boost = g.min_boost || (STAT_ABILITIES.includes(g.stat) ? 40 : 50)
+          return g.stat + ' +' + boost
+        }).join(', ')
       }
     }
 
@@ -3206,6 +3225,15 @@ app.get('/', (c) => {
       const btn = document.getElementById('advancedSearchToggle')
       panel.classList.toggle('hidden')
       btn.textContent = panel.classList.contains('hidden') ? 'Advanced Search ▼' : 'Advanced Search ▲'
+    })
+
+    document.getElementById('goalsToggle').addEventListener('click', () => {
+      const body = document.getElementById('goalsBody')
+      const chevron = document.getElementById('goalsChevron')
+      const summary = document.getElementById('goalsSummary')
+      body.classList.toggle('hidden')
+      chevron.classList.toggle('rotate-180')
+      summary.classList.toggle('hidden')
     })
     document.querySelectorAll('input[name="filterSlot"]').forEach(cb => cb.addEventListener('change', filterItems))
     document.getElementById('enhanciveSearch').addEventListener('input', filterItems)
