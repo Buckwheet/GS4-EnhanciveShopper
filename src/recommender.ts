@@ -246,38 +246,70 @@ export function runRecommendation(
     })
   }
 
+  // Helper: check if a set of picks meets all goals
+  function allGoalsMet(testPicks: Pick[]): boolean {
+    const gp: Record<string, number> = {}
+    for (const pick of testPicks) {
+      for (const [group, total] of Object.entries(pick.item.group_totals)) {
+        gp[group] = (gp[group] || 0) + total
+      }
+    }
+    return goals.every(g => {
+      const fromInv = currentBoosts[g.ability] || 0
+      const goalsInGroup = goals.filter(gg => gg.group === g.group)
+      const pool = gp[g.group] || 0
+      const totalNeed = goalsInGroup.reduce((s, gg) => s + Math.max(0, gg.target - (currentBoosts[gg.ability] || 0)), 0)
+      const myNeed = Math.max(0, g.target - fromInv)
+      const myShare = totalNeed > 0 ? pool * myNeed / totalNeed : pool
+      return fromInv + myShare >= g.target
+    })
+  }
+
   // 5. Prune: remove redundant picks (worst value first)
   picks.sort((a, b) => a.value_score - b.value_score)
   let pruned = true
   while (pruned) {
     pruned = false
     for (let i = 0; i < picks.length; i++) {
-      const remaining = picks.filter((_, j) => j !== i)
-      const groupPoints: Record<string, number> = {}
-      for (const pick of remaining) {
-        for (const [group, total] of Object.entries(pick.item.group_totals)) {
-          groupPoints[group] = (groupPoints[group] || 0) + total
-        }
-      }
-      const allMet = goals.every(g => {
-        const fromInv = currentBoosts[g.ability] || 0
-        const goalsInGroup = goals.filter(gg => gg.group === g.group)
-        const pool = groupPoints[g.group] || 0
-        const totalNeed = goalsInGroup.reduce((s, gg) => s + Math.max(0, gg.target - (currentBoosts[gg.ability] || 0)), 0)
-        const myNeed = Math.max(0, g.target - fromInv)
-        const myShare = totalNeed > 0 ? pool * myNeed / totalNeed : pool
-        return fromInv + myShare >= g.target
-      })
-      if (allMet) {
+      if (allGoalsMet(picks.filter((_, j) => j !== i))) {
         picks.splice(i, 1)
         pruned = true
         break
       }
     }
   }
+
+  // 6. Downgrade: replace expensive picks with cheaper alternatives
+  const pickedIds = new Set(picks.map(p => p.item.id))
+  picks.sort((a, b) => a.value_score - b.value_score) // worst value first
+  for (let i = 0; i < picks.length; i++) {
+    const current = picks[i]
+    // Find cheaper candidates in same groups
+    const currentGroups = new Set(Object.keys(current.item.group_totals))
+    const alternatives = candidates.filter(c =>
+      !pickedIds.has(c.id) &&
+      c.id !== current.item.id &&
+      (c.true_costs.nugget < current.true_cost || c.true_costs.wearable_perm < current.true_cost) &&
+      Object.keys(c.group_totals).some(g => currentGroups.has(g))
+    )
+    // Sort by cheapest
+    alternatives.sort((a, b) => Math.min(a.true_costs.nugget, a.true_costs.wearable_perm) - Math.min(b.true_costs.nugget, b.true_costs.wearable_perm))
+    for (const alt of alternatives) {
+      const testPick: Pick = { item: alt, value_score: 0, true_cost: 0, swap_cost: 0, contributions: {} }
+      const testPicks = picks.map((p, j) => j === i ? testPick : p)
+      if (allGoalsMet(testPicks)) {
+        pickedIds.delete(current.item.id)
+        pickedIds.add(alt.id)
+        // Recalculate true cost for the replacement
+        let tc = alt.is_nugget ? alt.true_costs.nugget : alt.is_permanent ? alt.true_costs.wearable_perm : alt.true_costs.wearable_nonperm
+        picks[i] = { item: alt, value_score: 0, true_cost: tc, swap_cost: 0, contributions: current.contributions }
+        break
+      }
+    }
+  }
   picks.sort((a, b) => b.value_score - a.value_score)
 
-  // Recalculate gaps after pruning using group_totals (same logic as prune check)
+  // Recalculate gaps after pruning/downgrade using group_totals using group_totals (same logic as prune check)
   const finalGroupPoints: Record<string, number> = {}
   for (const pick of picks) {
     for (const [group, total] of Object.entries(pick.item.group_totals)) {
