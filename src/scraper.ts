@@ -36,6 +36,7 @@ export async function scrapeEnhancives(): Promise<EnhanciveItem[]> {
                 cost: details.cost || null,
                 enchant: details.enchant || null,
                 worn: details.worn || null,
+                item_type: details.item_type || null,
                 enhancives: details.enhancives,
                 is_permanent: isPermanent,
               })

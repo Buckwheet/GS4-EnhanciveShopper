@@ -12,6 +12,7 @@ export interface EnhanciveItem {
   cost: number | null
   enchant: number | null
   worn: string | null
+  item_type: string | null
   enhancives: Enhancive[]
   is_permanent: boolean
 }

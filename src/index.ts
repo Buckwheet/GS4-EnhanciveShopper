@@ -4131,6 +4131,7 @@ app.get('/api/debug/enriched', async (c) => {
     const items = results.map((r: any) => ({
       id: r.id, name: r.name, town: r.town, shop: r.shop,
       cost: r.cost, enchant: r.enchant, worn: r.worn,
+      item_type: r.item_type,
       enhancives: JSON.parse(r.enhancives_json || '[]'),
       is_permanent: !!r.is_permanent,
     }))
@@ -4688,8 +4689,8 @@ app.post('/api/scrape', async (c) => {
     
     if (newItems.length > 0) {
       const stmt = c.env.DB.prepare(
-        `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available, is_permanent)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`
+        `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, item_type, enhancives_json, scraped_at, last_seen, available, is_permanent)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`
       )
       
       const batch = newItems.map(item => 
@@ -4701,6 +4702,7 @@ app.post('/api/scrape', async (c) => {
           item.cost,
           item.enchant,
           item.worn,
+          item.item_type,
           JSON.stringify(item.enhancives),
           now,
           now,
@@ -4791,14 +4793,14 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
 
     if (newItems.length > 0) {
       const stmt = env.DB.prepare(
-        `INSERT OR REPLACE INTO shop_items (id, name, town, shop, cost, enchant, worn, enhancives_json, scraped_at, last_seen, available, is_permanent)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`
+        `INSERT OR REPLACE INTO shop_items (id, name, town, shop, cost, enchant, worn, item_type, enhancives_json, scraped_at, last_seen, available, is_permanent)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`
       )
       for (let i = 0; i < newItems.length; i += BATCH_SIZE) {
         const chunk = newItems.slice(i, i + BATCH_SIZE)
         await env.DB.batch(chunk.map(item => stmt.bind(
           item.id, item.name, item.town, item.shop, item.cost,
-          item.enchant, item.worn, JSON.stringify(item.enhancives), now, now, item.is_permanent ? 1 : 0
+          item.enchant, item.worn, item.item_type, JSON.stringify(item.enhancives), now, now, item.is_permanent ? 1 : 0
         )))
       }
     }

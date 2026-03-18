@@ -25,9 +25,6 @@ export function normalizeAbility(raw: string): string {
   return raw.replace(/ (Bonus|Ranks|Base)$/i, '')
 }
 
-// Nugget slots require 25M silver to unlock
-const NUGGET_SLOTS = new Set(['nugget', 'shoulders', 'chest', 'hands', 'feet_on', 'waist'])
-
 const SYLINARA_COST = 10_000_000 // 10M silver per swap
 const NUGGET_COST = 25_000_000
 const PELL_COST = 10_000_000
@@ -61,8 +58,13 @@ export interface EnrichedItem {
 
 function classifySlot(item: EnhanciveItem): { slot: string | null; isNugget: boolean } {
   const worn = item.worn?.toLowerCase() || ''
-  // Weapons, runestaffs, shields, armor → nugget slot
-  if (!worn || worn === 'weapon' || worn === 'shield' || worn === 'armor') {
+  const itemType = item.item_type?.toLowerCase() || ''
+  // Weapons, shields, armor → nugget
+  if (itemType === 'weapon' || itemType === 'shield' || itemType === 'armor') {
+    return { slot: 'nugget', isNugget: true }
+  }
+  // No worn location and no item_type → nugget
+  if (!worn) {
     return { slot: 'nugget', isNugget: true }
   }
   // Map worn location to slot name
@@ -70,7 +72,7 @@ function classifySlot(item: EnhanciveItem): { slot: string | null; isNugget: boo
     'finger': 'fingers', 'ear': 'single_ear',
   }
   const slot = slotMap[worn] || worn
-  return { slot, isNugget: NUGGET_SLOTS.has(slot) }
+  return { slot, isNugget: false }
 }
 
 export function enrichItems(items: EnhanciveItem[]): EnrichedItem[] {
