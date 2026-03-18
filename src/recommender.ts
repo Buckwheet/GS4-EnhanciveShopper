@@ -327,11 +327,13 @@ export function runRecommendation(
     const costed = alternatives.map(alt => ({ alt, cost: calcTrueCost(alt, currentSlot) }))
       .filter(x => x.cost < current.true_cost)
     costed.sort((a, b) => a.cost - b.cost)
+    console.log(`Downgrade candidates for ${current.item.name} (${current.true_cost}): ${costed.slice(0,5).map(x => `${x.alt.name}=${x.cost}`).join(', ')}`)
 
     for (const { alt, cost } of costed) {
       const testPick: Pick = { item: alt, value_score: 0, true_cost: cost, swap_cost: 0, contributions: {} }
       const testPicks = picks.map((p, j) => j === i ? testPick : p)
       if (allGoalsMet(testPicks)) {
+        console.log(`Downgrade: ${current.item.name} (${current.true_cost}) → ${alt.name} (${cost}) slot=${alt.slot}`)
         pickedIds.delete(current.item.id)
         pickedIds.add(alt.id)
         // Update slot tracking
