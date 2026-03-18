@@ -4119,6 +4119,7 @@ app.get('/api/recommend/:setId', async (c) => {
       contributions: p.contributions,
       abilities: p.item.abilities,
     })),
+    debugLog: result.debugLog,
   })
 })
 
