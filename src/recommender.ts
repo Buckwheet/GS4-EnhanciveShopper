@@ -172,8 +172,12 @@ export function runRecommendation(
       if (weightedScore <= 0) continue
 
       // Combo bonus: items hitting multiple unfilled goals save future slots/items
-      const goalsHit = Object.keys(contributions).length
-      const comboMultiplier = 1 + (goalsHit - 1) * 0.25
+      // Only count goals where the item fills >10% of the remaining gap
+      let meaningfulGoals = 0
+      for (const [key, filled] of Object.entries(contributions)) {
+        if (filled / (gaps[key] || 1) > 0.1) meaningfulGoals++
+      }
+      const comboMultiplier = 1 + (meaningfulGoals - 1) * 0.3
 
       // Calculate true cost for this item
       let trueCost = item.cost || 0
