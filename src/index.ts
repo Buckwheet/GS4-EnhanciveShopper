@@ -4676,11 +4676,11 @@ app.post('/api/scrape', async (c) => {
     
     if (existingAvailableItems.length > 0) {
       const updateStmt = c.env.DB.prepare(
-        `UPDATE shop_items SET last_seen = ?, is_permanent = ?, available = 1 WHERE id = ?`
+        `UPDATE shop_items SET last_seen = ?, is_permanent = ?, item_type = ?, available = 1 WHERE id = ?`
       )
       
       const updateBatch = existingAvailableItems.map(item =>
-        updateStmt.bind(now, item.is_permanent ? 1 : 0, item.id)
+        updateStmt.bind(now, item.is_permanent ? 1 : 0, item.item_type, item.id)
       )
       
       await c.env.DB.batch(updateBatch)
