@@ -2477,6 +2477,11 @@ app.get('/', (c) => {
 
       const summary = '<div class="p-3 mb-3 bg-blue-50 rounded text-sm"><strong>' + data.slots_used + ' items</strong> · ' + data.total_cost_display + ' total · ' + data.fill_pct + ' goals filled</div>'
 
+      const rankedPicks = data.picks.map(p => {
+        const pts = Object.values(p.contributions).reduce((s, v) => s + v, 0)
+        return { ...p, pts, ppm: pts / (p.true_cost / 1e6) }
+      }).sort((a, b) => b.ppm - a.ppm)
+
       const renderPick = (p) => {
         const enhText = p.abilities.map(a => '+' + a.boost + ' ' + a.name).join(', ')
         const contribs = Object.entries(p.contributions).map(([k, v]) => k.split(':')[1] + ' +' + v).join(', ')
@@ -2488,14 +2493,15 @@ app.get('/', (c) => {
         const costNote = costs.length ? '<div class="text-xs text-orange-700 mt-1">' + costs.join(' · ') + '</div>' : ''
         const swapNote = p.swap_details && p.swap_details.length ? '<div class="text-xs text-purple-600 mt-1">Swaps: ' + p.swap_details.map(s => s.from + '→' + s.to).join(', ') + '</div>' : ''
         const totalCost = '<span class="font-semibold">' + (p.true_cost / 1e6).toFixed(1) + 'M total</span>'
-        return '<div class="p-3 border rounded bg-white mb-2"><div class="font-semibold">' + p.name + '</div><div class="text-sm text-gray-600">' + p.town + ' · ' + p.shop + ' · ' + (p.cost ? p.cost.toLocaleString() : 'N/A') + ' silvers · ' + (p.slot || 'nugget') + '</div><div class="text-sm text-gray-700">' + enhText + '</div>' + costNote + swapNote + '<div class="text-xs text-green-600 mt-1">Fills: ' + contribs + ' · ' + totalCost + '</div></div>'
+        const ppmBadge = '<span class="ml-2 text-blue-600 font-semibold">' + p.ppm.toFixed(2) + ' pts/M</span>'
+        return '<div class="p-3 border rounded bg-white mb-2"><div class="font-semibold">' + p.name + ppmBadge + '</div><div class="text-sm text-gray-600">' + p.town + ' · ' + p.shop + ' · ' + (p.cost ? p.cost.toLocaleString() : 'N/A') + ' silvers · ' + (p.slot || 'nugget') + '</div><div class="text-sm text-gray-700">' + enhText + '</div>' + costNote + swapNote + '<div class="text-xs text-green-600 mt-1">Fills: ' + contribs + ' · ' + totalCost + '</div></div>'
       }
 
       const direct = data.picks.filter(p => p.slot && p.slot !== 'nugget' && !p.is_permanent === false)
       const nuggets = data.picks.filter(p => !p.slot || p.slot === 'nugget')
       const wearable = data.picks.filter(p => p.slot && p.slot !== 'nugget')
 
-      document.getElementById('availableMatches').innerHTML = summary + data.picks.map(renderPick).join('')
+      document.getElementById('availableMatches').innerHTML = summary + rankedPicks.map(renderPick).join('')
       document.getElementById('directRecList').innerHTML = '<p class="text-gray-500">Coming soon</p>'
       document.getElementById('nuggetRecList').innerHTML = '<p class="text-gray-500">Coming soon</p>'
       document.getElementById('swatchRecList').innerHTML = '<p class="text-gray-500">Coming soon</p>'
