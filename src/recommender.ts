@@ -343,19 +343,29 @@ export function runRecommendation(
   }
   picks.sort((a, b) => b.value_score - a.value_score)
 
-  // Recalculate gaps after pruning/downgrade using per-line assignment
-  const allFinalLines: { name: string; group: string | null; boost: number }[] = []
-  for (const pick of picks) allFinalLines.push(...pick.item.abilities)
+  // Recalculate per-pick contributions and gaps using per-line assignment
   const finalGapMap: Record<string, number> = {}
   for (const goal of goals) {
     const fromInv = currentBoosts[goal.ability] || 0
     finalGapMap[goal.group + ':' + goal.ability] = Math.max(0, goal.target - fromInv)
   }
+  // Assign all lines globally for gap calc
+  const allFinalLines: { name: string; group: string | null; boost: number }[] = []
+  for (const pick of picks) allFinalLines.push(...pick.item.abilities)
   const { contributions: finalContribs } = assignLines(allFinalLines, finalGapMap, goals)
   for (const goal of goals) {
     const key = goal.group + ':' + goal.ability
-    const myNeed = finalGapMap[key]
-    gaps[key] = Math.max(0, myNeed - (finalContribs[key] || 0))
+    gaps[key] = Math.max(0, finalGapMap[key] - (finalContribs[key] || 0))
+  }
+  // Recalculate per-pick contributions
+  const remainingGaps = { ...finalGapMap }
+  for (const pick of picks) {
+    const { contributions, swapCount } = assignLines(pick.item.abilities, remainingGaps, goals)
+    pick.contributions = contributions
+    pick.swap_cost = swapCount * 10_000_000
+    for (const [key, filled] of Object.entries(contributions)) {
+      remainingGaps[key] = Math.max(0, remainingGaps[key] - filled)
+    }
   }
 
   // Calculate summary
