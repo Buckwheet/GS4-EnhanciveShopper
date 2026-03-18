@@ -281,28 +281,54 @@ export function runRecommendation(
 
   // 6. Downgrade: replace expensive picks with cheaper alternatives
   const pickedIds = new Set(picks.map(p => p.item.id))
+  // Track slot usage from current picks
+  const pickSlots: Record<string, number> = {}
+  for (const p of picks) {
+    const s = p.item.is_nugget ? null : p.item.slot
+    if (s && slotsAvail[s] !== undefined) pickSlots[s] = (pickSlots[s] || 0) + 1
+  }
+
+  function calcTrueCost(item: EnrichedItem, excludeSlot?: string | null): number {
+    let tc = item.is_nugget ? item.true_costs.nugget : item.is_permanent ? item.true_costs.wearable_perm : item.true_costs.wearable_nonperm
+    if (item.is_nugget) {
+      const hasSlot = [...NUGGET_SLOTS].some(s => (slotsAvail[s] || 0) - (pickSlots[s] || 0) > 0)
+      if (!hasSlot) tc += SWATCH_COST
+    } else {
+      const nativeSlot = item.slot || ''
+      const avail = (slotsAvail[nativeSlot] || 0) - (pickSlots[nativeSlot] || 0)
+      // If we're replacing a pick that used this slot, free it up
+      const freed = excludeSlot === nativeSlot ? 1 : 0
+      if (avail + freed <= 0) tc += SWATCH_COST
+    }
+    return tc
+  }
+
   picks.sort((a, b) => a.value_score - b.value_score) // worst value first
   for (let i = 0; i < picks.length; i++) {
     const current = picks[i]
-    // Find cheaper candidates in same groups
     const currentGroups = new Set(Object.keys(current.item.group_totals))
+    const currentSlot = current.item.is_nugget ? null : current.item.slot
     const alternatives = candidates.filter(c =>
       !pickedIds.has(c.id) &&
       c.id !== current.item.id &&
-      (c.true_costs.nugget < current.true_cost || c.true_costs.wearable_perm < current.true_cost) &&
       Object.keys(c.group_totals).some(g => currentGroups.has(g))
     )
-    // Sort by cheapest
-    alternatives.sort((a, b) => Math.min(a.true_costs.nugget, a.true_costs.wearable_perm) - Math.min(b.true_costs.nugget, b.true_costs.wearable_perm))
-    for (const alt of alternatives) {
-      const testPick: Pick = { item: alt, value_score: 0, true_cost: 0, swap_cost: 0, contributions: {} }
+    // Calculate actual cost for each alternative and filter/sort by it
+    const costed = alternatives.map(alt => ({ alt, cost: calcTrueCost(alt, currentSlot) }))
+      .filter(x => x.cost < current.true_cost)
+    costed.sort((a, b) => a.cost - b.cost)
+
+    for (const { alt, cost } of costed) {
+      const testPick: Pick = { item: alt, value_score: 0, true_cost: cost, swap_cost: 0, contributions: {} }
       const testPicks = picks.map((p, j) => j === i ? testPick : p)
       if (allGoalsMet(testPicks)) {
         pickedIds.delete(current.item.id)
         pickedIds.add(alt.id)
-        // Recalculate true cost for the replacement
-        let tc = alt.is_nugget ? alt.true_costs.nugget : alt.is_permanent ? alt.true_costs.wearable_perm : alt.true_costs.wearable_nonperm
-        picks[i] = { item: alt, value_score: 0, true_cost: tc, swap_cost: 0, contributions: current.contributions }
+        // Update slot tracking
+        if (currentSlot) pickSlots[currentSlot] = (pickSlots[currentSlot] || 0) - 1
+        const newSlot = alt.is_nugget ? null : alt.slot
+        if (newSlot) pickSlots[newSlot] = (pickSlots[newSlot] || 0) + 1
+        picks[i] = { item: alt, value_score: 0, true_cost: cost, swap_cost: 0, contributions: current.contributions }
         break
       }
     }
