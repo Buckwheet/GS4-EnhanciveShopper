@@ -15,6 +15,7 @@ export interface EnhanciveItem {
   item_type: string | null
   enhancives: Enhancive[]
   is_permanent: boolean
+  is_bloodstone: boolean
 }
 
 export interface Env {

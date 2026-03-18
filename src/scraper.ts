@@ -28,6 +28,7 @@ export async function scrapeEnhancives(): Promise<EnhanciveItem[]> {
             const details = item.details || {}
             if (details.enhancives && Array.isArray(details.enhancives)) {
               const isPermanent = Array.isArray(details.tags) && details.tags.includes('persists')
+              const isBloodstone = Array.isArray(details.raw) && details.raw.some((l: string) => l.includes('infused with the vitality of an Empath'))
               items.push({
                 id: item.id,
                 name: item.name,
@@ -39,6 +40,7 @@ export async function scrapeEnhancives(): Promise<EnhanciveItem[]> {
                 item_type: details.item_type || null,
                 enhancives: details.enhancives,
                 is_permanent: isPermanent,
+                is_bloodstone: isBloodstone,
               })
             }
           }

@@ -4678,11 +4678,11 @@ app.post('/api/scrape', async (c) => {
     
     if (existingAvailableItems.length > 0) {
       const updateStmt = c.env.DB.prepare(
-        `UPDATE shop_items SET last_seen = ?, is_permanent = ?, item_type = ?, available = 1 WHERE id = ?`
+        `UPDATE shop_items SET last_seen = ?, is_permanent = ?, item_type = ?, is_bloodstone = ?, available = 1 WHERE id = ?`
       )
       
       const updateBatch = existingAvailableItems.map(item =>
-        updateStmt.bind(now, item.is_permanent ? 1 : 0, item.item_type, item.id)
+        updateStmt.bind(now, item.is_permanent ? 1 : 0, item.item_type, item.is_bloodstone ? 1 : 0, item.id)
       )
       
       await c.env.DB.batch(updateBatch)
@@ -4691,8 +4691,8 @@ app.post('/api/scrape', async (c) => {
     
     if (newItems.length > 0) {
       const stmt = c.env.DB.prepare(
-        `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, item_type, enhancives_json, scraped_at, last_seen, available, is_permanent)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`
+        `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, item_type, enhancives_json, scraped_at, last_seen, available, is_permanent, is_bloodstone)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
       )
       
       const batch = newItems.map(item => 
@@ -4708,7 +4708,8 @@ app.post('/api/scrape', async (c) => {
           JSON.stringify(item.enhancives),
           now,
           now,
-          item.is_permanent ? 1 : 0
+          item.is_permanent ? 1 : 0,
+          item.is_bloodstone ? 1 : 0
         )
       )
       
@@ -4786,23 +4787,23 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
     const existingAvailableItems = items.filter(item => existingIds.has(item.id))
 
     if (existingAvailableItems.length > 0) {
-      const updateStmt = env.DB.prepare('UPDATE shop_items SET last_seen = ?, is_permanent = ?, item_type = ?, available = 1 WHERE id = ?')
+      const updateStmt = env.DB.prepare('UPDATE shop_items SET last_seen = ?, is_permanent = ?, item_type = ?, is_bloodstone = ?, available = 1 WHERE id = ?')
       for (let i = 0; i < existingAvailableItems.length; i += BATCH_SIZE) {
         const chunk = existingAvailableItems.slice(i, i + BATCH_SIZE)
-        await env.DB.batch(chunk.map(item => updateStmt.bind(now, item.is_permanent ? 1 : 0, item.item_type, item.id)))
+        await env.DB.batch(chunk.map(item => updateStmt.bind(now, item.is_permanent ? 1 : 0, item.item_type, item.is_bloodstone ? 1 : 0, item.id)))
       }
     }
 
     if (newItems.length > 0) {
       const stmt = env.DB.prepare(
-        `INSERT OR REPLACE INTO shop_items (id, name, town, shop, cost, enchant, worn, item_type, enhancives_json, scraped_at, last_seen, available, is_permanent)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)`
+        `INSERT OR REPLACE INTO shop_items (id, name, town, shop, cost, enchant, worn, item_type, enhancives_json, scraped_at, last_seen, available, is_permanent, is_bloodstone)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
       )
       for (let i = 0; i < newItems.length; i += BATCH_SIZE) {
         const chunk = newItems.slice(i, i + BATCH_SIZE)
         await env.DB.batch(chunk.map(item => stmt.bind(
           item.id, item.name, item.town, item.shop, item.cost,
-          item.enchant, item.worn, item.item_type, JSON.stringify(item.enhancives), now, now, item.is_permanent ? 1 : 0
+          item.enchant, item.worn, item.item_type, JSON.stringify(item.enhancives), now, now, item.is_permanent ? 1 : 0, item.is_bloodstone ? 1 : 0
         )))
       }
     }
