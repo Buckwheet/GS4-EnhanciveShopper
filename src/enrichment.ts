@@ -44,6 +44,7 @@ export interface EnrichedItem {
   slot: string | null       // worn slot or "nugget" for weapons/armor
   is_permanent: boolean
   is_nugget: boolean
+  is_bloodstone: boolean
   true_costs: {
     nugget: number
     wearable_perm: number
@@ -125,6 +126,7 @@ export function enrichItems(items: EnhanciveItem[]): EnrichedItem[] {
       slot,
       is_permanent: item.is_permanent,
       is_nugget: isNugget,
+      is_bloodstone: item.is_bloodstone || false,
       true_costs,
       group_totals,
       abilities,

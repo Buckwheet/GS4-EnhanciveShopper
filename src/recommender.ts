@@ -104,6 +104,7 @@ export function runRecommendation(
   enrichedItems: EnrichedItem[],
   openSlots: Record<string, number>,
   alpha: number = 1.5,
+  hasBloodstone: boolean = false,
 ): RecommendationResult {
   // 1. Calculate current boosts from inventory
   const currentBoosts: Record<string, number> = {}
@@ -130,6 +131,7 @@ export function runRecommendation(
   const candidates = enrichedItems.filter(item =>
     item.cost !== null &&
     !EXCLUDED_SHOPS.has(item.shop) &&
+    (!hasBloodstone || !item.is_bloodstone) &&
     Object.keys(item.group_totals).some(g => goalGroups.has(g))
   )
 

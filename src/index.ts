@@ -2181,6 +2181,7 @@ app.get('/', (c) => {
           '<span>Locked (won\\\'t remove)<\/span>',
           '<\/label>',
           isBlocker ? '' : '<label class="flex items-center gap-1 text-xs text-gray-600 cursor-pointer"><input type="checkbox" ' + irrepChecked + ' onchange="toggleIrreplaceable(' + item.id + ', this.checked)" class="cursor-pointer"><span>Irreplaceable<\/span><\/label>',
+          isBlocker ? '' : '<label class="flex items-center gap-1 text-xs text-red-700 cursor-pointer"><input type="checkbox" ' + (item.is_bloodstone ? 'checked' : '') + ' onchange="toggleBloodstone(' + item.id + ', this.checked)" class="cursor-pointer"><span>🩸 Bloodstone<\/span><\/label>',
           '<\/div>',
           '<\/div>',
           '<div class="flex gap-2">',
@@ -2241,6 +2242,20 @@ app.get('/', (c) => {
         await loadInventory()
       } catch (error) {
         console.error('Error toggling locked:', error)
+        alert('Failed to update item')
+      }
+    }
+
+    window.toggleBloodstone = async function(id, isBloodstone) {
+      try {
+        await fetch(API_BASE + '/api/inventory/' + id + '/bloodstone', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_bloodstone: isBloodstone })
+        })
+        await loadInventory()
+      } catch (error) {
+        console.error('Error toggling bloodstone:', error)
         alert('Failed to update item')
       }
     }
@@ -4056,8 +4071,9 @@ app.get('/api/recommend/:setId', async (c) => {
 
   // Load inventory for this set
   const { results: inventory } = await c.env.DB.prepare(
-    'SELECT enhancives_json, slot, is_locked FROM set_inventory WHERE set_id = ?'
+    'SELECT enhancives_json, slot, is_locked, is_bloodstone FROM set_inventory WHERE set_id = ?'
   ).bind(setId).all()
+  const hasBloodstone = (inventory as any[]).some(i => i.is_bloodstone)
 
   // Load goals from DB and resolve fuzzy stat names to exact abilities
   const { results: dbGoals } = await c.env.DB.prepare(
@@ -4089,7 +4105,7 @@ app.get('/api/recommend/:setId', async (c) => {
   }
 
   const start = Date.now()
-  const result = runRecommendation(goals, inventory as any[], enrichedItems, openSlots, alpha)
+  const result = runRecommendation(goals, inventory as any[], enrichedItems, openSlots, alpha, hasBloodstone)
   const duration = Date.now() - start
 
   // Write to R2
@@ -4136,6 +4152,7 @@ app.get('/api/debug/enriched', async (c) => {
       item_type: r.item_type,
       enhancives: JSON.parse(r.enhancives_json || '[]'),
       is_permanent: !!r.is_permanent,
+      is_bloodstone: !!r.is_bloodstone,
     }))
     const enriched = enrichItems(items)
     await c.env.ITEMS_BUCKET.put('items_enriched.json', JSON.stringify(enriched), {
@@ -4302,6 +4319,13 @@ app.put('/api/inventory/:id/locked', async (c) => {
   const id = c.req.param('id')
   const { is_locked } = await c.req.json()
   await c.env.DB.prepare('UPDATE set_inventory SET is_locked = ? WHERE id = ?').bind(is_locked ? 1 : 0, id).run()
+  return c.json({ success: true })
+})
+
+app.put('/api/inventory/:id/bloodstone', async (c) => {
+  const id = c.req.param('id')
+  const { is_bloodstone } = await c.req.json()
+  await c.env.DB.prepare('UPDATE set_inventory SET is_bloodstone = ? WHERE id = ?').bind(is_bloodstone ? 1 : 0, id).run()
   return c.json({ success: true })
 })
 
@@ -4829,8 +4853,9 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
       try {
         const setId = set.id as number
         const { results: inv } = await env.DB.prepare(
-          'SELECT enhancives_json, slot, is_locked FROM set_inventory WHERE set_id = ?'
+          'SELECT enhancives_json, slot, is_locked, is_bloodstone FROM set_inventory WHERE set_id = ?'
         ).bind(setId).all()
+        const hasBloodstone = (inv as any[]).some(i => i.is_bloodstone)
         const { results: dbGoals } = await env.DB.prepare(
           'SELECT stat FROM set_goals WHERE set_id = ?'
         ).bind(setId).all()
@@ -4844,7 +4869,7 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
           const used = invSlots.filter(s => s === slot).length
           if (limit - used > 0) openSlots[slot] = limit - used
         }
-        const result = runRecommendation(goals, inv as any[], enriched, openSlots, (set.alpha as number) || 1.5)
+        const result = runRecommendation(goals, inv as any[], enriched, openSlots, (set.alpha as number) || 1.5, hasBloodstone)
         await env.ITEMS_BUCKET.put(`recommendations/${setId}.json`, JSON.stringify(result), {
           httpMetadata: { contentType: 'application/json' },
         })
