@@ -4602,10 +4602,11 @@ app.get('/api/summary', async (c) => {
         if (!skills[cleanName]) skills[cleanName] = { base: skillRanks[cleanName] || 0, enhancive: 0, total: 0, cap: cap, items: [] }
         if (isRanks) {
           skills[cleanName].enhancive += ranksToBonus(boost, skills[cleanName].base)
+          skills[cleanName].items.push({ name: item.item_name as string, boost: ranksToBonus(boost, skills[cleanName].base) })
         } else {
           skills[cleanName].enhancive += boost
+          skills[cleanName].items.push({ name: item.item_name as string, boost })
         }
-        skills[cleanName].items.push({ name: item.item_name as string, boost: effectiveBoost })
       }
     }
   }
