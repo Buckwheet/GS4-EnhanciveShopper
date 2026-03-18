@@ -29,7 +29,8 @@ export interface Pick {
   value_score: number
   true_cost: number
   swap_cost: number
-  contributions: Record<string, number> // group → how much this pick fills
+  contributions: Record<string, number>
+  swap_details: { from: string; to: string; boost: number }[]
 }
 
 // Excluded shops
@@ -49,9 +50,10 @@ function assignLines(
   abilities: { name: string; group: string | null; boost: number }[],
   gapMap: Record<string, number>,  // "group:ability" → remaining gap
   goalList: Goal[],
-): { contributions: Record<string, number>; swapCount: number } {
+): { contributions: Record<string, number>; swapCount: number; swapDetails: { from: string; to: string; boost: number }[] } {
   const contributions: Record<string, number> = {}
   let swapCount = 0
+  const swapDetails: { from: string; to: string; boost: number }[] = []
 
   // Build lookup: group → list of goal keys with remaining gap
   const goalsByGroup: Record<string, { key: string; ability: string; gap: number }[]> = {}
@@ -92,11 +94,14 @@ function assignLines(
       const filled = Math.min(line.boost, remaining[bestGoal])
       contributions[bestGoal] = (contributions[bestGoal] || 0) + filled
       remaining[bestGoal] -= filled
-      if (line.name !== bestAbility) swapCount++
+      if (line.name !== bestAbility) {
+        swapCount++
+        swapDetails.push({ from: line.name, to: bestAbility, boost: line.boost })
+      }
     }
   }
 
-  return { contributions, swapCount }
+  return { contributions, swapCount, swapDetails }
 }
 
 export function runRecommendation(
@@ -249,6 +254,7 @@ export function runRecommendation(
       true_cost: bestTrueCost,
       swap_cost: bestSwapCost,
       contributions: bestContributions,
+      swap_details: [],
     })
   }
 
@@ -335,7 +341,7 @@ export function runRecommendation(
     debugLog.push(`Downgrade ${current.item.name} (${current.true_cost}): ${costed.length} candidates, top5: ${costed.slice(0,5).map(x => x.alt.name + '=' + x.cost + ' slot=' + x.alt.slot).join(' | ')}`)
 
     for (const { alt, cost } of costed) {
-      const testPick: Pick = { item: alt, value_score: 0, true_cost: cost, swap_cost: 0, contributions: {} }
+      const testPick: Pick = { item: alt, value_score: 0, true_cost: cost, swap_cost: 0, contributions: {}, swap_details: [] }
       const testPicks = picks.map((p, j) => j === i ? testPick : p)
       if (allGoalsMet(testPicks)) {
         console.log(`Downgrade: ${current.item.name} (${current.true_cost}) → ${alt.name} (${cost}) slot=${alt.slot}`)
@@ -345,7 +351,7 @@ export function runRecommendation(
         if (currentSlot) pickSlots[currentSlot] = (pickSlots[currentSlot] || 0) - 1
         const newSlot = alt.is_nugget ? null : alt.slot
         if (newSlot) pickSlots[newSlot] = (pickSlots[newSlot] || 0) + 1
-        picks[i] = { item: alt, value_score: 0, true_cost: cost, swap_cost: 0, contributions: current.contributions }
+        picks[i] = { item: alt, value_score: 0, true_cost: cost, swap_cost: 0, contributions: current.contributions, swap_details: [] }
         break
       }
     }
@@ -370,9 +376,10 @@ export function runRecommendation(
   const remainingGaps = { ...finalGapMap }
   const finalSlots: Record<string, number> = {}
   for (const pick of picks) {
-    const { contributions, swapCount } = assignLines(pick.item.abilities, remainingGaps, goals)
+    const { contributions, swapCount, swapDetails } = assignLines(pick.item.abilities, remainingGaps, goals)
     pick.contributions = contributions
     pick.swap_cost = swapCount * 10_000_000
+    pick.swap_details = swapDetails
     // Recompute true_cost from components
     const item = pick.item
     let base = item.is_nugget ? item.true_costs.nugget : item.is_permanent ? item.true_costs.wearable_perm : item.true_costs.wearable_nonperm

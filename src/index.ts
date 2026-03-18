@@ -2486,8 +2486,9 @@ app.get('/', (c) => {
         if (p.pell_cost > 0) costs.push('Pell: 10M')
         if (p.swap_cost > 0) costs.push('Swap: ' + (p.swap_cost / 1e6).toFixed(0) + 'M (' + (p.swap_cost / 1e7) + 'x)')
         const costNote = costs.length ? '<div class="text-xs text-orange-700 mt-1">' + costs.join(' · ') + '</div>' : ''
+        const swapNote = p.swap_details && p.swap_details.length ? '<div class="text-xs text-purple-600 mt-1">Swaps: ' + p.swap_details.map(s => s.from + '→' + s.to).join(', ') + '</div>' : ''
         const totalCost = '<span class="font-semibold">' + (p.true_cost / 1e6).toFixed(1) + 'M total</span>'
-        return '<div class="p-3 border rounded bg-white mb-2"><div class="font-semibold">' + p.name + '</div><div class="text-sm text-gray-600">' + p.town + ' · ' + p.shop + ' · ' + (p.cost ? p.cost.toLocaleString() : 'N/A') + ' silvers · ' + (p.slot || 'nugget') + '</div><div class="text-sm text-gray-700">' + enhText + '</div>' + costNote + '<div class="text-xs text-green-600 mt-1">Fills: ' + contribs + ' · ' + totalCost + '</div></div>'
+        return '<div class="p-3 border rounded bg-white mb-2"><div class="font-semibold">' + p.name + '</div><div class="text-sm text-gray-600">' + p.town + ' · ' + p.shop + ' · ' + (p.cost ? p.cost.toLocaleString() : 'N/A') + ' silvers · ' + (p.slot || 'nugget') + '</div><div class="text-sm text-gray-700">' + enhText + '</div>' + costNote + swapNote + '<div class="text-xs text-green-600 mt-1">Fills: ' + contribs + ' · ' + totalCost + '</div></div>'
       }
 
       const direct = data.picks.filter(p => p.slot && p.slot !== 'nugget' && !p.is_permanent === false)
@@ -4147,6 +4148,7 @@ app.get('/api/recommend/:setId', async (c) => {
         value_score: p.value_score.toFixed(4),
         contributions: p.contributions,
         abilities: p.item.abilities,
+        swap_details: p.swap_details,
       }
     }),
     debugLog: result.debugLog,
