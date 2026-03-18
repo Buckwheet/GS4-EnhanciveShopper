@@ -3083,6 +3083,11 @@ app.get('/', (c) => {
         return true
       })
       
+      // Hide items where all abilities are useless
+      if (showUsefulSum && currentUselessSkills.length > 0) {
+        filteredItems = filteredItems.filter(item => simpleUsefulSum(item) > 0)
+      }
+
       // Auto-sort
       if (defaultSortTotal) {
         currentSortColumn = 'totalSum'
