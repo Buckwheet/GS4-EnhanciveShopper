@@ -4805,6 +4805,37 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
     })
     console.log(`Wrote ${enriched.length} enriched items to R2`)
 
+    // Regenerate recommendations for all sets with goals
+    const { results: activeSets } = await env.DB.prepare(
+      'SELECT DISTINCT s.id, s.account_type, s.alpha FROM sets s INNER JOIN set_goals sg ON sg.set_id = s.id'
+    ).all()
+    for (const set of activeSets) {
+      try {
+        const setId = set.id as number
+        const { results: inv } = await env.DB.prepare(
+          'SELECT enhancives_json, slot, is_locked FROM set_inventory WHERE set_id = ?'
+        ).bind(setId).all()
+        const { results: dbGoals } = await env.DB.prepare(
+          'SELECT stat FROM set_goals WHERE set_id = ?'
+        ).bind(setId).all()
+        const goalAbilities = [...new Set(dbGoals.flatMap(g => resolveGoalStat(g.stat as string)))]
+        if (goalAbilities.length === 0) continue
+        const goals = resolveGoals(goalAbilities)
+        const slotLimits = SLOT_LIMITS[(set.account_type as string) as keyof typeof SLOT_LIMITS] || SLOT_LIMITS['F2P']
+        const invSlots = (inv as any[]).map(i => i.slot).filter(s => s && s !== 'locus' && s !== 'elsewhere')
+        const openSlots: Record<string, number> = {}
+        for (const [slot, limit] of Object.entries(slotLimits)) {
+          const used = invSlots.filter(s => s === slot).length
+          if (limit - used > 0) openSlots[slot] = limit - used
+        }
+        const result = runRecommendation(goals, inv as any[], enriched, openSlots, (set.alpha as number) || 1.5)
+        await env.ITEMS_BUCKET.put(`recommendations/${setId}.json`, JSON.stringify(result), {
+          httpMetadata: { contentType: 'application/json' },
+        })
+      } catch (e) { console.error(`Failed to regenerate recommendations for set ${set.id}:`, e) }
+    }
+    console.log(`Regenerated recommendations for ${activeSets.length} sets`)
+
     await env.DB.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)')
       .bind('last_updated', lastUpdated).run()
 
