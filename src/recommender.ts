@@ -131,6 +131,7 @@ export function runRecommendation(
 
   // 3. Filter items: available, not excluded, has relevant groups
   const goalGroups = new Set(goals.map(g => g.group))
+  const debugLog: string[] = []
   const candidates = enrichedItems.filter(item =>
     item.cost !== null &&
     !EXCLUDED_SHOPS.has(item.shop) &&
@@ -282,7 +283,6 @@ export function runRecommendation(
   }
 
   // 6. Downgrade: replace expensive picks with cheaper alternatives
-  const debugLog: string[] = []
   const pickedIds = new Set(picks.map(p => p.item.id))
   // Track slot usage from current picks
   const pickSlots: Record<string, number> = {}
