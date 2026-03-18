@@ -744,7 +744,7 @@ app.get('/', (c) => {
     <div id="itemsContainer" class="bg-white rounded-lg shadow-md overflow-hidden hidden">
       <table class="min-w-full table-fixed">
         <colgroup>
-          <col style="width:22%"><col style="width:8%"><col style="width:8%"><col style="width:10%"><col style="width:7%"><col style="width:5%"><col style="width:5%"><col style="width:35%">
+          <col style="width:20%"><col style="width:7%"><col style="width:7%"><col style="width:9%"><col style="width:6%"><col style="width:5%"><col style="width:5%"><col style="width:5%"><col style="width:36%">
         </colgroup>
         <thead class="bg-gray-800 text-white sticky top-0 z-10">
           <tr>
@@ -763,7 +763,7 @@ app.get('/', (c) => {
       <div id="tableScroller" class="overflow-auto" style="max-height: 70vh;">
         <table class="min-w-full table-fixed">
           <colgroup>
-            <col style="width:22%"><col style="width:8%"><col style="width:8%"><col style="width:10%"><col style="width:7%"><col style="width:5%"><col style="width:5%"><col style="width:35%">
+            <col style="width:20%"><col style="width:7%"><col style="width:7%"><col style="width:9%"><col style="width:6%"><col style="width:5%"><col style="width:5%"><col style="width:5%"><col style="width:36%">
           </colgroup>
           <tbody id="itemsTable" class="divide-y divide-gray-200">
           </tbody>
