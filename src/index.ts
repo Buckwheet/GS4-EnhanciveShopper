@@ -2481,9 +2481,13 @@ app.get('/', (c) => {
         const enhText = p.abilities.map(a => '+' + a.boost + ' ' + a.name).join(', ')
         const contribs = Object.entries(p.contributions).map(([k, v]) => k.split(':')[1] + ' +' + v).join(', ')
         const costs = []
-        if (p.swap_cost > 0) costs.push('Swap: ' + (p.swap_cost / 1e6).toFixed(0) + 'M')
-        const costNote = costs.length ? ' · ' + costs.join(', ') : ''
-        return '<div class="p-3 border rounded bg-white mb-2"><div class="font-semibold">' + p.name + '</div><div class="text-sm text-gray-600">' + p.town + ' · ' + p.shop + ' · ' + (p.cost ? p.cost.toLocaleString() : 'N/A') + ' silvers · ' + (p.slot || 'nugget') + costNote + '</div><div class="text-sm text-gray-700">' + enhText + '</div><div class="text-xs text-green-600 mt-1">Fills: ' + contribs + '</div></div>'
+        if (p.nugget_cost > 0) costs.push('Nugget: 25M')
+        if (p.swatch_cost > 0) costs.push('Swatch: 25M')
+        if (p.pell_cost > 0) costs.push('Pell: 10M')
+        if (p.swap_cost > 0) costs.push('Swap: ' + (p.swap_cost / 1e6).toFixed(0) + 'M (' + (p.swap_cost / 1e7) + 'x)')
+        const costNote = costs.length ? '<div class="text-xs text-orange-700 mt-1">' + costs.join(' · ') + '</div>' : ''
+        const totalCost = '<span class="font-semibold">' + (p.true_cost / 1e6).toFixed(1) + 'M total</span>'
+        return '<div class="p-3 border rounded bg-white mb-2"><div class="font-semibold">' + p.name + '</div><div class="text-sm text-gray-600">' + p.town + ' · ' + p.shop + ' · ' + (p.cost ? p.cost.toLocaleString() : 'N/A') + ' silvers · ' + (p.slot || 'nugget') + '</div><div class="text-sm text-gray-700">' + enhText + '</div>' + costNote + '<div class="text-xs text-green-600 mt-1">Fills: ' + contribs + ' · ' + totalCost + '</div></div>'
       }
 
       const direct = data.picks.filter(p => p.slot && p.slot !== 'nugget' && !p.is_permanent === false)
@@ -4122,19 +4126,29 @@ app.get('/api/recommend/:setId', async (c) => {
     fill_pct: result.fill_pct.toFixed(1) + '%',
     slots_used: result.slots_used,
     gaps_remaining: result.gaps_remaining,
-    picks: result.picks.map(p => ({
-      name: p.item.name,
-      town: p.item.town,
-      shop: p.item.shop,
-      cost: p.item.cost,
-      slot: p.item.slot,
-      is_permanent: p.item.is_permanent,
-      true_cost: p.true_cost,
-      swap_cost: p.swap_cost,
-      value_score: p.value_score.toFixed(4),
-      contributions: p.contributions,
-      abilities: p.item.abilities,
-    })),
+    picks: result.picks.map(p => {
+      const baseCost = p.item.cost || 0
+      const nuggetCost = p.item.is_nugget ? 25_000_000 : 0
+      const pellCost = !p.item.is_nugget && !p.item.is_permanent ? 10_000_000 : 0
+      const swatchCost = p.true_cost - baseCost - nuggetCost - pellCost - p.swap_cost
+      return {
+        name: p.item.name,
+        town: p.item.town,
+        shop: p.item.shop,
+        cost: p.item.cost,
+        slot: p.item.slot,
+        is_permanent: p.item.is_permanent,
+        is_nugget: p.item.is_nugget,
+        true_cost: p.true_cost,
+        swap_cost: p.swap_cost,
+        swatch_cost: Math.max(0, swatchCost),
+        nugget_cost: nuggetCost,
+        pell_cost: pellCost,
+        value_score: p.value_score.toFixed(4),
+        contributions: p.contributions,
+        abilities: p.item.abilities,
+      }
+    }),
     debugLog: result.debugLog,
   })
 })
