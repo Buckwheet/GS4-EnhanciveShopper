@@ -328,6 +328,11 @@ export function runRecommendation(
     const costed = alternatives.map(alt => ({ alt, cost: calcTrueCost(alt, currentSlot) }))
       .filter(x => x.cost < current.true_cost)
     costed.sort((a, b) => a.cost - b.cost)
+    // Debug: find the pendant specifically
+    const pendant = alternatives.find(a => a.name.includes('star sapphire pendant'))
+    if (pendant) {
+      debugLog.push(`  pendant found in alternatives: cost=${calcTrueCost(pendant, currentSlot)} is_nugget=${pendant.is_nugget} slot=${pendant.slot} perm=${pendant.is_permanent} true_costs=${JSON.stringify(pendant.true_costs)} swap_costs=${JSON.stringify(pendant.swap_costs)}`)
+    }
     debugLog.push(`Downgrade ${current.item.name} (${current.true_cost}): ${costed.length} candidates, top5: ${costed.slice(0,5).map(x => x.alt.name + '=' + x.cost + ' slot=' + x.alt.slot).join(' | ')}`)
 
     for (const { alt, cost } of costed) {
