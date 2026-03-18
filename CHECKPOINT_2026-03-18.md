@@ -1,4 +1,4 @@
-# CHECKPOINT — 2026-03-18 Session 4
+# CHECKPOINT — 2026-03-18 Session 5
 
 ## OBJECTIVE
 Build a swap-group-aware intelligent recommendation engine for the GS4 Enhancive Shopper (Cloudflare Workers + Hono + D1 + R2). Recommends optimal enhancive item purchases based on goals, inventory, and budget.
@@ -19,79 +19,81 @@ Build a swap-group-aware intelligent recommendation engine for the GS4 Enhancive
 
 ## COMPLETED THIS SESSION
 
-### item_type Classification (Major Fix)
-- **Problem**: Shields/weapons/armor worn on `shoulders` were misclassified as wearables. Engine treated them as swatch-only (25M) instead of nugget-required (25M nugget + 25M swatch).
-- **Source data has `item_type`**: `weapon`, `shield`, `armor`, `jewelry`, `container` — available from shops.elanthia.online
-- Added `item_type` column to `shop_items` table, captured in scraper, backfilled all 5,679 items
-- Updated `classifySlot()` in enrichment to use `item_type` instead of guessing from `worn` field
-- Both scraper code paths (POST `/api/scrape` and scheduled `runScrape`) now write `item_type` on insert AND update
-- Removed stale `NUGGET_SLOTS` set from enrichment.ts (was incorrectly including shoulders, chest, etc.)
+### Per-Line Assignment Model (Major Algorithm Fix)
+- **Problem**: Engine treated swap groups as fungible pools — e.g. an item with +12 Intuition could "split" into +5 Logic and +6 Intuition. In reality, each enhancive line is atomic: the +12 Intuition either stays as Intuition or swaps entirely to Logic/Influence.
+- **Fix**: New `assignLines()` function replaces all pooling logic. For each item, assigns each enhancive line to the best goal (swap or keep), respecting atomic swaps. Lines sorted largest-first, assigned to largest remaining gap.
+- **Replaced in**: greedy contribution calc, `allGoalsMet()` check, final gap recalculation, per-pick contribution display, swap cost calculation.
+- **Result**: Shollindal 81.2M → 77.5M (found better combo). Mejora 483M → 667M → 747M → 977M (honest accounting — no more over-counting shared group contributions).
 
-### Scraper Auto-Regenerates Recommendations
-- After enrichment write, scraper queries all sets with goals where user `last_active` within 30 days
-- Runs `runRecommendation()` for each, writes `recommendations/{setId}.json` to R2
-- R2 write budget: 1,000 sets × 24/day × 30 = 720K/month, well under 1M free tier
+### Stat Bonus 2x Conversion
+- **Problem**: `Discipline Bonus +6` counts as +12 toward the stat enhancive cap (40), but engine treated it as +6. Mejora showed a 4-point Discipline gap that didn't exist (inventory had 42 effective, not 36).
+- **Fix**: Both inventory parsing (recommender) and shop item enrichment detect `Bonus` suffix on stat abilities (groups starting with "Stat") and double the boost value.
+- **Note**: Skill Bonus/Ranks are different — skills don't get doubled. Only stat Bonus items (Stat A/B/C groups).
 
-### User Activity Tracking
-- Added `last_active TEXT` column to `users` table, seeded existing 3 users
-- Updated once per day max via `/api/character-sets` GET: `WHERE last_active IS NULL OR last_active < datetime('now', '-1 day')`
-- `last_login` (existing) = Discord OAuth only; `last_active` (new) = site usage
-- Scraper skips recommendation regen for users inactive >30 days
+### Bloodstone Item Exclusion
+- **Detection**: Scraper checks `details.raw` for `"infused with the vitality of an Empath"` — only reliable marker (name/appearance can be altered).
+- **DB**: `is_bloodstone INTEGER DEFAULT 0` on both `shop_items` and `set_inventory`.
+- **UI**: 🩸 Bloodstone checkbox on every inventory item (manual, user-controlled).
+- **Engine**: When any inventory item in the set has `is_bloodstone=1`, all bloodstone shop items are excluded from candidates.
+- **Rule**: Only one bloodstone item can be active at a time in GemStone IV.
+- 2 bloodstone items found in current shop data (both oval bloodstone pendants).
 
-### Downgrade Pass Improvements
-- **Slot-aware cost calculation**: `calcTrueCost()` now accounts for swatch costs based on actual slot availability and current pick set's slot usage
-- **Swap cost included**: Downgrade alternatives now include Sylinara swap costs in their true cost comparison
-- **NUGGET_SLOTS reordered**: `ankle, waist, arms, hair, head, pin, ear, ears, wrist, fingers, neck` — less-contested slots first so nugget transmutes don't steal slots needed by cheap wearables
-- **Result**: Shollindal's set dropped from 106M → 81.2M (neckchain at 250K replaced 25M nuggetized whip-blade for +2 Discipline)
+### Cost Breakdown Display
+- **Problem**: User saw "Swap: 30M" but couldn't tell a 25M swatch was also hidden in the price. Total cost was opaque.
+- **Fix**: API now returns per-pick: `nugget_cost`, `swatch_cost`, `pell_cost`, `swap_cost`. Frontend shows each as a separate line (orange text).
+- **Fills line** now includes total cost: "Fills: Spell Aiming +10 · 57.0M total"
 
-### Bug Fixes
-- **Blank set selector**: When switching characters, `currentSetId` from previous character didn't exist in new character's sets → blank dropdown. Now checks if current set exists in new set list.
-- **Skill item display**: Summary tooltip showed doubled `effectiveBoost` for Bonus skills instead of raw boost. Items now show actual contribution matching the total.
-- **Two scraper code paths**: `/api/scrape` POST had its own UPDATE statement missing `item_type` — fixed both paths.
+### Final Pass True Cost Recomputation
+- **Problem**: `true_cost` and `contributions` on picks were stale from greedy/downgrade passes. Downgrade copied old item's contributions. Swap costs didn't match final line assignments.
+- **Fix**: After prune/downgrade, final pass recalculates per-pick: contributions via `assignLines`, swap count, and true_cost (base + nugget + pell + swatch + swap) with correct slot availability tracking.
 
-### Debug Tooling
-- `debugLog` array in recommendation result — logs downgrade candidates, costs, slot info
-- `/api/debug/enriched?refresh=1` — force re-enrichment from D1 to R2
+### NUGGET_SLOTS Reorder
+- Reordered to prefer less-contested slots: `ankle, waist, arms, hair, head, pin, single_ear, both_ears, wrist, fingers, neck`
+- Prevents nugget transmutes from stealing slots needed by cheap wearable alternatives.
 
 ## KEY FILES
-- `src/index.ts` (~4700+ lines) — All routes, HTML/CSS/JS frontend, scraper
-- `src/enrichment.ts` — Swap groups, ability normalization, true cost calculation, `classifySlot()` uses `item_type`
-- `src/recommender.ts` — 3-pass algorithm with slot-aware downgrade
-- `src/scraper.ts` — Pulls from shops.elanthia.online, captures `item_type`
-- `src/types.ts` — `EnhanciveItem` includes `item_type: string | null`
+- `src/index.ts` (~4800+ lines) — All routes, HTML/CSS/JS frontend, scraper
+- `src/enrichment.ts` — Swap groups, ability normalization, true cost calc, `classifySlot()`, stat Bonus 2x
+- `src/recommender.ts` — `assignLines()` + 3-pass algorithm with final recomputation
+- `src/scraper.ts` — Pulls from shops.elanthia.online, captures `item_type` + `is_bloodstone`
+- `src/types.ts` — `EnhanciveItem` includes `item_type`, `is_bloodstone`
 - `src/constants.ts` — `SLOT_LIMITS`, `STAT_CAP` (40), `SKILL_CAP` (50)
 
-## D1 SCHEMA
-```sql
-users (id, discord_id, discord_username, email, password_hash, created_at, last_login, notifications_enabled, last_active)
-characters (id, discord_id, character_name, account_type, base_stats, skill_ranks, show_useful_sum, default_sort_total)
-sets (id, character_id, set_name, account_type, alpha REAL DEFAULT 1.5, created_at)
-set_goals (id, set_id, stat TEXT, min_boost INTEGER NOT NULL, max_cost, preferred_slots, include_nugget_price)
-set_inventory (id, set_id, item_name, slot, enhancives_json, is_permanent, is_irreplaceable, is_locked)
-shop_items (id, name, town, shop, cost, enchant, worn, item_type, enhancives_json, scraped_at, last_seen, available, unavailable_since, is_permanent)
-```
-
 ## RECOMMENDATION ENGINE (`src/recommender.ts`)
+
+### `assignLines(abilities, gapMap, goals)`
+Core function. For each swap group with active goals:
+1. Collect item's enhancive lines in that group
+2. Sort lines largest-first
+3. Assign each line to the goal with the largest remaining gap
+4. Track swap count (line assigned to different ability than its native)
+Returns `{ contributions, swapCount }`
+
+### 3-Pass Algorithm
 ```
 Pass 1 (Greedy): Pick best value items until all goals met
   - value = weightedScore / log10(max(trueCost, 1000))^alpha
-  - Per-slot tracking with swatch/nugget costs
-  - Nugget transmute prefers less-contested slots (ankle first, neck last)
+  - Uses assignLines for per-item contribution calc
+  - Nugget transmute prefers less-contested slots
 
 Pass 2 (Prune): Remove redundant picks (worst value first)
-  - allGoalsMet() checks group_totals with proportional gap-based split
+  - allGoalsMet() uses assignLines across ALL picks' lines
 
 Pass 3 (Downgrade): Replace expensive picks with cheaper alternatives
-  - calcTrueCost() includes: base + pell + swatch (slot-aware) + swap costs
-  - Tracks pickSlots to avoid double-counting slot usage
-  - Frees excluded pick's slot when evaluating replacements
+  - calcTrueCost() includes swatch (slot-aware) + swap via assignLines
+
+Final: Recompute all picks
+  - Per-pick contributions via assignLines (sequential, consuming gaps)
+  - Per-pick swap_cost from actual swap count
+  - Per-pick true_cost from base + nugget + pell + swatch + swap
 ```
 
 ## COST MODEL
-- **Nugget**: base + 25M (transmute to jewelry)
-- **Swatch**: +25M (change worn location, needed when native slot full)
+- **Base**: item price from shop
+- **Nugget**: +25M (transmute weapon/armor/shield to jewelry)
+- **Swatch**: +25M (change worn location when native slot full)
 - **Pell**: +10M (make permanent, for non-permanent wearables)
-- **Sylinara swap**: +10M per ability swap within group
+- **Sylinara swap**: +10M per line swapped within group
 - **Nugget transmute targets** (ordered): ankle, waist, arms, hair, head, pin, ear, ears, wrist, fingers, neck
 
 ## SWAP GROUPS
@@ -106,21 +108,33 @@ Recovery: {Mana Recovery, Stamina Recovery, Health Recovery}
 MIU/AS: {Magic Item Use, Arcane Symbols}
 ```
 
+## STAT BONUS MECHANICS
+- Stat items come as Base or Bonus. `Discipline (DIS)` = Base, `Discipline Bonus` = Bonus.
+- For stats: Bonus value × 2 = effective stat contribution toward the 40 cap.
+- For skills: Bonus and Ranks are separate systems (not doubled). Engine currently treats skill Bonus at face value.
+- Enrichment and inventory parsing both apply the 2x for stat Bonus items.
+
 ## TEST RESULTS
-- **Mejora** (set=4, 8 goals, alpha=1.5): 12 items, 483M, 100% fill
-- **Shollindal** (set=14, 4 goals, alpha=1.5): 2 items, 81.2M, 100% fill
-  - razern twohanded sword (nugget, 81M) fills Logic+5, Intuition+6, Discipline+13
-  - opal neckchain (250K, neck slot) fills Discipline+2
+- **Mejora** (set=4, 8 goals, alpha=1.5): 12 items, 977.2M, 100% fill
+- **Shollindal** (set=14, 4 goals, alpha=1.5): 2 items, 77.5M, 100% fill
+
+## DB CHANGES THIS SESSION
+```sql
+ALTER TABLE shop_items ADD COLUMN is_bloodstone INTEGER DEFAULT 0
+ALTER TABLE set_inventory ADD COLUMN is_bloodstone INTEGER DEFAULT 0
+```
 
 ## NEXT STEPS
 1. **Remove debugLog from production** — clean up debug output from API response
-2. **Populate remaining My Matches tabs** — Direct (wearables), Nuggets, Swatches, Swaps
-3. **Bloodstone family exclusion** — only one bloodstone item can be active
-4. **Inventory replacement evaluation** — suggest replacing non-locked items with better alternatives
-5. **Greedy pass also needs slot-aware costing** — currently only downgrade has `calcTrueCost`, greedy uses simpler logic that may pick suboptimal items
+2. **Skill Bonus/Ranks handling** — currently at face value; may need conversion table
+3. **Populate remaining My Matches tabs** — Direct, Nuggets, Swatches, Swaps
+4. **Inventory replacement evaluation** — suggest replacing non-locked items
+5. **Overflow swap suggestions** — "you have +12 Logic but only need +5, consider swapping to Influence"
+6. **Fix broken debug routes** — `debug/alerts` handler missing closing `})`
 
 ## KNOWN ISSUES
-- `debug/alerts` route (~line 3910) missing closing `})`, swallowing routes after it
 - `debugLog` still in API response (remove after debugging complete)
-- Greedy pass slot costing is simpler than downgrade's `calcTrueCost` — may pick expensive nuggets when cheap wearables exist
+- `debug/alerts` route (~line 3910) missing closing `})`, swallowing routes after it
 - Old `/api/my-matches` and `/api/recommendations` endpoints still exist but unused
+- Greedy pass slot costing may still pick suboptimal items that final recompute reveals as expensive (swatch costs appear in final pass that weren't in greedy)
+- Total cost jumped significantly (747M → 977M) when final pass correctly added swatch costs — greedy may need slot-aware costing improvement
