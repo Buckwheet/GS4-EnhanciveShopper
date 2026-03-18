@@ -21,6 +21,7 @@ export interface RecommendationResult {
   fill_pct: number
   slots_used: number
   alpha: number
+  debugLog: string[]
 }
 
 export interface Pick {
