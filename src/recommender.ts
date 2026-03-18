@@ -196,8 +196,6 @@ export function runRecommendation(
 
       const value = weightedScore / Math.pow(Math.log10(Math.max(trueCost, 1000)), alpha)
 
-      if (item.id === '159385') debugLog.push(`FAEWOOD iter${picks.length}: ws=${weightedScore.toFixed(4)} tc=${trueCost} val=${value.toFixed(6)} swaps=${swapCount} contribs=${JSON.stringify(contributions)} gaps=${JSON.stringify(gaps)}`)
-
       if (value > bestValue) {
         bestValue = value
         bestItem = item
@@ -208,8 +206,6 @@ export function runRecommendation(
     }
 
     if (!bestItem) break
-
-    debugLog.push(`Greedy pick ${picks.length}: ${bestItem.name} (${bestItem.id}) val=${bestValue.toFixed(6)} tc=${bestTrueCost} contribs=${JSON.stringify(bestContributions)}`)
 
     // Pick this item — consume a slot
     usedIds.add(bestItem.id)
