@@ -171,6 +171,10 @@ export function runRecommendation(
 
       if (weightedScore <= 0) continue
 
+      // Combo bonus: items hitting multiple unfilled goals save future slots/items
+      const goalsHit = Object.keys(contributions).length
+      const comboMultiplier = 1 + (goalsHit - 1) * 0.25
+
       // Calculate true cost for this item
       let trueCost = item.cost || 0
       let slotCost = 0
@@ -194,7 +198,7 @@ export function runRecommendation(
       const swapCost = swapCount * 10_000_000
       trueCost += swapCost
 
-      const value = weightedScore / Math.pow(Math.log10(Math.max(trueCost, 1000)), alpha)
+      const value = (weightedScore * comboMultiplier) / Math.pow(Math.log10(Math.max(trueCost, 1000)), alpha)
 
       if (value > bestValue) {
         bestValue = value
