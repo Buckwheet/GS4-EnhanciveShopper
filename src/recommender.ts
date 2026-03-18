@@ -111,8 +111,11 @@ export function runRecommendation(
   for (const inv of inventory) {
     const enhs = JSON.parse(inv.enhancives_json || '[]') as { ability: string; boost: number }[]
     for (const e of enhs) {
-      const name = normalizeAbility(e.ability.replace(/ \([A-Z]{3}\)$/, ''))
-      currentBoosts[name] = (currentBoosts[name] || 0) + e.boost
+      const stripped = e.ability.replace(/ \([A-Z]{3}\)$/, '')
+      const isStatBonus = /Bonus$/i.test(stripped) && STATS.has(stripped.replace(/ Bonus$/i, ''))
+      const name = normalizeAbility(stripped)
+      const effective = isStatBonus ? e.boost * 2 : e.boost
+      currentBoosts[name] = (currentBoosts[name] || 0) + effective
     }
   }
 

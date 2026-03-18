@@ -93,14 +93,17 @@ export function enrichItems(items: EnhanciveItem[]): EnrichedItem[] {
     const groupAbilities: Record<string, { name: string; boost: number }[]> = {}
 
     for (const enh of item.enhancives) {
-      const name = normalizeAbility(enh.ability)
+      const raw = enh.ability
+      const name = normalizeAbility(raw)
       const group = ABILITY_TO_GROUP[name] || null
-      abilities.push({ name, group, boost: enh.boost })
+      const isStatBonus = /Bonus$/i.test(raw) && group?.startsWith('Stat')
+      const effective = isStatBonus ? enh.boost * 2 : enh.boost
+      abilities.push({ name, group, boost: effective })
 
       if (group) {
-        group_totals[group] = (group_totals[group] || 0) + enh.boost
+        group_totals[group] = (group_totals[group] || 0) + effective
         if (!groupAbilities[group]) groupAbilities[group] = []
-        groupAbilities[group].push({ name, boost: enh.boost })
+        groupAbilities[group].push({ name, boost: effective })
       }
     }
 
