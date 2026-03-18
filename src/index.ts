@@ -1096,7 +1096,7 @@ app.get('/', (c) => {
           selector.appendChild(opt)
         })
         
-        if (!currentSetId && data.sets.length > 0) {
+        if (!currentSetId || !data.sets.find(s => s.id == currentSetId)) {
           currentSetId = data.sets[0].id
           currentSetName = data.sets[0].set_name
         }
