@@ -384,15 +384,15 @@ export function runRecommendation(
     const item = pick.item
     let base = item.is_nugget ? item.true_costs.nugget : item.is_permanent ? item.true_costs.wearable_perm : item.true_costs.wearable_nonperm
     if (item.is_nugget) {
-      const hasSlot = [...NUGGET_SLOTS].some(s => (slotsAvail[s] || 0) - (finalSlots[s] || 0) > 0)
+      const hasSlot = [...NUGGET_SLOTS].some(s => (openSlots[s] || 0) - (finalSlots[s] || 0) > 0)
       if (!hasSlot) base += SWATCH_COST
     } else {
       const ns = item.slot || ''
-      if ((slotsAvail[ns] || 0) - (finalSlots[ns] || 0) <= 0) base += SWATCH_COST
+      if ((openSlots[ns] || 0) - (finalSlots[ns] || 0) <= 0) base += SWATCH_COST
     }
     pick.true_cost = base + pick.swap_cost
     // Track slot usage
-    const s = item.is_nugget ? [...NUGGET_SLOTS].find(sl => (slotsAvail[sl] || 0) - (finalSlots[sl] || 0) > 0) || '' : (item.slot || '')
+    const s = item.is_nugget ? [...NUGGET_SLOTS].find(sl => (openSlots[sl] || 0) - (finalSlots[sl] || 0) > 0) || '' : (item.slot || '')
     if (s) finalSlots[s] = (finalSlots[s] || 0) + 1
     for (const [key, filled] of Object.entries(contributions)) {
       remainingGaps[key] = Math.max(0, remainingGaps[key] - filled)
