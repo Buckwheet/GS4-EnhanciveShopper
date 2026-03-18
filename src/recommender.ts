@@ -357,12 +357,27 @@ export function runRecommendation(
     const key = goal.group + ':' + goal.ability
     gaps[key] = Math.max(0, finalGapMap[key] - (finalContribs[key] || 0))
   }
-  // Recalculate per-pick contributions
+  // Recalculate per-pick contributions, swap costs, and true costs
   const remainingGaps = { ...finalGapMap }
+  const finalSlots: Record<string, number> = {}
   for (const pick of picks) {
     const { contributions, swapCount } = assignLines(pick.item.abilities, remainingGaps, goals)
     pick.contributions = contributions
     pick.swap_cost = swapCount * 10_000_000
+    // Recompute true_cost from components
+    const item = pick.item
+    let base = item.is_nugget ? item.true_costs.nugget : item.is_permanent ? item.true_costs.wearable_perm : item.true_costs.wearable_nonperm
+    if (item.is_nugget) {
+      const hasSlot = [...NUGGET_SLOTS].some(s => (slotsAvail[s] || 0) - (finalSlots[s] || 0) > 0)
+      if (!hasSlot) base += SWATCH_COST
+    } else {
+      const ns = item.slot || ''
+      if ((slotsAvail[ns] || 0) - (finalSlots[ns] || 0) <= 0) base += SWATCH_COST
+    }
+    pick.true_cost = base + pick.swap_cost
+    // Track slot usage
+    const s = item.is_nugget ? [...NUGGET_SLOTS].find(sl => (slotsAvail[sl] || 0) - (finalSlots[sl] || 0) > 0) || '' : (item.slot || '')
+    if (s) finalSlots[s] = (finalSlots[s] || 0) + 1
     for (const [key, filled] of Object.entries(contributions)) {
       remainingGaps[key] = Math.max(0, remainingGaps[key] - filled)
     }
