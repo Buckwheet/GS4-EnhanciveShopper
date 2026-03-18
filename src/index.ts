@@ -3662,6 +3662,12 @@ app.get('/api/character-sets', async (c) => {
   const discordId = c.req.query('discord_id')
   if (!discordId) return c.json({ error: 'discord_id required' }, 400)
 
+  // Touch last_active at most once per day
+  c.executionCtx.waitUntil(
+    c.env.DB.prepare("UPDATE users SET last_active = ? WHERE discord_id = ? AND (last_active IS NULL OR last_active < datetime('now', '-1 day'))")
+      .bind(new Date().toISOString(), discordId).run()
+  )
+
   const { results: sets } = await c.env.DB.prepare('SELECT * FROM character_sets WHERE discord_id = ?')
     .bind(discordId)
     .all()
@@ -4807,7 +4813,11 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
 
     // Regenerate recommendations for all sets with goals
     const { results: activeSets } = await env.DB.prepare(
-      'SELECT DISTINCT s.id, s.account_type, s.alpha FROM sets s INNER JOIN set_goals sg ON sg.set_id = s.id'
+      `SELECT DISTINCT s.id, s.account_type, s.alpha FROM sets s
+       INNER JOIN set_goals sg ON sg.set_id = s.id
+       INNER JOIN characters ch ON ch.id = s.character_id
+       INNER JOIN users u ON u.discord_id = ch.discord_id
+       WHERE u.last_active > datetime('now', '-30 days')`
     ).all()
     for (const set of activeSets) {
       try {
