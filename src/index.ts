@@ -754,6 +754,7 @@ app.get('/', (c) => {
             <th class="px-4 py-3 text-right cursor-pointer hover:bg-gray-700" onclick="sortItems('cost')">Cost ↕</th>
             <th class="px-4 py-3 text-left cursor-pointer hover:bg-gray-700" onclick="sortItems('slot')">Slot ↕</th>
             <th class="px-4 py-3 text-right cursor-pointer hover:bg-gray-700" onclick="sortItems('matchSum')">Match Sum ↕</th>
+            <th class="px-4 py-3 text-right cursor-pointer hover:bg-gray-700" onclick="sortItems('ppm')">Pts/M ↕</th>
             <th class="px-4 py-3 text-right cursor-pointer hover:bg-gray-700" onclick="sortItems('totalSum')">Total Sum ↕</th>
             <th class="px-4 py-3 text-left">Enhancives</th>
           </tr>
@@ -2795,6 +2796,12 @@ app.get('/', (c) => {
             aVal = calculateMatchSum(a)
             bVal = calculateMatchSum(b)
             break
+          case 'ppm':
+            const aCost = (a.cost || 1) + ((!a.worn || a.worn === 'N/A') ? 25e6 : 0)
+            const bCost = (b.cost || 1) + ((!b.worn || b.worn === 'N/A') ? 25e6 : 0)
+            aVal = calculateMatchSum(a) / (aCost / 1e6)
+            bVal = calculateMatchSum(b) / (bCost / 1e6)
+            break
           case 'totalSum':
             aVal = showUsefulSum ? simpleUsefulSum(a) : simpleSum(a)
             bVal = showUsefulSum ? simpleUsefulSum(b) : simpleSum(b)
@@ -3186,6 +3193,9 @@ app.get('/', (c) => {
       
       const crumbleIcon = !item.is_permanent ? '<span title="Temporary - will crumble">⚠️</span> ' : ''
 
+      const effectiveCost = displayCost || 1
+      const ppm = matchSum > 0 ? (matchSum / (effectiveCost / 1e6)).toFixed(2) : '-'
+
       tr.innerHTML = \`
         <td class="px-4 py-3">\${crumbleIcon}\${item.name}</td>
         <td class="px-4 py-3">\${item.town}</td>
@@ -3193,6 +3203,7 @@ app.get('/', (c) => {
         <td class="px-4 py-3 text-right">\${displayCost ? displayCost.toLocaleString() : 'N/A'}\${costLabel}</td>
         <td class="px-4 py-3">\${displaySlot}</td>
         <td class="px-4 py-3 text-right font-semibold \${matchSum > 0 ? 'text-green-600' : 'text-gray-400'}">\${matchSumDisplay}</td>
+        <td class="px-4 py-3 text-right font-semibold \${matchSum > 0 ? 'text-teal-600' : 'text-gray-400'}">\${ppm}</td>
         <td class="px-4 py-3 text-right font-semibold text-blue-600" title="\${hoverText}">\${totalSumDisplay}</td>
         <td class="px-4 py-3 text-sm">\${enhancivesText}</td>
       \`
