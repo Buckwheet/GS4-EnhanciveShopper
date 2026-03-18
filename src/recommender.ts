@@ -39,6 +39,65 @@ const SWATCH_COST = 25_000_000
 // Nugget transmute can produce these slots
 const NUGGET_SLOTS = new Set(['ankle', 'waist', 'arms', 'hair', 'head', 'pin', 'single_ear', 'both_ears', 'wrist', 'fingers', 'neck'])
 
+/**
+ * Assign each enhancive line on an item to the best goal ability.
+ * Each line is atomic — its full boost goes to one target.
+ * Returns contributions (group:ability → boost filled) and swap count.
+ */
+function assignLines(
+  abilities: { name: string; group: string | null; boost: number }[],
+  gapMap: Record<string, number>,  // "group:ability" → remaining gap
+  goalList: Goal[],
+): { contributions: Record<string, number>; swapCount: number } {
+  const contributions: Record<string, number> = {}
+  let swapCount = 0
+
+  // Build lookup: group → list of goal keys with remaining gap
+  const goalsByGroup: Record<string, { key: string; ability: string; gap: number }[]> = {}
+  for (const g of goalList) {
+    const key = g.group + ':' + g.ability
+    const gap = gapMap[key]
+    if (!gap || gap <= 0) continue
+    if (!goalsByGroup[g.group]) goalsByGroup[g.group] = []
+    goalsByGroup[g.group].push({ key, ability: g.ability, gap })
+  }
+
+  // For each group, assign lines to goals greedily (best fit: line whose boost is closest to gap without going under)
+  for (const [group, groupGoals] of Object.entries(goalsByGroup)) {
+    const lines = abilities.filter(a => a.group === group)
+    if (!lines.length) continue
+
+    // Track remaining gap per goal for this assignment
+    const remaining: Record<string, number> = {}
+    for (const g of groupGoals) remaining[g.key] = g.gap
+
+    // Sort lines largest first — assign big lines to big gaps
+    const sortedLines = [...lines].sort((a, b) => b.boost - a.boost)
+
+    for (const line of sortedLines) {
+      // Find the goal with the largest remaining gap
+      let bestGoal: string | null = null
+      let bestAbility: string | null = null
+      let bestGap = 0
+      for (const g of groupGoals) {
+        if (remaining[g.key] > 0 && remaining[g.key] > bestGap) {
+          bestGap = remaining[g.key]
+          bestGoal = g.key
+          bestAbility = g.ability
+        }
+      }
+      if (!bestGoal || !bestAbility) continue // no gaps left in this group
+
+      const filled = Math.min(line.boost, remaining[bestGoal])
+      contributions[bestGoal] = (contributions[bestGoal] || 0) + filled
+      remaining[bestGoal] -= filled
+      if (line.name !== bestAbility) swapCount++
+    }
+  }
+
+  return { contributions, swapCount }
+}
+
 export function runRecommendation(
   goals: Goal[],
   inventory: { enhancives_json: string; slot: string; is_locked: number }[],
@@ -94,57 +153,13 @@ export function runRecommendation(
     for (const item of candidates) {
       if (usedIds.has(item.id)) continue
 
-      // Calculate contributions to each goal
-      // Key constraint: when multiple goals share a group (e.g. Religion + Blessings
-      // both in Lores), the group's total points must be SPLIT, not double-counted.
-      // Each enhancive can only be swapped to one target ability.
-      const contributions: Record<string, number> = {}
+      // Calculate contributions to each goal using per-line assignment
+      const { contributions, swapCount } = assignLines(item.abilities, gaps, goals)
+
       let weightedScore = 0
-
-      // Group goals by their group to handle shared-group allocation
-      const goalsByGroup: Record<string, { key: string; gap: number }[]> = {}
-      for (const goal of goals) {
-        const key = goal.group + ':' + goal.ability
-        const gap = gaps[key]
-        if (gap <= 0) continue
-        const groupTotal = item.group_totals[goal.group]
-        if (!groupTotal) continue
-        if (!goalsByGroup[goal.group]) goalsByGroup[goal.group] = []
-        goalsByGroup[goal.group].push({ key, gap })
-      }
-
-      for (const [group, groupGoals] of Object.entries(goalsByGroup)) {
-        const pool = item.group_totals[group]
-        if (groupGoals.length === 1) {
-          // Single goal for this group — straightforward
-          const g = groupGoals[0]
-          const contribution = Math.min(pool, g.gap)
-          contributions[g.key] = contribution
-          weightedScore += contribution / g.gap
-        } else {
-          // Multiple goals share this group — allocate proportionally by gap
-          const totalGapInGroup = groupGoals.reduce((s, g) => s + g.gap, 0)
-          let remaining = pool
-          for (const g of groupGoals) {
-            const share = Math.min(Math.floor(pool * g.gap / totalGapInGroup), g.gap, remaining)
-            if (share > 0) {
-              contributions[g.key] = share
-              weightedScore += share / g.gap
-              remaining -= share
-            }
-          }
-          // Distribute any leftover from rounding to first goal with room
-          for (const g of groupGoals) {
-            if (remaining <= 0) break
-            const current = contributions[g.key] || 0
-            const extra = Math.min(remaining, g.gap - current)
-            if (extra > 0) {
-              contributions[g.key] = current + extra
-              weightedScore += extra / g.gap
-              remaining -= extra
-            }
-          }
-        }
+      for (const [key, filled] of Object.entries(contributions)) {
+        const initGap = totalGapInitial[key] || 1
+        weightedScore += filled / initGap
       }
 
       if (weightedScore <= 0) continue
@@ -168,32 +183,8 @@ export function runRecommendation(
       }
       trueCost += slotCost
 
-      // Add swap costs: for each GROUP this item contributes to, add swap cost once.
-      // When multiple goals share a group (e.g. Religion + Blessings), the swap cost
-      // is for the most expensive target (worst case — some enhancives go to each).
-      let swapCost = 0
-      const groupsSeen = new Set<string>()
-      for (const goal of goals) {
-        const key = goal.group + ':' + goal.ability
-        if (!contributions[key]) continue
-        if (groupsSeen.has(goal.group)) continue
-        groupsSeen.add(goal.group)
-        const groupSwapCosts = item.swap_costs[goal.group]
-        if (groupSwapCosts) {
-          // Use the cheapest target's swap cost as baseline (best case allocation)
-          const relevantGoals = goals.filter(g => g.group === goal.group && contributions[g.group + ':' + g.ability])
-          if (relevantGoals.length === 1) {
-            swapCost += groupSwapCosts[relevantGoals[0].ability] || 0
-          } else {
-            // Multiple targets in same group: each enhancive swaps to one target.
-            // Count of enhancives that don't match ANY target = swaps needed.
-            const targetSet = new Set(relevantGoals.map(g => g.ability))
-            const itemAbilities = item.abilities.filter(a => a.group === goal.group)
-            const swapsNeeded = itemAbilities.filter(a => !targetSet.has(a.name)).length
-            swapCost += swapsNeeded * 10_000_000
-          }
-        }
-      }
+      // Swap cost: assignLines already counted exact swaps needed
+      const swapCost = swapCount * 10_000_000
       trueCost += swapCost
 
       const value = weightedScore / Math.pow(Math.log10(Math.max(trueCost, 1000)), alpha)
@@ -246,22 +237,24 @@ export function runRecommendation(
     })
   }
 
-  // Helper: check if a set of picks meets all goals
+  // Helper: check if a set of picks meets all goals using per-line assignment
   function allGoalsMet(testPicks: Pick[]): boolean {
-    const gp: Record<string, number> = {}
+    // Collect all enhancive lines from all picks
+    const allLines: { name: string; group: string | null; boost: number }[] = []
     for (const pick of testPicks) {
-      for (const [group, total] of Object.entries(pick.item.group_totals)) {
-        gp[group] = (gp[group] || 0) + total
-      }
+      allLines.push(...pick.item.abilities)
     }
-    return goals.every(g => {
+    // Build gap map from inventory
+    const gapMap: Record<string, number> = {}
+    for (const g of goals) {
       const fromInv = currentBoosts[g.ability] || 0
-      const goalsInGroup = goals.filter(gg => gg.group === g.group)
-      const pool = gp[g.group] || 0
-      const totalNeed = goalsInGroup.reduce((s, gg) => s + Math.max(0, gg.target - (currentBoosts[gg.ability] || 0)), 0)
-      const myNeed = Math.max(0, g.target - fromInv)
-      const myShare = totalNeed > 0 ? pool * myNeed / totalNeed : pool
-      return fromInv + myShare >= g.target
+      gapMap[g.group + ':' + g.ability] = Math.max(0, g.target - fromInv)
+    }
+    const { contributions } = assignLines(allLines, gapMap, goals)
+    return goals.every(g => {
+      const key = g.group + ':' + g.ability
+      const fromInv = currentBoosts[g.ability] || 0
+      return fromInv + (contributions[key] || 0) >= g.target
     })
   }
 
@@ -300,17 +293,9 @@ export function runRecommendation(
       const freed = excludeSlot === nativeSlot ? 1 : 0
       if (avail + freed <= 0) tc += SWATCH_COST
     }
-    // Add swap costs for goal groups
-    for (const [group, swapTargets] of Object.entries(item.swap_costs)) {
-      if (!goalGroups.has(group)) continue
-      const goalAbilitiesInGroup = goals.filter(g => g.group === group).map(g => g.ability)
-      // Find cheapest swap cost for any goal ability in this group
-      let minSwap = Infinity
-      for (const ab of goalAbilitiesInGroup) {
-        if (swapTargets[ab] !== undefined && swapTargets[ab] < minSwap) minSwap = swapTargets[ab]
-      }
-      if (minSwap < Infinity) tc += minSwap
-    }
+    // Swap cost via per-line assignment against current gaps
+    const { swapCount } = assignLines(item.abilities, gaps, goals)
+    tc += swapCount * 10_000_000
     return tc
   }
 
@@ -353,22 +338,19 @@ export function runRecommendation(
   }
   picks.sort((a, b) => b.value_score - a.value_score)
 
-  // Recalculate gaps after pruning/downgrade using group_totals using group_totals (same logic as prune check)
-  const finalGroupPoints: Record<string, number> = {}
-  for (const pick of picks) {
-    for (const [group, total] of Object.entries(pick.item.group_totals)) {
-      finalGroupPoints[group] = (finalGroupPoints[group] || 0) + total
-    }
+  // Recalculate gaps after pruning/downgrade using per-line assignment
+  const allFinalLines: { name: string; group: string | null; boost: number }[] = []
+  for (const pick of picks) allFinalLines.push(...pick.item.abilities)
+  const finalGapMap: Record<string, number> = {}
+  for (const goal of goals) {
+    const fromInv = currentBoosts[goal.ability] || 0
+    finalGapMap[goal.group + ':' + goal.ability] = Math.max(0, goal.target - fromInv)
   }
+  const { contributions: finalContribs } = assignLines(allFinalLines, finalGapMap, goals)
   for (const goal of goals) {
     const key = goal.group + ':' + goal.ability
-    const fromInv = currentBoosts[goal.ability] || 0
-    const goalsInGroup = goals.filter(g => g.group === goal.group)
-    const pool = finalGroupPoints[goal.group] || 0
-    const totalNeed = goalsInGroup.reduce((s, g) => s + Math.max(0, g.target - (currentBoosts[g.ability] || 0)), 0)
-    const myNeed = Math.max(0, goal.target - fromInv)
-    const myShare = totalNeed > 0 ? pool * myNeed / totalNeed : pool
-    gaps[key] = Math.max(0, myNeed - myShare)
+    const myNeed = finalGapMap[key]
+    gaps[key] = Math.max(0, myNeed - (finalContribs[key] || 0))
   }
 
   // Calculate summary
