@@ -280,6 +280,7 @@ export function runRecommendation(
   }
 
   // 6. Downgrade: replace expensive picks with cheaper alternatives
+  const debugLog: string[] = []
   const pickedIds = new Set(picks.map(p => p.item.id))
   // Track slot usage from current picks
   const pickSlots: Record<string, number> = {}
@@ -327,7 +328,7 @@ export function runRecommendation(
     const costed = alternatives.map(alt => ({ alt, cost: calcTrueCost(alt, currentSlot) }))
       .filter(x => x.cost < current.true_cost)
     costed.sort((a, b) => a.cost - b.cost)
-    console.log(`Downgrade candidates for ${current.item.name} (${current.true_cost}): ${costed.slice(0,5).map(x => `${x.alt.name}=${x.cost}`).join(', ')}`)
+    debugLog.push(`Downgrade ${current.item.name} (${current.true_cost}): ${costed.length} candidates, top5: ${costed.slice(0,5).map(x => x.alt.name + '=' + x.cost + ' slot=' + x.alt.slot).join(' | ')}`)
 
     for (const { alt, cost } of costed) {
       const testPick: Pick = { item: alt, value_score: 0, true_cost: cost, swap_cost: 0, contributions: {} }
@@ -378,6 +379,7 @@ export function runRecommendation(
     fill_pct: fillPct,
     slots_used: picks.length,
     alpha,
+    debugLog,
   }
 }
 
