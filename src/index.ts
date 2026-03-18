@@ -4123,8 +4123,9 @@ app.get('/api/recommend/:setId', async (c) => {
 })
 
 app.get('/api/debug/enriched', async (c) => {
+  const forceRefresh = c.req.query('refresh') === '1'
   // Read from R2
-  const obj = await c.env.ITEMS_BUCKET.get('items_enriched.json')
+  const obj = forceRefresh ? null : await c.env.ITEMS_BUCKET.get('items_enriched.json')
   if (!obj) {
     // Generate on the fly from D1
     const { results } = await c.env.DB.prepare('SELECT * FROM shop_items WHERE available = 1').all()
