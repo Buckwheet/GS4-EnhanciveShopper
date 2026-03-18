@@ -296,9 +296,19 @@ export function runRecommendation(
     } else {
       const nativeSlot = item.slot || ''
       const avail = (slotsAvail[nativeSlot] || 0) - (pickSlots[nativeSlot] || 0)
-      // If we're replacing a pick that used this slot, free it up
       const freed = excludeSlot === nativeSlot ? 1 : 0
       if (avail + freed <= 0) tc += SWATCH_COST
+    }
+    // Add swap costs for goal groups
+    for (const [group, swapTargets] of Object.entries(item.swap_costs)) {
+      if (!goalGroups.has(group)) continue
+      const goalAbilitiesInGroup = goals.filter(g => g.group === group).map(g => g.ability)
+      // Find cheapest swap cost for any goal ability in this group
+      let minSwap = Infinity
+      for (const ab of goalAbilitiesInGroup) {
+        if (swapTargets[ab] !== undefined && swapTargets[ab] < minSwap) minSwap = swapTargets[ab]
+      }
+      if (minSwap < Infinity) tc += minSwap
     }
     return tc
   }
