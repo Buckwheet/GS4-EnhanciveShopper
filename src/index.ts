@@ -4784,10 +4784,10 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
     const existingAvailableItems = items.filter(item => existingIds.has(item.id))
 
     if (existingAvailableItems.length > 0) {
-      const updateStmt = env.DB.prepare('UPDATE shop_items SET last_seen = ?, is_permanent = ?, available = 1 WHERE id = ?')
+      const updateStmt = env.DB.prepare('UPDATE shop_items SET last_seen = ?, is_permanent = ?, item_type = ?, available = 1 WHERE id = ?')
       for (let i = 0; i < existingAvailableItems.length; i += BATCH_SIZE) {
         const chunk = existingAvailableItems.slice(i, i + BATCH_SIZE)
-        await env.DB.batch(chunk.map(item => updateStmt.bind(now, item.is_permanent ? 1 : 0, item.id)))
+        await env.DB.batch(chunk.map(item => updateStmt.bind(now, item.is_permanent ? 1 : 0, item.item_type, item.id)))
       }
     }
 
