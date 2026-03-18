@@ -37,7 +37,7 @@ const EXCLUDED_SHOPS = new Set(['Yakushi'])
 const SWATCH_COST = 25_000_000
 
 // Nugget transmute can produce these slots
-const NUGGET_SLOTS = new Set(['pin', 'head', 'hair', 'single_ear', 'both_ears', 'neck', 'arms', 'wrist', 'fingers', 'waist', 'ankle'])
+const NUGGET_SLOTS = new Set(['ankle', 'waist', 'arms', 'hair', 'head', 'pin', 'single_ear', 'both_ears', 'wrist', 'fingers', 'neck'])
 
 export function runRecommendation(
   goals: Goal[],
