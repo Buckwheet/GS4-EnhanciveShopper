@@ -4829,6 +4829,8 @@ app.post('/api/price-check', async (c) => {
     const permMatch = parsed.is_permanent === !!(item.is_permanent)
     comparables.push({
       name: item.name, shop: item.shop, cost: item.cost as number,
+      worn: item.worn, item_type: item.item_type,
+      enhancives: enh,
       matching_points: matchPts, total_points: totalPts,
       is_permanent: !!(item.is_permanent), perm_match: permMatch,
       cost_per_match_point: Math.round((item.cost as number) / matchPts),
@@ -4936,7 +4938,7 @@ app.get('/pricing', (c) => {
       <div class="bg-white rounded-lg shadow p-6 mb-4">
         <h2 class="text-lg font-semibold mb-2">Market Comparables (<span id="compCount">0</span>)</h2>
         <div class="overflow-x-auto"><table class="w-full text-sm">
-          <thead><tr class="border-b"><th class="text-left p-1">Item</th><th class="text-left p-1">Shop</th><th class="text-right p-1">Cost</th><th class="text-right p-1">Match Pts</th><th class="text-right p-1">Cost/Pt</th><th class="text-center p-1">Perm</th></tr></thead>
+          <thead><tr class="border-b"><th class="text-left p-1">Item</th><th class="text-left p-1">Shop</th><th class="text-left p-1">Slot</th><th class="text-right p-1">Cost</th><th class="text-right p-1">Match</th><th class="text-right p-1">Total</th><th class="text-right p-1">Cost/Pt</th><th class="text-center p-1">Perm</th><th class="text-left p-1">Enhancives</th></tr></thead>
           <tbody id="compTable"></tbody>
         </table></div>
       </div>
@@ -5024,10 +5026,17 @@ document.getElementById('priceBtn').addEventListener('click', async () => {
   // Comparables table
   document.getElementById('compCount').textContent = data.comparables.length;
   document.getElementById('compTable').innerHTML = data.comparables.map(function(c) {
+    var enhStr = c.enhancives.map(function(e) {
+      var isMatch = data.parsed.enhancives.some(function(pe) { return pe.ability === e.ability; });
+      return '<span class="' + (isMatch ? 'text-green-700 font-semibold' : 'text-gray-500') + '">+' + e.boost + ' ' + e.ability.replace(' Bonus','') + '</span>';
+    }).join(', ');
     return '<tr class="border-b' + (c.perm_match ? '' : ' opacity-50') + '"><td class="p-1">' + c.name +
-      '</td><td class="p-1">' + c.shop + '</td><td class="p-1 text-right">' + fmt(c.cost) +
-      '</td><td class="p-1 text-right">' + c.matching_points + '</td><td class="p-1 text-right">' +
-      fmt(c.cost_per_match_point) + '</td><td class="p-1 text-center">' + (c.is_permanent ? 'Y' : 'N') + '</td></tr>';
+      '</td><td class="p-1">' + c.shop + '</td><td class="p-1">' + (c.worn || '-') +
+      '</td><td class="p-1 text-right">' + fmt(c.cost) +
+      '</td><td class="p-1 text-right">' + c.matching_points + '</td><td class="p-1 text-right">' + c.total_points +
+      '</td><td class="p-1 text-right">' + fmt(c.cost_per_match_point) +
+      '</td><td class="p-1 text-center">' + (c.is_permanent ? 'Y' : 'N') +
+      '</td><td class="p-1 text-xs">' + enhStr + '</td></tr>';
   }).join('');
 
   // Sales
