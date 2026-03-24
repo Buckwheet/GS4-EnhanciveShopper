@@ -5234,6 +5234,15 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
             httpMetadata: { contentType: 'application/json' },
           })
           console.log(`Exported ${newSales.length} new sales to R2 (${merged.length} total)`)
+
+          // Milestone reminders for pricing algorithm
+          const milestones = [50, 100, 200, 300]
+          for (const m of milestones) {
+            if (prev.length < m && merged.length >= m) {
+              await sendDiscordDM(env.DISCORD_BOT_TOKEN, ADMIN_DISCORD_ID,
+                `📊 **Pricing Algorithm Reminder**\nYou've hit **${m} sales** logged. ${m >= 200 ? 'Time to revisit the pricing algorithm!' : 'Data is building up — getting closer to having enough for a real pricing model.'}\n\nCheck it out: https://gs4-enhancive-shopper.rpgfilms.workers.dev/pricing`)
+            }
+          }
         }
       } catch (e) { console.error('Failed to export sales log to R2:', e) }
     }
