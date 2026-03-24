@@ -5220,6 +5220,24 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
     }
     console.log(`Regenerated recommendations for ${activeSets.length} sets`)
 
+    // Export sales log to R2 (append-style: read existing, merge, write back)
+    if (itemsRemoved > 0) {
+      try {
+        const existing = await env.ITEMS_BUCKET.get('sales_log.json')
+        const prev: any[] = existing ? await existing.json() : []
+        const { results: newSales } = await env.DB.prepare(
+          'SELECT * FROM sales_log WHERE sold_at >= ? ORDER BY sold_at DESC'
+        ).bind(now).all()
+        if (newSales.length > 0) {
+          const merged = [...newSales, ...prev]
+          await env.ITEMS_BUCKET.put('sales_log.json', JSON.stringify(merged), {
+            httpMetadata: { contentType: 'application/json' },
+          })
+          console.log(`Exported ${newSales.length} new sales to R2 (${merged.length} total)`)
+        }
+      } catch (e) { console.error('Failed to export sales log to R2:', e) }
+    }
+
     await env.DB.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)')
       .bind('last_updated', lastUpdated).run()
 
