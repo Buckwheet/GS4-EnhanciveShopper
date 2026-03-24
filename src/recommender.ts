@@ -311,8 +311,13 @@ export function runRecommendation(
       const freed = excludeSlot === nativeSlot ? 1 : 0
       if (avail + freed <= 0) tc += SWATCH_COST
     }
-    // Swap cost via per-line assignment against current gaps
-    const { swapCount } = assignLines(item.abilities, gaps, goals)
+    // Swap cost via per-line assignment against original gaps (not depleted)
+    const origGaps: Record<string, number> = {}
+    for (const goal of goals) {
+      const fromInv = currentBoosts[goal.ability] || 0
+      origGaps[goal.group + ':' + goal.ability] = Math.max(0, goal.target - fromInv)
+    }
+    const { swapCount } = assignLines(item.abilities, origGaps, goals)
     tc += swapCount * 10_000_000
     return tc
   }
