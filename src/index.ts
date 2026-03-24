@@ -4806,23 +4806,32 @@ app.post('/api/scrape', async (c) => {
 // ── Pricing Tool (admin only) ──
 
 app.post('/api/price-check', async (c) => {
-  const { discord_id, text } = await c.req.json()
+  const { discord_id, text, focus } = await c.req.json()
   if (discord_id !== ADMIN_DISCORD_ID) return c.json({ error: 'Unauthorized' }, 403)
 
   const parsed = parseItemText(text)
   if (parsed.enhancives.length === 0) return c.json({ error: 'No enhancives found in text', parsed })
 
-  // Find comparable items: same abilities (by name) in the market
-  const abilityNames = parsed.enhancives.map(e => e.ability)
+  // If focus provided, only match on those abilities; otherwise all
+  const focusAbilities: { ability: string; boost: number }[] = focus && focus.length > 0
+    ? parsed.enhancives.filter((e: any) => focus.includes(e.ability))
+    : parsed.enhancives
+  const focusNames = focusAbilities.map((e: any) => e.ability)
+  const focusPoints = focusAbilities.reduce((s: number, e: any) => s + e.boost, 0)
+
   const { results: allItems } = await c.env.DB.prepare(
     'SELECT name, shop, cost, worn, item_type, is_permanent, enhancives_json FROM shop_items WHERE available = 1'
   ).all()
 
+  const FUZZ = 3
   const comparables: any[] = []
   for (const item of allItems) {
     const enh = JSON.parse((item.enhancives_json as string) || '[]')
-    // Check if item has ANY of the same abilities
-    const matching = enh.filter((e: any) => abilityNames.includes(e.ability))
+    // Match items that have at least one focus ability within ±FUZZ boost
+    const matching = enh.filter((e: any) => {
+      const fa = focusAbilities.find((f: any) => f.ability === e.ability)
+      return fa && Math.abs(e.boost - fa.boost) <= FUZZ
+    })
     if (matching.length === 0) continue
     const matchPts = matching.reduce((s: number, e: any) => s + e.boost, 0)
     const totalPts = enh.reduce((s: number, e: any) => s + e.boost, 0)
@@ -4837,7 +4846,6 @@ app.post('/api/price-check', async (c) => {
     })
   }
 
-  // Also check sales history
   const { results: salesItems } = await c.env.DB.prepare(
     'SELECT item_name, shop, cost, is_permanent, enhancives_json, sold_at, days_listed FROM sales_log'
   ).all()
@@ -4845,7 +4853,10 @@ app.post('/api/price-check', async (c) => {
   const sales: any[] = []
   for (const item of salesItems) {
     const enh = JSON.parse((item.enhancives_json as string) || '[]')
-    const matching = enh.filter((e: any) => abilityNames.includes(e.ability))
+    const matching = enh.filter((e: any) => {
+      const fa = focusAbilities.find((f: any) => f.ability === e.ability)
+      return fa && Math.abs(e.boost - fa.boost) <= FUZZ
+    })
     if (matching.length === 0) continue
     const matchPts = matching.reduce((s: number, e: any) => s + e.boost, 0)
     sales.push({
@@ -4877,10 +4888,10 @@ app.post('/api/price-check', async (c) => {
       p90_cpp,
     }
     // Suggested price = p90 cost-per-point × your item's matching points
-    suggested_price = p90_cpp * parsed.total_points
+    suggested_price = p90_cpp * focusPoints
   }
 
-  return c.json({ parsed, comparables: comparables.slice(0, 50), sales: sales.slice(0, 20), market_stats, suggested_price })
+  return c.json({ parsed, focus: focusNames, focus_points: focusPoints, comparables: comparables.slice(0, 50), sales: sales.slice(0, 20), market_stats, suggested_price })
 })
 
 app.get('/api/price-check/my-items', async (c) => {
@@ -4993,23 +5004,43 @@ function fmt(n) { return n ? n.toLocaleString() : '0'; }
 document.getElementById('priceBtn').addEventListener('click', async () => {
   const text = document.getElementById('itemText').value;
   if (!text.trim()) return;
+  // First pass: all abilities selected
+  await runPriceCheck(text, null);
+});
+
+async function runPriceCheck(text, focus) {
+  const body = { discord_id: currentUser.id, text };
+  if (focus) body.focus = focus;
   const res = await fetch(API + '/api/price-check', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ discord_id: currentUser.id, text })
+    body: JSON.stringify(body)
   });
   const data = await res.json();
   if (data.error) { alert(data.error); return; }
 
   document.getElementById('results').classList.remove('hidden');
 
-  // Parsed info
+  // Parsed info with focus checkboxes
   const p = data.parsed;
+  const focusSet = data.focus || p.enhancives.map(function(e) { return e.ability; });
   document.getElementById('parsedInfo').innerHTML =
     '<p><b>Name:</b> ' + (p.name || 'Unknown') + '</p>' +
     '<p><b>Type:</b> ' + (p.item_type || 'Unknown') + ' | <b>Permanent:</b> ' + (p.is_permanent ? 'Yes' : 'No') + '</p>' +
-    '<p><b>Enhancives:</b></p><ul class="ml-4 list-disc">' +
-    p.enhancives.map(function(e) { return '<li>+' + e.boost + ' ' + e.ability + '</li>'; }).join('') +
-    '</ul><p class="mt-1"><b>Total points:</b> ' + p.total_points + '</p>';
+    '<p class="mt-2"><b>Price based on:</b> <span class="text-xs text-gray-500">(uncheck junk abilities, comparables match ±3 boost)</span></p>' +
+    '<div class="ml-2 mt-1">' + p.enhancives.map(function(e) {
+      var checked = focusSet.indexOf(e.ability) >= 0 ? ' checked' : '';
+      return '<label class="flex items-center gap-2 mb-1"><input type="checkbox" class="focusCb" value="' + e.ability + '"' + checked + '><span>+' + e.boost + ' ' + e.ability + '</span></label>';
+    }).join('') + '</div>' +
+    '<button id="refocusBtn" class="mt-2 bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700">Re-price with selection</button>' +
+    '<p class="mt-1 text-sm"><b>Focus points:</b> ' + data.focus_points + ' of ' + p.total_points + ' total</p>';
+
+  document.getElementById('parsedInfo').querySelector('#refocusBtn').addEventListener('click', function() {
+    var cbs = document.querySelectorAll('.focusCb');
+    var sel = [];
+    cbs.forEach(function(cb) { if (cb.checked) sel.push(cb.value); });
+    if (sel.length === 0) { alert('Select at least one ability'); return; }
+    runPriceCheck(document.getElementById('itemText').value, sel);
+  });
 
   // Suggestion
   if (data.suggested_price) {
@@ -5052,7 +5083,7 @@ document.getElementById('priceBtn').addEventListener('click', async () => {
   } else {
     document.getElementById('salesSection').classList.add('hidden');
   }
-});
+}
 
 document.getElementById('loadMyItems').addEventListener('click', async () => {
   const res = await fetch(API + '/api/price-check/my-items?discord_id=' + currentUser.id);
