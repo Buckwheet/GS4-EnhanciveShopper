@@ -1454,7 +1454,7 @@ app.get('/', (c) => {
       
       document.getElementById('editSetName').value = activeSet.set_name
       document.getElementById('editSetAccountType').value = activeSet.account_type || 'F2P'
-      document.getElementById('editSetAlpha').value = activeSet.alpha || '1.5'
+      document.getElementById('editSetAlpha').value = String(parseFloat(activeSet.alpha || 1.5).toFixed(1))
       document.getElementById('editSetModal').classList.remove('hidden')
     })
 
