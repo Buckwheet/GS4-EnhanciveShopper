@@ -5069,7 +5069,7 @@ async function runPriceCheck(text, focus) {
   document.getElementById('compTable').innerHTML = data.comparables.map(function(c) {
     var enhStr = c.enhancives.map(function(e) {
       var isMatch = data.parsed.enhancives.some(function(pe) { return pe.ability === e.ability; });
-      return '<span class="' + (isMatch ? 'text-green-700 font-semibold' : 'text-gray-500') + '">+' + e.boost + ' ' + e.ability.replace(' Bonus','') + '</span>';
+      return '<span class="' + (isMatch ? 'text-green-700 font-semibold' : 'text-gray-500') + '">+' + e.boost + ' ' + e.ability + '</span>';
     }).join(', ');
     var dimClass = c.category === 'weapon_nugget' ? ' opacity-40' : (c.perm_match ? '' : ' opacity-50');
     return '<tr class="border-b' + dimClass + '"><td class="p-1"><span title="' + (catTips[c.category]||'') + '">' + (catLabels[c.category]||'') + '</span> ' + c.name +
