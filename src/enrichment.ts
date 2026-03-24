@@ -70,7 +70,8 @@ function classifySlot(item: EnhanciveItem): { slot: string | null; isNugget: boo
   }
   // Map worn location to slot name
   const slotMap: Record<string, string> = {
-    'finger': 'fingers', 'ear': 'single_ear',
+    'finger': 'fingers', 'ear': 'single_ear', 'ears': 'both_ears',
+    'shoulders': 'shoulder_slung', 'feet': 'feet_on', 'legs': 'legs_pulled',
   }
   const slot = slotMap[worn] || worn
   return { slot, isNugget: false }
