@@ -8,6 +8,7 @@ import { STAT_CAP, SKILL_CAP, SLOT_LIMITS } from './constants'
 import { ranksToBonus } from './parser'
 import { findDirectMatches, findNuggetOpportunities, findSwatchOpportunities, findSimpleSwaps } from './recommendation-engine'
 import { runRecommendation, resolveGoals, resolveGoalStat } from './recommender'
+import { parseItemText } from './pricer'
 import type { Env } from './types'
 
 const ADMIN_DISCORD_ID = '411322973920821258'
@@ -4802,6 +4803,282 @@ app.post('/api/scrape', async (c) => {
   }
 })
 
+// ── Pricing Tool (admin only) ──
+
+app.post('/api/price-check', async (c) => {
+  const { discord_id, text } = await c.req.json()
+  if (discord_id !== ADMIN_DISCORD_ID) return c.json({ error: 'Unauthorized' }, 403)
+
+  const parsed = parseItemText(text)
+  if (parsed.enhancives.length === 0) return c.json({ error: 'No enhancives found in text', parsed })
+
+  // Find comparable items: same abilities (by name) in the market
+  const abilityNames = parsed.enhancives.map(e => e.ability)
+  const { results: allItems } = await c.env.DB.prepare(
+    'SELECT name, shop, cost, worn, item_type, is_permanent, enhancives_json FROM shop_items WHERE available = 1'
+  ).all()
+
+  const comparables: any[] = []
+  for (const item of allItems) {
+    const enh = JSON.parse((item.enhancives_json as string) || '[]')
+    // Check if item has ANY of the same abilities
+    const matching = enh.filter((e: any) => abilityNames.includes(e.ability))
+    if (matching.length === 0) continue
+    const matchPts = matching.reduce((s: number, e: any) => s + e.boost, 0)
+    const totalPts = enh.reduce((s: number, e: any) => s + e.boost, 0)
+    const permMatch = parsed.is_permanent === !!(item.is_permanent)
+    comparables.push({
+      name: item.name, shop: item.shop, cost: item.cost as number,
+      matching_points: matchPts, total_points: totalPts,
+      is_permanent: !!(item.is_permanent), perm_match: permMatch,
+      cost_per_match_point: Math.round((item.cost as number) / matchPts),
+    })
+  }
+
+  // Also check sales history
+  const { results: salesItems } = await c.env.DB.prepare(
+    'SELECT item_name, shop, cost, is_permanent, enhancives_json, sold_at, days_listed FROM sales_log'
+  ).all()
+
+  const sales: any[] = []
+  for (const item of salesItems) {
+    const enh = JSON.parse((item.enhancives_json as string) || '[]')
+    const matching = enh.filter((e: any) => abilityNames.includes(e.ability))
+    if (matching.length === 0) continue
+    const matchPts = matching.reduce((s: number, e: any) => s + e.boost, 0)
+    sales.push({
+      name: item.item_name, shop: item.shop, cost: item.cost as number,
+      matching_points: matchPts, is_permanent: !!(item.is_permanent),
+      cost_per_match_point: Math.round((item.cost as number) / matchPts),
+      sold_at: item.sold_at, days_listed: item.days_listed,
+    })
+  }
+
+  // Sort by cost_per_match_point
+  comparables.sort((a, b) => a.cost_per_match_point - b.cost_per_match_point)
+
+  // Calculate market stats from comparables with same permanence
+  const samePerm = comparables.filter(c => c.perm_match)
+  const costs_per_pt = samePerm.map(c => c.cost_per_match_point).sort((a, b) => a - b)
+  let market_stats = null
+  let suggested_price = null
+
+  if (costs_per_pt.length >= 3) {
+    const p90idx = Math.floor(costs_per_pt.length * 0.9)
+    const median_idx = Math.floor(costs_per_pt.length * 0.5)
+    const p90_cpp = costs_per_pt[Math.min(p90idx, costs_per_pt.length - 1)]
+    market_stats = {
+      count: costs_per_pt.length,
+      min_cpp: costs_per_pt[0],
+      max_cpp: costs_per_pt[costs_per_pt.length - 1],
+      median_cpp: costs_per_pt[median_idx],
+      p90_cpp,
+    }
+    // Suggested price = p90 cost-per-point × your item's matching points
+    suggested_price = p90_cpp * parsed.total_points
+  }
+
+  return c.json({ parsed, comparables: comparables.slice(0, 50), sales: sales.slice(0, 20), market_stats, suggested_price })
+})
+
+app.get('/api/price-check/my-items', async (c) => {
+  const discord_id = c.req.query('discord_id')
+  if (discord_id !== ADMIN_DISCORD_ID) return c.json({ error: 'Unauthorized' }, 403)
+
+  const shops = ['Erendiir', 'Boiler', 'Jinsem']
+  const placeholders = shops.map(() => '?').join(',')
+  const { results } = await c.env.DB.prepare(
+    `SELECT name, shop, cost, worn, item_type, is_permanent, enhancives_json FROM shop_items WHERE shop IN (${placeholders}) AND available = 1 ORDER BY shop, cost DESC`
+  ).bind(...shops).all()
+
+  return c.json({ items: results })
+})
+
+app.get('/api/sales-log', async (c) => {
+  const discord_id = c.req.query('discord_id')
+  if (discord_id !== ADMIN_DISCORD_ID) return c.json({ error: 'Unauthorized' }, 403)
+
+  const { results } = await c.env.DB.prepare(
+    'SELECT * FROM sales_log ORDER BY sold_at DESC LIMIT 200'
+  ).all()
+  return c.json({ sales: results })
+})
+
+app.get('/pricing', (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enhancive Pricer</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head><body class="bg-gray-100 min-h-screen p-4">
+<div class="max-w-4xl mx-auto">
+  <h1 class="text-2xl font-bold mb-4">Enhancive Pricing Tool</h1>
+  <div id="authGate" class="bg-white rounded-lg shadow p-6 mb-4">
+    <p class="text-gray-600 mb-2">Admin access required.</p>
+    <button id="loginBtn" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">Login with Discord</button>
+  </div>
+  <div id="mainContent" class="hidden">
+    <div class="bg-white rounded-lg shadow p-6 mb-4">
+      <h2 class="text-lg font-semibold mb-2">Paste Item Analysis</h2>
+      <textarea id="itemText" rows="12" class="w-full border rounded p-2 font-mono text-sm" placeholder="Paste ANALYZE output here..."></textarea>
+      <button id="priceBtn" class="mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Price It</button>
+    </div>
+    <div id="results" class="hidden">
+      <div class="bg-white rounded-lg shadow p-6 mb-4">
+        <h2 class="text-lg font-semibold mb-2">Parsed Item</h2>
+        <div id="parsedInfo"></div>
+      </div>
+      <div id="suggestionBox" class="bg-green-50 border border-green-300 rounded-lg shadow p-6 mb-4 hidden">
+        <h2 class="text-lg font-semibold mb-2 text-green-800">Suggested Price</h2>
+        <div id="suggestion" class="text-2xl font-bold text-green-700"></div>
+        <div id="marketStats" class="text-sm text-gray-600 mt-2"></div>
+      </div>
+      <div class="bg-white rounded-lg shadow p-6 mb-4">
+        <h2 class="text-lg font-semibold mb-2">Market Comparables (<span id="compCount">0</span>)</h2>
+        <div class="overflow-x-auto"><table class="w-full text-sm">
+          <thead><tr class="border-b"><th class="text-left p-1">Item</th><th class="text-left p-1">Shop</th><th class="text-right p-1">Cost</th><th class="text-right p-1">Match Pts</th><th class="text-right p-1">Cost/Pt</th><th class="text-center p-1">Perm</th></tr></thead>
+          <tbody id="compTable"></tbody>
+        </table></div>
+      </div>
+      <div id="salesSection" class="bg-white rounded-lg shadow p-6 mb-4 hidden">
+        <h2 class="text-lg font-semibold mb-2">Recent Sales (<span id="salesCount">0</span>)</h2>
+        <div class="overflow-x-auto"><table class="w-full text-sm">
+          <thead><tr class="border-b"><th class="text-left p-1">Item</th><th class="text-left p-1">Shop</th><th class="text-right p-1">Sold For</th><th class="text-right p-1">Match Pts</th><th class="text-right p-1">Cost/Pt</th><th class="text-right p-1">Days Listed</th></tr></thead>
+          <tbody id="salesTable"></tbody>
+        </table></div>
+      </div>
+    </div>
+    <div class="bg-white rounded-lg shadow p-6 mb-4">
+      <h2 class="text-lg font-semibold mb-2">My Shop Items</h2>
+      <button id="loadMyItems" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 mb-2">Load My Items</button>
+      <div id="myItems"></div>
+    </div>
+  </div>
+</div>
+<script>
+const API = '';
+let currentUser = null;
+
+function init() {
+  const stored = localStorage.getItem('discord_user');
+  if (stored) {
+    currentUser = JSON.parse(stored);
+    if (currentUser.id === '${ADMIN_DISCORD_ID}') showMain();
+    else document.getElementById('authGate').innerHTML = '<p class="text-red-600">Access denied.</p>';
+  }
+}
+
+function showMain() {
+  document.getElementById('authGate').classList.add('hidden');
+  document.getElementById('mainContent').classList.remove('hidden');
+}
+
+document.getElementById('loginBtn').addEventListener('click', () => {
+  const w=500,h=700,l=(screen.width-w)/2,t=(screen.height-h)/2;
+  window.open(API+'/api/auth/discord','Discord Login','width='+w+',height='+h+',left='+l+',top='+t);
+});
+
+window.addEventListener('message', (e) => {
+  if (e.data.type === 'discord_auth') {
+    currentUser = e.data.user;
+    localStorage.setItem('discord_user', JSON.stringify(currentUser));
+    if (currentUser.id === '${ADMIN_DISCORD_ID}') showMain();
+  }
+});
+
+function fmt(n) { return n ? n.toLocaleString() : '0'; }
+
+document.getElementById('priceBtn').addEventListener('click', async () => {
+  const text = document.getElementById('itemText').value;
+  if (!text.trim()) return;
+  const res = await fetch(API + '/api/price-check', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ discord_id: currentUser.id, text })
+  });
+  const data = await res.json();
+  if (data.error) { alert(data.error); return; }
+
+  document.getElementById('results').classList.remove('hidden');
+
+  // Parsed info
+  const p = data.parsed;
+  document.getElementById('parsedInfo').innerHTML =
+    '<p><b>Name:</b> ' + (p.name || 'Unknown') + '</p>' +
+    '<p><b>Type:</b> ' + (p.item_type || 'Unknown') + ' | <b>Permanent:</b> ' + (p.is_permanent ? 'Yes' : 'No') + '</p>' +
+    '<p><b>Enhancives:</b></p><ul class="ml-4 list-disc">' +
+    p.enhancives.map(function(e) { return '<li>+' + e.boost + ' ' + e.ability + '</li>'; }).join('') +
+    '</ul><p class="mt-1"><b>Total points:</b> ' + p.total_points + '</p>';
+
+  // Suggestion
+  if (data.suggested_price) {
+    document.getElementById('suggestionBox').classList.remove('hidden');
+    document.getElementById('suggestion').textContent = fmt(data.suggested_price) + ' silvers';
+    const ms = data.market_stats;
+    document.getElementById('marketStats').textContent =
+      'Based on ' + ms.count + ' comparables | Cost/pt range: ' + fmt(ms.min_cpp) + ' - ' + fmt(ms.max_cpp) +
+      ' | Median: ' + fmt(ms.median_cpp) + ' | P90: ' + fmt(ms.p90_cpp);
+  } else {
+    document.getElementById('suggestionBox').classList.add('hidden');
+  }
+
+  // Comparables table
+  document.getElementById('compCount').textContent = data.comparables.length;
+  document.getElementById('compTable').innerHTML = data.comparables.map(function(c) {
+    return '<tr class="border-b' + (c.perm_match ? '' : ' opacity-50') + '"><td class="p-1">' + c.name +
+      '</td><td class="p-1">' + c.shop + '</td><td class="p-1 text-right">' + fmt(c.cost) +
+      '</td><td class="p-1 text-right">' + c.matching_points + '</td><td class="p-1 text-right">' +
+      fmt(c.cost_per_match_point) + '</td><td class="p-1 text-center">' + (c.is_permanent ? 'Y' : 'N') + '</td></tr>';
+  }).join('');
+
+  // Sales
+  if (data.sales && data.sales.length > 0) {
+    document.getElementById('salesSection').classList.remove('hidden');
+    document.getElementById('salesCount').textContent = data.sales.length;
+    document.getElementById('salesTable').innerHTML = data.sales.map(function(s) {
+      return '<tr class="border-b"><td class="p-1">' + s.name + '</td><td class="p-1">' + s.shop +
+        '</td><td class="p-1 text-right">' + fmt(s.cost) + '</td><td class="p-1 text-right">' +
+        s.matching_points + '</td><td class="p-1 text-right">' + fmt(s.cost_per_match_point) +
+        '</td><td class="p-1 text-right">' + (s.days_listed || '-') + '</td></tr>';
+    }).join('');
+  } else {
+    document.getElementById('salesSection').classList.add('hidden');
+  }
+});
+
+document.getElementById('loadMyItems').addEventListener('click', async () => {
+  const res = await fetch(API + '/api/price-check/my-items?discord_id=' + currentUser.id);
+  const data = await res.json();
+  if (data.error) { alert(data.error); return; }
+  const div = document.getElementById('myItems');
+  div.innerHTML = '<table class="w-full text-sm"><thead><tr class="border-b"><th class="text-left p-1">Item</th><th class="text-left p-1">Shop</th><th class="text-right p-1">Cost</th><th class="text-left p-1">Enhancives</th><th class="text-center p-1">Perm</th></tr></thead><tbody>' +
+    data.items.map(function(item) {
+      var enh = JSON.parse(item.enhancives_json || '[]');
+      var enhStr = enh.map(function(e) { return '+' + e.boost + ' ' + e.ability; }).join(', ');
+      return '<tr class="border-b hover:bg-gray-50 cursor-pointer" onclick="priceMyItem(this)" data-name="' +
+        item.name.replace(/"/g, '&quot;') + '" data-enh=\\'' + item.enhancives_json.replace(/'/g, '&apos;') + '\\'>' +
+        '<td class="p-1">' + item.name + '</td><td class="p-1">' + item.shop +
+        '</td><td class="p-1 text-right">' + fmt(item.cost) + '</td><td class="p-1 text-xs">' + enhStr +
+        '</td><td class="p-1 text-center">' + (item.is_permanent ? 'Y' : 'N') + '</td></tr>';
+    }).join('') + '</tbody></table>';
+});
+
+function priceMyItem(row) {
+  // Build a fake analyze text from the item data
+  var name = row.dataset.name;
+  var enh = JSON.parse(row.dataset.enh);
+  var text = 'Analysis of ' + name + ' indicates something.\\nIt is an enhancive item:\\n';
+  enh.forEach(function(e) { text += '    It provides a boost of ' + e.boost + ' to ' + e.ability + '.\\n'; });
+  text += 'It will persist after its last enhancive charge has been expended.\\n';
+  document.getElementById('itemText').value = text;
+  document.getElementById('priceBtn').click();
+  window.scrollTo(0, 0);
+}
+
+init();
+</script>
+</body></html>`)
+})
+
 async function runScrape(env: Env): Promise<{ status: string; detail?: string }> {
   const BATCH_SIZE = 400
   const start = Date.now()
@@ -4842,6 +5119,29 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
 
     const removedIds = [...existingIds].filter(id => !scrapedIds.has(id))
     itemsRemoved = removedIds.length
+
+    // Log sales before marking unavailable
+    if (removedIds.length > 0) {
+      for (let i = 0; i < removedIds.length; i += BATCH_SIZE) {
+        const chunk = removedIds.slice(i, i + BATCH_SIZE)
+        const placeholders = chunk.map(() => '?').join(',')
+        const { results: soldItems } = await env.DB.prepare(
+          `SELECT name, shop, town, cost, worn, item_type, is_permanent, enhancives_json, scraped_at FROM shop_items WHERE id IN (${placeholders})`
+        ).bind(...chunk).all()
+        if (soldItems.length > 0) {
+          const logStmt = env.DB.prepare(
+            `INSERT INTO sales_log (item_name, shop, town, cost, worn, item_type, is_permanent, enhancives_json, listed_at, sold_at, days_listed)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          )
+          await env.DB.batch(soldItems.map((s: any) => {
+            const listedAt = s.scraped_at || now
+            const days = (new Date(now).getTime() - new Date(listedAt).getTime()) / 86400000
+            return logStmt.bind(s.name, s.shop, s.town, s.cost, s.worn, s.item_type, s.is_permanent, s.enhancives_json, listedAt, now, Math.round(days * 10) / 10)
+          }))
+        }
+      }
+    }
+
     for (let i = 0; i < removedIds.length; i += BATCH_SIZE) {
       const chunk = removedIds.slice(i, i + BATCH_SIZE)
       const placeholders = chunk.map(() => '?').join(',')
