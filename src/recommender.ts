@@ -217,8 +217,8 @@ export function runRecommendation(
 
         let value: number
         if (mode === 'cheapest') {
-          // Cheapest item that contributes anything
-          value = -tc
+          // Best cost-per-point ratio
+          value = -tc / score
         } else {
           let meaningful = 0
           for (const [key, filled] of Object.entries(contributions)) {
