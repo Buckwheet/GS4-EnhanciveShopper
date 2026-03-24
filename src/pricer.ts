@@ -5,6 +5,7 @@ export interface ParsedItem {
   enhancives: { ability: string; boost: number }[]
   is_permanent: boolean
   item_type: string | null
+  worn: string | null
   total_points: number
 }
 
@@ -63,5 +64,28 @@ export function parseItemText(text: string): ParsedItem {
   }
 
   const total_points = enhancives.reduce((s, e) => s + e.boost, 0)
-  return { name, enhancives, is_permanent, item_type, total_points }
+
+  // Detect worn slot from name/type keywords
+  let worn: string | null = null
+  const nameLower = (name || '').toLowerCase()
+  const wornMap: [string[], string][] = [
+    [['helm', 'greathelm', 'crown', 'headband', 'tiara', 'circlet', 'cap', 'hat', 'hood', 'coif'], 'head'],
+    [['necklace', 'medallion', 'torc', 'pendant', 'amulet', 'choker'], 'neck'],
+    [['ring', 'band'], 'finger'],
+    [['bracelet', 'bracer', 'wristlet', 'cuff', 'manacle'], 'wrist'],
+    [['earring', 'earcuff', 'ear-stud'], 'ear'],
+    [['pin', 'brooch', 'clasp', 'buckle', 'stickpin'], 'pin'],
+    [['cloak', 'mantle', 'cape'], 'shoulders'],
+    [['belt', 'sash', 'girdle'], 'belt'],
+    [['boots', 'sandals', 'shoes', 'slippers'], 'feet'],
+    [['greaves', 'leggings', 'pants', 'trousers', 'breeches'], 'legs'],
+    [['gauntlets', 'gloves', 'handwraps'], 'hands'],
+    [['arm greaves', 'armband', 'vambrace'], 'arms'],
+    [['breastplate', 'armor', 'hauberk', 'brigandine', 'cuirbouilli', 'haubergeon', 'bodysuit'], 'chest'],
+  ]
+  for (const [keywords, slot] of wornMap) {
+    if (keywords.some(k => nameLower.includes(k))) { worn = slot; break }
+  }
+
+  return { name, enhancives, is_permanent, item_type, worn, total_points }
 }

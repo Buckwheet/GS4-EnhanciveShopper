@@ -4836,9 +4836,16 @@ app.post('/api/price-check', async (c) => {
     const matchPts = matching.reduce((s: number, e: any) => s + e.boost, 0)
     const totalPts = enh.reduce((s: number, e: any) => s + e.boost, 0)
     const permMatch = parsed.is_permanent === !!(item.is_permanent)
+    // Categorize: same-slot > same-type wearable > weapon/nugget
+    const itemWorn = item.worn as string | null
+    const isWeaponNugget = !itemWorn && (item.item_type === 'weapon' || item.item_type === 'shield' || item.item_type === 'runestaff')
+    let category = 'other_worn'
+    if (parsed.worn && itemWorn === parsed.worn) category = 'same_slot'
+    else if (parsed.worn && itemWorn) category = 'other_worn'
+    else if (isWeaponNugget) category = 'weapon_nugget'
     comparables.push({
       name: item.name, shop: item.shop, cost: item.cost as number,
-      worn: item.worn, item_type: item.item_type,
+      worn: item.worn, item_type: item.item_type, category,
       enhancives: enh,
       matching_points: matchPts, total_points: totalPts,
       is_permanent: !!(item.is_permanent), perm_match: permMatch,
@@ -4867,12 +4874,13 @@ app.post('/api/price-check', async (c) => {
     })
   }
 
-  // Sort by cost_per_match_point
-  comparables.sort((a, b) => a.cost_per_match_point - b.cost_per_match_point)
+  // Sort: same_slot first, then other_worn, then weapon_nugget; within each by cost_per_match_point
+  const catOrder: Record<string, number> = { same_slot: 0, other_worn: 1, weapon_nugget: 2 }
+  comparables.sort((a, b) => (catOrder[a.category] ?? 1) - (catOrder[b.category] ?? 1) || a.cost_per_match_point - b.cost_per_match_point)
 
-  // Calculate market stats from comparables with same permanence
-  const samePerm = comparables.filter(c => c.perm_match)
-  const costs_per_pt = samePerm.map(c => c.cost_per_match_point).sort((a, b) => a - b)
+  // Market stats only from same_slot + other_worn (exclude weapons/nuggets)
+  const wornComps = comparables.filter(c => c.perm_match && c.category !== 'weapon_nugget')
+  const costs_per_pt = wornComps.map(c => c.cost_per_match_point).sort((a, b) => a - b)
   let market_stats = null
   let suggested_price = null
 
@@ -5025,7 +5033,7 @@ async function runPriceCheck(text, focus) {
   const focusSet = data.focus || p.enhancives.map(function(e) { return e.ability; });
   document.getElementById('parsedInfo').innerHTML =
     '<p><b>Name:</b> ' + (p.name || 'Unknown') + '</p>' +
-    '<p><b>Type:</b> ' + (p.item_type || 'Unknown') + ' | <b>Permanent:</b> ' + (p.is_permanent ? 'Yes' : 'No') + '</p>' +
+    '<p><b>Type:</b> ' + (p.item_type || 'Unknown') + ' | <b>Slot:</b> ' + (p.worn || 'Unknown') + ' | <b>Permanent:</b> ' + (p.is_permanent ? 'Yes' : 'No') + '</p>' +
     '<p class="mt-2"><b>Price based on:</b> <span class="text-xs text-gray-500">(uncheck junk abilities, comparables match ±3 boost)</span></p>' +
     '<div class="ml-2 mt-1">' + p.enhancives.map(function(e) {
       var checked = focusSet.indexOf(e.ability) >= 0 ? ' checked' : '';
@@ -5056,13 +5064,16 @@ async function runPriceCheck(text, focus) {
 
   // Comparables table
   document.getElementById('compCount').textContent = data.comparables.length;
+  var catLabels = { same_slot: '🎯', other_worn: '👕', weapon_nugget: '⚔️' };
+  var catTips = { same_slot: 'Same slot', other_worn: 'Different worn slot', weapon_nugget: 'Weapon/nugget (not directly comparable)' };
   document.getElementById('compTable').innerHTML = data.comparables.map(function(c) {
     var enhStr = c.enhancives.map(function(e) {
       var isMatch = data.parsed.enhancives.some(function(pe) { return pe.ability === e.ability; });
       return '<span class="' + (isMatch ? 'text-green-700 font-semibold' : 'text-gray-500') + '">+' + e.boost + ' ' + e.ability.replace(' Bonus','') + '</span>';
     }).join(', ');
-    return '<tr class="border-b' + (c.perm_match ? '' : ' opacity-50') + '"><td class="p-1">' + c.name +
-      '</td><td class="p-1">' + c.shop + '</td><td class="p-1">' + (c.worn || '-') +
+    var dimClass = c.category === 'weapon_nugget' ? ' opacity-40' : (c.perm_match ? '' : ' opacity-50');
+    return '<tr class="border-b' + dimClass + '"><td class="p-1"><span title="' + (catTips[c.category]||'') + '">' + (catLabels[c.category]||'') + '</span> ' + c.name +
+      '</td><td class="p-1">' + c.shop + '</td><td class="p-1">' + (c.worn || c.item_type || '-') +
       '</td><td class="p-1 text-right">' + fmt(c.cost) +
       '</td><td class="p-1 text-right">' + c.matching_points + '</td><td class="p-1 text-right">' + c.total_points +
       '</td><td class="p-1 text-right">' + fmt(c.cost_per_match_point) +
