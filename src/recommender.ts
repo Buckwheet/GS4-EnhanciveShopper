@@ -145,127 +145,10 @@ export function runRecommendation(
     Object.keys(item.group_totals).some(g => goalGroups.has(g))
   )
 
-  // 4. Greedy loop
-  const picks: Pick[] = []
-  const usedIds = new Set<string>()
-  const slotsAvail = { ...openSlots }
-  const totalOpen = () => Object.values(slotsAvail).reduce((s, v) => s + v, 0)
-
-  while (totalOpen() > 0) {
-    // Check if all gaps are filled
-    const totalGap = Object.values(gaps).reduce((s, v) => s + v, 0)
-    if (totalGap <= 0) break
-
-    let bestItem: EnrichedItem | null = null
-    let bestValue = -1
-    let bestContributions: Record<string, number> = {}
-    let bestTrueCost = 0
-    let bestSwapCost = 0
-
-    for (const item of candidates) {
-      if (usedIds.has(item.id)) continue
-
-      // Calculate contributions to each goal using per-line assignment
-      const { contributions, swapCount } = assignLines(item.abilities, gaps, goals)
-
-      let weightedScore = 0
-      for (const [key, filled] of Object.entries(contributions)) {
-        const initGap = totalGapInitial[key] || 1
-        weightedScore += filled / initGap
-      }
-
-      if (weightedScore <= 0) continue
-
-      // Combo bonus: items hitting multiple unfilled goals save future slots/items
-      // Only count goals where the item fills >10% of the remaining gap
-      let meaningfulGoals = 0
-      for (const [key, filled] of Object.entries(contributions)) {
-        if (filled / (gaps[key] || 1) > 0.1) meaningfulGoals++
-      }
-      const comboMultiplier = 1 + (meaningfulGoals - 1) * 0.3
-
-      // Calculate true cost for this item
-      let trueCost = item.cost || 0
-      let slotCost = 0
-      if (item.is_nugget) {
-        trueCost = item.true_costs.nugget
-        // Nugget transmute: check if any transmute-target slot is open (no swatch needed)
-        const hasDirectSlot = [...NUGGET_SLOTS].some(s => (slotsAvail[s] || 0) > 0)
-        if (!hasDirectSlot) slotCost = SWATCH_COST // need swatch after transmute
-      } else if (item.is_permanent) {
-        trueCost = item.true_costs.wearable_perm
-        const nativeSlot = item.slot || ''
-        if ((slotsAvail[nativeSlot] || 0) <= 0) slotCost = SWATCH_COST
-      } else {
-        trueCost = item.true_costs.wearable_nonperm
-        const nativeSlot = item.slot || ''
-        if ((slotsAvail[nativeSlot] || 0) <= 0) slotCost = SWATCH_COST
-      }
-      trueCost += slotCost
-
-      // Swap cost: assignLines already counted exact swaps needed
-      const swapCost = swapCount * 10_000_000
-      trueCost += swapCost
-
-      const value = (weightedScore * comboMultiplier) / Math.pow(Math.log10(Math.max(trueCost, 1000)), alpha)
-
-      if (value > bestValue) {
-        bestValue = value
-        bestItem = item
-        bestContributions = contributions
-        bestTrueCost = trueCost
-        bestSwapCost = swapCost
-      }
-    }
-
-    if (!bestItem) break
-
-    // Pick this item — consume a slot
-    usedIds.add(bestItem.id)
-
-    // Find best slot to consume: native slot if open, else any open slot
-    const nativeSlot = bestItem.is_nugget ? null : bestItem.slot
-    if (nativeSlot && (slotsAvail[nativeSlot] || 0) > 0) {
-      slotsAvail[nativeSlot]--
-    } else if (bestItem.is_nugget) {
-      // Try a nugget-transmute slot first
-      const directSlot = [...NUGGET_SLOTS].find(s => (slotsAvail[s] || 0) > 0)
-      if (directSlot) {
-        slotsAvail[directSlot]--
-      } else {
-        // Any open slot (swatch needed, already costed)
-        const anySlot = Object.keys(slotsAvail).find(s => slotsAvail[s] > 0)
-        if (anySlot) slotsAvail[anySlot]--
-      }
-    } else {
-      // Wearable needing swatch — any open slot
-      const anySlot = Object.keys(slotsAvail).find(s => slotsAvail[s] > 0)
-      if (anySlot) slotsAvail[anySlot]--
-    }
-
-    // Update gaps
-    for (const [key, contribution] of Object.entries(bestContributions)) {
-      gaps[key] = Math.max(0, gaps[key] - contribution)
-    }
-
-    picks.push({
-      item: bestItem,
-      value_score: bestValue,
-      true_cost: bestTrueCost,
-      swap_cost: bestSwapCost,
-      contributions: bestContributions,
-      swap_details: [],
-    })
-  }
-
   // Helper: check if a set of picks meets all goals using per-line assignment
   function allGoalsMet(testPicks: Pick[]): boolean {
-    // Collect all enhancive lines from all picks
     const allLines: { name: string; group: string | null; boost: number }[] = []
-    for (const pick of testPicks) {
-      allLines.push(...pick.item.abilities)
-    }
-    // Build gap map from inventory
+    for (const pick of testPicks) allLines.push(...pick.item.abilities)
     const gapMap: Record<string, number> = {}
     for (const g of goals) {
       const fromInv = currentBoosts[g.ability] || 0
@@ -277,6 +160,121 @@ export function runRecommendation(
       const fromInv = currentBoosts[g.ability] || 0
       return fromInv + (contributions[key] || 0) >= g.target
     })
+  }
+
+  function calcItemCost(item: EnrichedItem, swapCount: number, slots: Record<string, number>): number {
+    let tc = item.is_nugget ? item.true_costs.nugget : item.is_permanent ? item.true_costs.wearable_perm : item.true_costs.wearable_nonperm
+    if (item.is_nugget) {
+      if (![...NUGGET_SLOTS].some(s => (slots[s] || 0) > 0)) tc += SWATCH_COST
+    } else {
+      if ((slots[item.slot || ''] || 0) <= 0) tc += SWATCH_COST
+    }
+    return tc + swapCount * 10_000_000
+  }
+
+  function consumeSlot(item: EnrichedItem, slots: Record<string, number>) {
+    const ns = item.is_nugget ? null : item.slot
+    if (ns && (slots[ns] || 0) > 0) { slots[ns]--; return }
+    if (item.is_nugget) {
+      const ds = [...NUGGET_SLOTS].find(s => (slots[s] || 0) > 0)
+      if (ds) { slots[ds]--; return }
+    }
+    const any = Object.keys(slots).find(s => slots[s] > 0)
+    if (any) slots[any]--
+  }
+
+  // 4. Run greedy in two modes: balanced (original) and cheapest-first
+  function greedyPass(mode: 'balanced' | 'cheapest'): Pick[] {
+    const gp: Record<string, number> = {}
+    for (const goal of goals) {
+      const fromInv = currentBoosts[goal.ability] || 0
+      gp[goal.group + ':' + goal.ability] = Math.max(0, goal.target - fromInv)
+    }
+    const sl = { ...openSlots }
+    const used = new Set<string>()
+    const result: Pick[] = []
+    const slotOpen = () => Object.values(sl).reduce((s, v) => s + v, 0)
+
+    while (slotOpen() > 0) {
+      if (Object.values(gp).reduce((s, v) => s + v, 0) <= 0) break
+
+      let bestItem: EnrichedItem | null = null
+      let bestValue = -Infinity
+      let bestContrib: Record<string, number> = {}
+      let bestCost = 0
+      let bestSwapCost = 0
+
+      for (const item of candidates) {
+        if (used.has(item.id)) continue
+        const { contributions, swapCount } = assignLines(item.abilities, gp, goals)
+        let score = 0
+        for (const [key, filled] of Object.entries(contributions)) {
+          score += filled / (totalGapInitial[key] || 1)
+        }
+        if (score <= 0) continue
+
+        const tc = calcItemCost(item, swapCount, sl)
+
+        let value: number
+        if (mode === 'cheapest') {
+          // Cheapest item that contributes anything
+          value = -tc
+        } else {
+          let meaningful = 0
+          for (const [key, filled] of Object.entries(contributions)) {
+            if (filled / (gp[key] || 1) > 0.1) meaningful++
+          }
+          const combo = 1 + (meaningful - 1) * 0.3
+          value = (score * combo) / Math.pow(Math.log10(Math.max(tc, 1000)), alpha)
+        }
+
+        if (value > bestValue) {
+          bestValue = value
+          bestItem = item
+          bestContrib = contributions
+          bestCost = tc
+          bestSwapCost = swapCount * 10_000_000
+        }
+      }
+
+      if (!bestItem) break
+      used.add(bestItem.id)
+      consumeSlot(bestItem, sl)
+      for (const [key, c] of Object.entries(bestContrib)) {
+        gp[key] = Math.max(0, gp[key] - c)
+      }
+      result.push({ item: bestItem, value_score: bestValue, true_cost: bestCost, swap_cost: bestSwapCost, contributions: bestContrib, swap_details: [] })
+    }
+    return result
+  }
+
+  const balancedPicks = greedyPass('balanced')
+  const cheapPicks = greedyPass('cheapest')
+  const balancedCost = balancedPicks.reduce((s, p) => s + p.true_cost, 0)
+  const cheapCost = cheapPicks.reduce((s, p) => s + p.true_cost, 0)
+  const cheapMeetsGoals = allGoalsMet(cheapPicks)
+
+  let picks: Pick[]
+  if (cheapMeetsGoals && cheapCost < balancedCost) {
+    picks = cheapPicks
+    debugLog.push(`Cheapest pass won: ${(cheapCost/1e6).toFixed(1)}M (${cheapPicks.length} items) vs balanced ${(balancedCost/1e6).toFixed(1)}M (${balancedPicks.length} items)`)
+  } else {
+    picks = balancedPicks
+    debugLog.push(`Balanced pass won: ${(balancedCost/1e6).toFixed(1)}M (${balancedPicks.length} items) vs cheapest ${(cheapCost/1e6).toFixed(1)}M (${cheapPicks.length} items, meets=${cheapMeetsGoals})`)
+  }
+  const usedIds = new Set(picks.map(p => p.item.id))
+  const slotsAvail = { ...openSlots }
+  for (const p of picks) consumeSlot(p.item, slotsAvail)
+  // Rebuild gaps from chosen picks
+  for (const goal of goals) {
+    const fromInv = currentBoosts[goal.ability] || 0
+    gaps[goal.group + ':' + goal.ability] = Math.max(0, goal.target - fromInv)
+  }
+  const allLines: { name: string; group: string | null; boost: number }[] = []
+  for (const p of picks) allLines.push(...p.item.abilities)
+  const { contributions: greedyContribs } = assignLines(allLines, { ...gaps }, goals)
+  for (const [key, filled] of Object.entries(greedyContribs)) {
+    gaps[key] = Math.max(0, gaps[key] - filled)
   }
 
   // 5. Prune: remove redundant picks (worst value first)
