@@ -60,8 +60,8 @@ export interface EnrichedItem {
 function classifySlot(item: EnhanciveItem): { slot: string | null; isNugget: boolean } {
   const worn = item.worn?.toLowerCase() || ''
   const itemType = item.item_type?.toLowerCase() || ''
-  // Weapons, shields, armor → nugget
-  if (itemType === 'weapon' || itemType === 'shield' || itemType === 'armor') {
+  // Weapons, shields, armor without a worn location → nugget
+  if ((itemType === 'weapon' || itemType === 'shield' || itemType === 'armor') && !worn) {
     return { slot: 'nugget', isNugget: true }
   }
   // No worn location and no item_type → nugget
