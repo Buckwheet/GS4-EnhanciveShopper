@@ -356,6 +356,104 @@ export function runRecommendation(
       }
     }
   }
+
+  // 7. Split-downgrade: try replacing expensive picks with multiple cheaper ones
+  picks.sort((a, b) => b.true_cost - a.true_cost) // most expensive first
+  for (let i = 0; i < picks.length; i++) {
+    const expensive = picks[i]
+    // Build gap map as if this pick didn't exist
+    const splitGapMap: Record<string, number> = {}
+    for (const goal of goals) {
+      const fromInv = currentBoosts[goal.ability] || 0
+      splitGapMap[goal.group + ':' + goal.ability] = Math.max(0, goal.target - fromInv)
+    }
+    const otherPicks = picks.filter((_, j) => j !== i)
+    const otherLines: { name: string; group: string | null; boost: number }[] = []
+    for (const p of otherPicks) otherLines.push(...p.item.abilities)
+    const { contributions: otherContribs } = assignLines(otherLines, splitGapMap, goals)
+    // Remaining gap after other picks
+    const splitGaps: Record<string, number> = {}
+    let hasGap = false
+    for (const key of Object.keys(splitGapMap)) {
+      splitGaps[key] = Math.max(0, splitGapMap[key] - (otherContribs[key] || 0))
+      if (splitGaps[key] > 0) hasGap = true
+    }
+    if (!hasGap) continue // prune pass should have caught this
+
+    // Count available slots (excluding other picks)
+    const splitSlots: Record<string, number> = { ...openSlots }
+    for (const p of otherPicks) {
+      const s = p.item.is_nugget ? [...NUGGET_SLOTS].find(sl => (splitSlots[sl] || 0) > 0) || '' : (p.item.slot || '')
+      if (s && splitSlots[s]) splitSlots[s]--
+    }
+
+    // Mini-greedy to fill splitGaps with cheap items
+    const splitUsed = new Set(otherPicks.map(p => p.item.id))
+    const replacements: Pick[] = []
+    const miniSlots = { ...splitSlots }
+    const miniGaps = { ...splitGaps }
+    const miniTotalOpen = () => Object.values(miniSlots).reduce((s, v) => s + v, 0)
+
+    while (miniTotalOpen() > 0) {
+      const totalGap = Object.values(miniGaps).reduce((s, v) => s + v, 0)
+      if (totalGap <= 0) break
+
+      let best: EnrichedItem | null = null
+      let bestCost = Infinity
+      let bestContrib: Record<string, number> = {}
+      let bestSwaps = 0
+
+      for (const item of candidates) {
+        if (splitUsed.has(item.id)) continue
+        const { contributions: c, swapCount } = assignLines(item.abilities, miniGaps, goals)
+        const score = Object.values(c).reduce((s, v) => s + v, 0)
+        if (score <= 0) continue
+
+        let tc = item.is_nugget ? item.true_costs.nugget : item.is_permanent ? item.true_costs.wearable_perm : item.true_costs.wearable_nonperm
+        if (item.is_nugget) {
+          if (![...NUGGET_SLOTS].some(s => (miniSlots[s] || 0) > 0)) tc += SWATCH_COST
+        } else {
+          if ((miniSlots[item.slot || ''] || 0) <= 0) tc += SWATCH_COST
+        }
+        tc += swapCount * 10_000_000
+
+        // Prefer cheapest item that contributes
+        if (tc < bestCost) {
+          bestCost = tc
+          best = item
+          bestContrib = c
+          bestSwaps = swapCount
+        }
+      }
+
+      if (!best) break
+      splitUsed.add(best.id)
+      // Consume slot
+      const ns = best.is_nugget ? [...NUGGET_SLOTS].find(s => (miniSlots[s] || 0) > 0) || '' : (best.slot || '')
+      if (ns && (miniSlots[ns] || 0) > 0) miniSlots[ns]--
+      else {
+        const any = Object.keys(miniSlots).find(s => miniSlots[s] > 0)
+        if (any) miniSlots[any]--
+      }
+      for (const [key, filled] of Object.entries(bestContrib)) {
+        miniGaps[key] = Math.max(0, miniGaps[key] - filled)
+      }
+      replacements.push({ item: best, value_score: 0, true_cost: bestCost, swap_cost: bestSwaps * 10_000_000, contributions: bestContrib, swap_details: [] })
+    }
+
+    // Check: do replacements fill the gap AND cost less?
+    const replacementCost = replacements.reduce((s, p) => s + p.true_cost, 0)
+    const replacementGap = Object.values(miniGaps).reduce((s, v) => s + v, 0)
+    if (replacementGap <= 0 && replacementCost < expensive.true_cost) {
+      debugLog.push(`Split: ${expensive.item.name} (${expensive.true_cost}) → ${replacements.length} items (${replacementCost}): ${replacements.map(r => r.item.name + '=' + r.true_cost).join(', ')}`)
+      picks.splice(i, 1, ...replacements)
+      // Update pickedIds
+      pickedIds.delete(expensive.item.id)
+      for (const r of replacements) pickedIds.add(r.item.id)
+      i-- // re-check from this position
+    }
+  }
+
   picks.sort((a, b) => b.value_score - a.value_score)
 
   // Recalculate per-pick contributions and gaps using per-line assignment
