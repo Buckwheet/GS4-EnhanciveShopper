@@ -4732,9 +4732,13 @@ app.post('/api/scrape', async (c) => {
     
     // Only mark removed items as unavailable (not all items)
     if (removedIds.length > 0) {
-      const placeholders = removedIds.map(() => '?').join(',')
-      await c.env.DB.prepare(`UPDATE shop_items SET available = 0, unavailable_since = ? WHERE id IN (${placeholders})`)
-        .bind(now, ...removedIds).run()
+      const CHUNK = 400
+      for (let i = 0; i < removedIds.length; i += CHUNK) {
+        const chunk = removedIds.slice(i, i + CHUNK)
+        const placeholders = chunk.map(() => '?').join(',')
+        await c.env.DB.prepare(`UPDATE shop_items SET available = 0, unavailable_since = ? WHERE id IN (${placeholders})`)
+          .bind(now, ...chunk).run()
+      }
       console.log(`Marked ${removedIds.length} items as unavailable`)
     }
     
@@ -4748,12 +4752,13 @@ app.post('/api/scrape', async (c) => {
       const updateStmt = c.env.DB.prepare(
         `UPDATE shop_items SET last_seen = ?, is_permanent = ?, item_type = ?, is_bloodstone = ?, available = 1 WHERE id = ?`
       )
-      
-      const updateBatch = existingAvailableItems.map(item =>
-        updateStmt.bind(now, item.is_permanent ? 1 : 0, item.item_type, item.is_bloodstone ? 1 : 0, item.id)
-      )
-      
-      await c.env.DB.batch(updateBatch)
+      const CHUNK = 400
+      for (let i = 0; i < existingAvailableItems.length; i += CHUNK) {
+        const chunk = existingAvailableItems.slice(i, i + CHUNK)
+        await c.env.DB.batch(chunk.map(item =>
+          updateStmt.bind(now, item.is_permanent ? 1 : 0, item.item_type, item.is_bloodstone ? 1 : 0, item.id)
+        ))
+      }
       console.log(`Updated ${existingAvailableItems.length} existing items`)
     }
     
@@ -4762,26 +4767,17 @@ app.post('/api/scrape', async (c) => {
         `INSERT INTO shop_items (id, name, town, shop, cost, enchant, worn, item_type, enhancives_json, scraped_at, last_seen, available, is_permanent, is_bloodstone)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`
       )
-      
-      const batch = newItems.map(item => 
-        stmt.bind(
-          item.id,
-          item.name,
-          item.town,
-          item.shop,
-          item.cost,
-          item.enchant,
-          item.worn,
-          item.item_type,
-          JSON.stringify(item.enhancives),
-          now,
-          now,
-          item.is_permanent ? 1 : 0,
-          item.is_bloodstone ? 1 : 0
-        )
-      )
-      
-      await c.env.DB.batch(batch)
+      const CHUNK = 400
+      for (let i = 0; i < newItems.length; i += CHUNK) {
+        const chunk = newItems.slice(i, i + CHUNK)
+        await c.env.DB.batch(chunk.map(item =>
+          stmt.bind(
+            item.id, item.name, item.town, item.shop, item.cost,
+            item.enchant, item.worn, item.item_type, JSON.stringify(item.enhancives),
+            now, now, item.is_permanent ? 1 : 0, item.is_bloodstone ? 1 : 0
+          )
+        ))
+      }
       console.log(`Inserted ${newItems.length} new items`)
     }
 
