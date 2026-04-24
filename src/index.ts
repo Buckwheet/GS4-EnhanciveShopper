@@ -4732,7 +4732,7 @@ app.post('/api/scrape', async (c) => {
     
     // Only mark removed items as unavailable (not all items)
     if (removedIds.length > 0) {
-      const CHUNK = 400
+      const CHUNK = 90 // D1 limit: 100 bound params per query
       for (let i = 0; i < removedIds.length; i += CHUNK) {
         const chunk = removedIds.slice(i, i + CHUNK)
         const placeholders = chunk.map(() => '?').join(',')
@@ -5127,7 +5127,8 @@ init();
 })
 
 async function runScrape(env: Env): Promise<{ status: string; detail?: string }> {
-  const BATCH_SIZE = 400
+  const BATCH_SIZE = 400 // for DB.batch() (each stmt has few params)
+  const IN_CHUNK = 90   // for IN clauses (D1 limit: 100 bound params per query)
   const start = Date.now()
   let status = 'error'
   let detail = ''
@@ -5169,8 +5170,8 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
 
     // Log sales before marking unavailable
     if (removedIds.length > 0) {
-      for (let i = 0; i < removedIds.length; i += BATCH_SIZE) {
-        const chunk = removedIds.slice(i, i + BATCH_SIZE)
+      for (let i = 0; i < removedIds.length; i += IN_CHUNK) {
+        const chunk = removedIds.slice(i, i + IN_CHUNK)
         const placeholders = chunk.map(() => '?').join(',')
         const { results: soldItems } = await env.DB.prepare(
           `SELECT name, shop, town, cost, worn, item_type, is_permanent, enhancives_json, scraped_at FROM shop_items WHERE id IN (${placeholders})`
@@ -5189,8 +5190,8 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
       }
     }
 
-    for (let i = 0; i < removedIds.length; i += BATCH_SIZE) {
-      const chunk = removedIds.slice(i, i + BATCH_SIZE)
+    for (let i = 0; i < removedIds.length; i += IN_CHUNK) {
+      const chunk = removedIds.slice(i, i + IN_CHUNK)
       const placeholders = chunk.map(() => '?').join(',')
       await env.DB.prepare(`UPDATE shop_items SET available = 0, unavailable_since = ? WHERE id IN (${placeholders})`)
         .bind(now, ...chunk).run()
