@@ -4842,23 +4842,7 @@ app.post('/api/scrape', async (c) => {
     }
 
     // Keep the R2 public blob fresh (used by /api/items to avoid a shop_items scan).
-    if (items.length > 0) {
-      await c.env.ITEMS_BUCKET.put(
-        'items_public.json',
-        JSON.stringify(items.map((it: any) => ({
-          id: it.id,
-          name: it.name,
-          town: it.town,
-          shop: it.shop,
-          cost: it.cost,
-          worn: it.worn,
-          item_type: it.item_type,
-          is_permanent: it.is_permanent,
-          enhancives_json: JSON.stringify(it.enhancives || []),
-        }))),
-        { httpMetadata: { contentType: 'application/json' } },
-      )
-    }
+    await writePublicItemsBlob(c.env, items)
 
     // Check for matches and send alerts (only new items)
     console.log(`Checking ${newItems.length} new items for alerts`)
@@ -5198,6 +5182,28 @@ init();
 </body></html>`)
 })
 
+// Write the lean R2 blob backing /api/items (matches what consumers read:
+// name/town/shop/cost/worn/is_permanent/enhancives_json). Kept in one place so
+// both scrape paths and the no_change path serve identical data.
+async function writePublicItemsBlob(env: Env, items: any[]): Promise<void> {
+  if (items.length === 0) return
+  await env.ITEMS_BUCKET.put(
+    'items_public.json',
+    JSON.stringify(items.map((it: any) => ({
+      id: it.id,
+      name: it.name,
+      town: it.town,
+      shop: it.shop,
+      cost: it.cost,
+      worn: it.worn,
+      item_type: it.item_type,
+      is_permanent: it.is_permanent,
+      enhancives_json: JSON.stringify(it.enhancives || []),
+    }))),
+    { httpMetadata: { contentType: 'application/json' } },
+  )
+}
+
 async function runScrape(env: Env): Promise<{ status: string; detail?: string }> {
   const BATCH_SIZE = 400 // for DB.batch() (each stmt has few params)
   const IN_CHUNK = 90   // for IN clauses (D1 limit: 100 bound params per query)
@@ -5225,6 +5231,21 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
       const cutoff = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString()
       const { meta } = await env.DB.prepare('DELETE FROM shop_items WHERE available = 0 AND unavailable_since < ?').bind(cutoff).run()
       if (meta.changes > 0) console.log(`Cleaned up ${meta.changes} items older than 72 hours`)
+      // Warm the R2 fast path even when the shop didn't change, so /api/items stays
+      // off the full shop_items scan. Use the indexed `available` filter.
+      const { results: availableRows } = await env.DB.prepare(
+        'SELECT id, name, town, shop, cost, worn, item_type, is_permanent, enhancives_json FROM shop_items WHERE available = 1'
+      ).all()
+      let asItems: any[] = []
+      try {
+        asItems = (availableRows as any[]).map((r: any) => ({
+          ...r,
+          enhancives: JSON.parse(r.enhancives_json || '[]'),
+        }))
+      } catch (parseErr) {
+        console.error(`Failed to parse enhancives_json while warming public blob: ${(parseErr as Error).message}`)
+      }
+      await writePublicItemsBlob(env, asItems)
       return { status, detail }
     }
 
@@ -5335,24 +5356,8 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
     })
     console.log(`Wrote ${enriched.length} enriched items to R2`)
 
-    // Public-shape blob for /api/items (matches the shape consumers read:
-    // name/town/shop/cost/worn/is_permanent/enhancives_json). Serving from R2
-    // avoids a full shop_items scan on every /api/items request.
-    await env.ITEMS_BUCKET.put(
-      'items_public.json',
-      JSON.stringify(items.map((it: any) => ({
-        id: it.id,
-        name: it.name,
-        town: it.town,
-        shop: it.shop,
-        cost: it.cost,
-        worn: it.worn,
-        item_type: it.item_type,
-        is_permanent: it.is_permanent,
-        enhancives_json: JSON.stringify(it.enhancives || []),
-      }))),
-      { httpMetadata: { contentType: 'application/json' } },
-    )
+    // Public-shape blob for /api/items (avoids a full shop_items scan per request).
+    await writePublicItemsBlob(env, items)
     console.log(`Wrote ${items.length} public items to R2`)
 
     // Regenerate recommendations for all sets with goals
