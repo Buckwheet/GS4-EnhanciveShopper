@@ -4745,21 +4745,49 @@ app.post('/api/scrape', async (c) => {
     // Only insert truly new items (not in DB at all)
     const newItems = items.filter(item => !existingIds.has(item.id))
     
-    // Update existing items that are still available
+    // Update existing items that are still available — but only when flags changed.
+    // (last_seen is a shared per-scrape timestamp, not part of the change guard.)
     const existingAvailableItems = items.filter(item => existingIds.has(item.id))
-    
+
+    const changedItems: any[] = []
     if (existingAvailableItems.length > 0) {
+      const CHUNK_SEL = 90 // D1 limit: 100 bound params per query
+      for (let j = 0; j < existingAvailableItems.length; j += CHUNK_SEL) {
+        const idsChunk = existingAvailableItems.slice(j, j + CHUNK_SEL).map((i: any) => i.id)
+        const placeholders = idsChunk.map(() => '?').join(',')
+        const { results: current } = await c.env.DB.prepare(
+          `SELECT id, is_permanent, item_type, is_bloodstone
+             FROM shop_items
+            WHERE available = 1
+              AND id IN (${placeholders})`
+        ).bind(...idsChunk).all()
+        const currentById = new Map((current as any[]).map((r: any) => [r.id, r]))
+        for (const item of existingAvailableItems.slice(j, j + CHUNK_SEL)) {
+          const cur = currentById.get(item.id)
+          const isPermanent = item.is_permanent ? 1 : 0
+          const isBloodstone = item.is_bloodstone ? 1 : 0
+          if (
+            cur === undefined
+            || cur.is_permanent !== isPermanent
+            || cur.item_type !== item.item_type
+            || cur.is_bloodstone !== isBloodstone
+          ) changedItems.push(item)
+        }
+      }
+    }
+
+    if (changedItems.length > 0) {
       const updateStmt = c.env.DB.prepare(
         `UPDATE shop_items SET last_seen = ?, is_permanent = ?, item_type = ?, is_bloodstone = ?, available = 1 WHERE id = ?`
       )
       const CHUNK = 400
-      for (let i = 0; i < existingAvailableItems.length; i += CHUNK) {
-        const chunk = existingAvailableItems.slice(i, i + CHUNK)
+      for (let i = 0; i < changedItems.length; i += CHUNK) {
+        const chunk = changedItems.slice(i, i + CHUNK)
         await c.env.DB.batch(chunk.map(item =>
           updateStmt.bind(now, item.is_permanent ? 1 : 0, item.item_type, item.is_bloodstone ? 1 : 0, item.id)
         ))
       }
-      console.log(`Updated ${existingAvailableItems.length} existing items`)
+      console.log(`Updated ${changedItems.length} existing items`)
     }
     
     if (newItems.length > 0) {
@@ -5201,12 +5229,43 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
     itemsNew = newItems.length
     const existingAvailableItems = items.filter(item => existingIds.has(item.id))
 
+    // Only write rows whose mutable flags actually changed. last_seen is intentionally
+    // NOT part of the guard: it is a single per-scrape timestamp shared by all rows, so
+    // comparing it would re-write everything every scrape. It is never read for logic.
+    const changedItems: any[] = []
     if (existingAvailableItems.length > 0) {
+      for (let j = 0; j < existingAvailableItems.length; j += IN_CHUNK) {
+        const idsChunk = existingAvailableItems.slice(j, j + IN_CHUNK)
+        const placeholders = idsChunk.map(() => '?').join(',')
+        const { results: current } = await env.DB.prepare(
+          `SELECT id, is_permanent, item_type, is_bloodstone
+             FROM shop_items
+            WHERE available = 1
+              AND id IN (${placeholders})`
+        ).bind(...idsChunk.map((i: any) => i.id)).all()
+        const currentById = new Map((current as any[]).map((r: any) => [r.id, r]))
+        for (const item of idsChunk) {
+          const cur = currentById.get(item.id)
+          const isPermanent = item.is_permanent ? 1 : 0
+          const isBloodstone = item.is_bloodstone ? 1 : 0
+          if (
+            cur === undefined
+            || cur.is_permanent !== isPermanent
+            || cur.item_type !== item.item_type
+            || cur.is_bloodstone !== isBloodstone
+          ) changedItems.push(item)
+        }
+      }
+    }
+
+    if (changedItems.length > 0) {
       const updateStmt = env.DB.prepare('UPDATE shop_items SET last_seen = ?, is_permanent = ?, item_type = ?, is_bloodstone = ?, available = 1 WHERE id = ?')
-      for (let i = 0; i < existingAvailableItems.length; i += BATCH_SIZE) {
-        const chunk = existingAvailableItems.slice(i, i + BATCH_SIZE)
+      for (let i = 0; i < changedItems.length; i += BATCH_SIZE) {
+        const chunk = changedItems.slice(i, i + BATCH_SIZE)
         await env.DB.batch(chunk.map(item => updateStmt.bind(now, item.is_permanent ? 1 : 0, item.item_type, item.is_bloodstone ? 1 : 0, item.id)))
       }
+    } else if (existingAvailableItems.length > 0 && itemsRemoved === 0) {
+      console.log(`No shop_items changes detected among ${existingAvailableItems.length} available items`)
     }
 
     if (newItems.length > 0) {
