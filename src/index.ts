@@ -4789,7 +4789,7 @@ app.post('/api/scrape', async (c) => {
         const idsChunk = existingAvailableItems.slice(j, j + CHUNK_SEL).map((i: any) => i.id)
         const placeholders = idsChunk.map(() => '?').join(',')
         const { results: current } = await c.env.DB.prepare(
-          `SELECT id, is_permanent, item_type, is_bloodstone
+          `SELECT id, name, town, shop, cost, worn, item_type, is_permanent, is_bloodstone, enhancives_json
              FROM shop_items
             WHERE available = 1
               AND id IN (${placeholders})`
@@ -4799,11 +4799,19 @@ app.post('/api/scrape', async (c) => {
           const cur = currentById.get(item.id)
           const isPermanent = item.is_permanent ? 1 : 0
           const isBloodstone = item.is_bloodstone ? 1 : 0
+          const curEnh = (cur?.enhancives_json || '')
+          const newEnh = JSON.stringify(item.enhancives || [])
           if (
             cur === undefined
-            || cur.is_permanent !== isPermanent
+            || cur.name !== item.name
+            || (cur.town ?? null) !== (item.town ?? null)
+            || (cur.shop ?? null) !== (item.shop ?? null)
+            || (cur.cost ?? null) !== (item.cost ?? null)
+            || (cur.worn ?? null) !== (item.worn ?? null)
             || cur.item_type !== item.item_type
+            || cur.is_permanent !== isPermanent
             || cur.is_bloodstone !== isBloodstone
+            || curEnh !== newEnh
           ) changedItems.push(item)
         }
       }
@@ -4811,13 +4819,17 @@ app.post('/api/scrape', async (c) => {
 
     if (changedItems.length > 0) {
       const updateStmt = c.env.DB.prepare(
-        `UPDATE shop_items SET last_seen = ?, is_permanent = ?, item_type = ?, is_bloodstone = ?, available = 1 WHERE id = ?`
+        `UPDATE shop_items SET last_seen = ?, name = ?, town = ?, shop = ?, cost = ?, worn = ?, item_type = ?, is_permanent = ?, is_bloodstone = ?, enhancives_json = ?, available = 1 WHERE id = ?`
       )
       const CHUNK = 400
       for (let i = 0; i < changedItems.length; i += CHUNK) {
         const chunk = changedItems.slice(i, i + CHUNK)
         await c.env.DB.batch(chunk.map(item =>
-          updateStmt.bind(now, item.is_permanent ? 1 : 0, item.item_type, item.is_bloodstone ? 1 : 0, item.id)
+          updateStmt.bind(
+            now, item.name, item.town, item.shop, item.cost ?? null, item.worn ?? null,
+            item.item_type, item.is_permanent ? 1 : 0, item.is_bloodstone ? 1 : 0,
+            JSON.stringify(item.enhancives || []), item.id
+          )
         ))
       }
       console.log(`Updated ${changedItems.length} existing items`)
@@ -5311,7 +5323,7 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
         const idsChunk = existingAvailableItems.slice(j, j + IN_CHUNK)
         const placeholders = idsChunk.map(() => '?').join(',')
         const { results: current } = await env.DB.prepare(
-          `SELECT id, is_permanent, item_type, is_bloodstone
+          `SELECT id, name, town, shop, cost, worn, item_type, is_permanent, is_bloodstone, enhancives_json
              FROM shop_items
             WHERE available = 1
               AND id IN (${placeholders})`
@@ -5321,21 +5333,35 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
           const cur = currentById.get(item.id)
           const isPermanent = item.is_permanent ? 1 : 0
           const isBloodstone = item.is_bloodstone ? 1 : 0
+          const curEnh = (cur?.enhancives_json || '')
+          const newEnh = JSON.stringify(item.enhancives || [])
           if (
             cur === undefined
-            || cur.is_permanent !== isPermanent
+            || cur.name !== item.name
+            || (cur.town ?? null) !== (item.town ?? null)
+            || (cur.shop ?? null) !== (item.shop ?? null)
+            || (cur.cost ?? null) !== (item.cost ?? null)
+            || (cur.worn ?? null) !== (item.worn ?? null)
             || cur.item_type !== item.item_type
+            || cur.is_permanent !== isPermanent
             || cur.is_bloodstone !== isBloodstone
+            || curEnh !== newEnh
           ) changedItems.push(item)
         }
       }
     }
 
     if (changedItems.length > 0) {
-      const updateStmt = env.DB.prepare('UPDATE shop_items SET last_seen = ?, is_permanent = ?, item_type = ?, is_bloodstone = ?, available = 1 WHERE id = ?')
+      const updateStmt = env.DB.prepare(
+        `UPDATE shop_items SET last_seen = ?, name = ?, town = ?, shop = ?, cost = ?, worn = ?, item_type = ?, is_permanent = ?, is_bloodstone = ?, enhancives_json = ?, available = 1 WHERE id = ?`
+      )
       for (let i = 0; i < changedItems.length; i += BATCH_SIZE) {
         const chunk = changedItems.slice(i, i + BATCH_SIZE)
-        await env.DB.batch(chunk.map(item => updateStmt.bind(now, item.is_permanent ? 1 : 0, item.item_type, item.is_bloodstone ? 1 : 0, item.id)))
+        await env.DB.batch(chunk.map(item => updateStmt.bind(
+          now, item.name, item.town, item.shop, item.cost ?? null, item.worn ?? null,
+          item.item_type, item.is_permanent ? 1 : 0, item.is_bloodstone ? 1 : 0,
+          JSON.stringify(item.enhancives || []), item.id
+        )))
       }
     } else if (existingAvailableItems.length > 0 && itemsRemoved === 0) {
       console.log(`No shop_items changes detected among ${existingAvailableItems.length} available items`)
