@@ -3440,16 +3440,29 @@ app.get('/api/auth/discord/callback', async (c) => {
 
 app.get('/api/items', async (c) => {
   const showUnavailable = c.req.query('show_unavailable') === 'true'
-  
-  const query = showUnavailable 
+
+  // Default (available items): serve from R2 to avoid a full shop_items scan per request.
+  // show_unavailable=true needs unavailable rows which the public R2 blob doesn't carry -> D1.
+  if (!showUnavailable) {
+    const obj = await c.env.ITEMS_BUCKET.get('items_public.json')
+    if (obj) {
+      const items = await obj.json() as any[]
+      const { results: metadata } = await c.env.DB.prepare('SELECT * FROM metadata').all()
+      const lastUpdated = metadata.find((m: any) => m.key === 'last_updated')?.value
+      return c.json({ items, total: items.length, lastUpdated: lastUpdated || null })
+    }
+  }
+
+  // Fallback / show_unavailable path — original D1 behavior.
+  const query = showUnavailable
     ? 'SELECT * FROM shop_items ORDER BY available DESC, scraped_at DESC'
     : 'SELECT * FROM shop_items WHERE available = 1 ORDER BY scraped_at DESC'
-  
+
   const { results } = await c.env.DB.prepare(query).all()
   const { results: metadata } = await c.env.DB.prepare('SELECT * FROM metadata').all()
   const lastUpdated = metadata.find((m: any) => m.key === 'last_updated')?.value
-  
-  return c.json({ 
+
+  return c.json({
     items: results,
     total: results.length,
     lastUpdated: lastUpdated || null
@@ -4215,8 +4228,15 @@ app.get('/api/debug/alerts', async (c) => {
   const { results: goals } = await c.env.DB.prepare('SELECT * FROM user_goals WHERE discord_id = ?').bind(discordId).all()
   const { results: alerts } = await c.env.DB.prepare('SELECT * FROM alerts WHERE discord_id = ? ORDER BY sent_at DESC LIMIT 10').bind(discordId).all()
   
-  // Find matching items
-  const { results: allItems } = await c.env.DB.prepare('SELECT * FROM shop_items WHERE available = 1').all()
+  // Find matching items (from R2 public blob; fall back to D1 if absent)
+  const itemsObj = await c.env.ITEMS_BUCKET.get('items_public.json')
+  let allItems: any[]
+  if (itemsObj) {
+    allItems = await itemsObj.json() as any[]
+  } else {
+    const { results } = await c.env.DB.prepare('SELECT * FROM shop_items WHERE available = 1').all()
+    allItems = results as any[]
+  }
   
   const matches = []
   if (goals.length > 0) {
@@ -4272,7 +4292,12 @@ app.get('/api/debug/sets', async (c) => {
 
 app.post('/api/test-match', async (c) => {
   try {
-    const { results: items } = await c.env.DB.prepare('SELECT * FROM shop_items WHERE available = 1').all()
+    const obj = await c.env.ITEMS_BUCKET.get('items_public.json')
+    const items: any[] = obj ? await obj.json() : []
+    if (items.length === 0) {
+      const { results } = await c.env.DB.prepare('SELECT * FROM shop_items WHERE available = 1').all()
+      items.push(...(results as any[]))
+    }
     console.log(`Testing matcher with ${items.length} items`)
     
     await checkMatches(c.env, items)
@@ -4816,6 +4841,25 @@ app.post('/api/scrape', async (c) => {
         .run()
     }
 
+    // Keep the R2 public blob fresh (used by /api/items to avoid a shop_items scan).
+    if (items.length > 0) {
+      await c.env.ITEMS_BUCKET.put(
+        'items_public.json',
+        JSON.stringify(items.map((it: any) => ({
+          id: it.id,
+          name: it.name,
+          town: it.town,
+          shop: it.shop,
+          cost: it.cost,
+          worn: it.worn,
+          item_type: it.item_type,
+          is_permanent: it.is_permanent,
+          enhancives_json: JSON.stringify(it.enhancives || []),
+        }))),
+        { httpMetadata: { contentType: 'application/json' } },
+      )
+    }
+
     // Check for matches and send alerts (only new items)
     console.log(`Checking ${newItems.length} new items for alerts`)
     await checkMatches(c.env, newItems)
@@ -5290,6 +5334,26 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
       httpMetadata: { contentType: 'application/json' },
     })
     console.log(`Wrote ${enriched.length} enriched items to R2`)
+
+    // Public-shape blob for /api/items (matches the shape consumers read:
+    // name/town/shop/cost/worn/is_permanent/enhancives_json). Serving from R2
+    // avoids a full shop_items scan on every /api/items request.
+    await env.ITEMS_BUCKET.put(
+      'items_public.json',
+      JSON.stringify(items.map((it: any) => ({
+        id: it.id,
+        name: it.name,
+        town: it.town,
+        shop: it.shop,
+        cost: it.cost,
+        worn: it.worn,
+        item_type: it.item_type,
+        is_permanent: it.is_permanent,
+        enhancives_json: JSON.stringify(it.enhancives || []),
+      }))),
+      { httpMetadata: { contentType: 'application/json' } },
+    )
+    console.log(`Wrote ${items.length} public items to R2`)
 
     // Regenerate recommendations for all sets with goals
     const { results: activeSets } = await env.DB.prepare(
