@@ -5333,7 +5333,12 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
         const existing = await env.ITEMS_BUCKET.get('sales_log.json')
         const prev: any[] = existing ? await existing.json() : []
         const { results: newSales } = await env.DB.prepare(
-          'SELECT * FROM sales_log WHERE sold_at >= ? ORDER BY sold_at DESC'
+          `SELECT item_name, shop, town, cost, worn, item_type, is_permanent,
+                  enhancives_json, listed_at, sold_at, days_listed
+             FROM sales_log
+            WHERE sold_at >= ?
+            ORDER BY sold_at DESC
+            LIMIT 1000`
         ).bind(now).all()
         if (newSales.length > 0) {
           const merged = [...newSales, ...prev]
@@ -5341,6 +5346,9 @@ async function runScrape(env: Env): Promise<{ status: string; detail?: string }>
             httpMetadata: { contentType: 'application/json' },
           })
           console.log(`Exported ${newSales.length} new sales to R2 (${merged.length} total)`)
+          if (newSales.length >= 1000) {
+            console.warn(`sales_log export hit LIMIT 1000; there may be more than ${newSales.length} new sales in this scrape window that were not archived to R2`)
+          }
 
           // Milestone reminders for pricing algorithm
           const milestones = [50, 100, 200, 300]
