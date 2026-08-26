@@ -13,6 +13,12 @@ import type { Env } from './types'
 
 const ADMIN_DISCORD_ID = '411322973920821258'
 
+// Require a Bearer token (SCRAPE_ADMIN_TOKEN) for operations that trigger full
+// scrapes / bulk D1 writes. Kept alongside the auth-gated scrape endpoints.
+const scrapeAuthorized = (c: any): boolean =>
+  c.req?.header('authorization') === `Bearer ${c.env?.SCRAPE_ADMIN_TOKEN}`
+
+
 const app = new Hono<{ Bindings: Env }>()
 
 app.use('/*', cors())
@@ -3329,6 +3335,7 @@ app.get('/enh_export.lic', async (c) => {
 app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }))
 
 app.post('/api/trigger-scrape', async (c) => {
+  if (!scrapeAuthorized(c)) return c.json({ error: 'Unauthorized' }, 403)
   const env = c.env as Env
   const result = await runScrape(env)
   return c.json(result)
@@ -4742,6 +4749,7 @@ app.post('/api/my-matches', async (c) => {
 })
 
 app.post('/api/scrape', async (c) => {
+  if (!scrapeAuthorized(c)) return c.json({ error: 'Unauthorized' }, 403)
   try {
     const lastUpdated = await getLastUpdated()
     const items = await scrapeEnhancives()

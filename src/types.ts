@@ -26,4 +26,5 @@ export interface Env {
   DISCORD_CLIENT_SECRET: string
   DISCORD_BOT_TOKEN: string
   DISCORD_REDIRECT_URI: string
+  SCRAPE_ADMIN_TOKEN: string
 }
