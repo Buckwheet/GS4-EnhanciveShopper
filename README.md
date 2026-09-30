@@ -1,17 +1,25 @@
-# Enhancive Alert System
+# GS4 Enhancive Shopper
 
-A web application that monitors GemStone IV player shop listings and alerts users when items matching their enhancive build requirements become available.
+Cloudflare Worker that scrapes GemStone IV player shops (https://shops.elanthia.online) hourly, recommends enhancive purchases against each character's goals and inventory, and sends Discord DM alerts.
 
-## Project Status
-🚧 Planning Phase
+**Live:** https://gs4-enhancive-shopper.rpgfilms.workers.dev
 
-See [PLANNING.md](PLANNING.md) for detailed project plan and open questions.
+Stack: Hono · D1 · R2 · Workers AI · Discord OAuth/Bot · TypeScript · Biome
 
-## Quick Overview
-- Scrapes https://shops.elanthia.online hourly for new enhancive items
-- Users define their build goals and available slots
-- System matches new listings to user criteria
-- Sends notifications when matches found
+## Develop
 
-## Development
-TBD - Tech stack not yet selected
+```bash
+npm install
+npm run dev
+npm run typecheck && npm run lint
+```
+
+Work on a branch, open a PR against `main` (CI runs typecheck + lint), merge → CI deploys.
+
+## Docs
+
+- [AI_INSTRUCTIONS.md](AI_INSTRUCTIONS.md) — architecture, schema, routes, conventions
+- [docs/DecisionBrain.md](docs/DecisionBrain.md) — recommendation engine spec
+- [ROADMAP.md](ROADMAP.md) — shipped features; open work lives in [Issues](https://github.com/Buckwheet/GS4-EnhanciveShopper/issues)
+- `archive/` — historical session notes, prototypes, and data dumps (not used at runtime)
+- `enh_export.lic` — Lich export script; served by the app from `main`, keep at repo root
