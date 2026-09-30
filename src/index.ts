@@ -4250,6 +4250,19 @@ app.get('/api/debug/alerts', async (c) => {
     const goal = goals[0]
     for (const item of allItems.slice(0, 100)) {
       try {
+        const enhancives = JSON.parse(item.enhancives_json as string)
+        const hasMatch = enhancives.some((enh: any) => 
+          enh.ability.toLowerCase().includes((goal.stat as string).toLowerCase()) && enh.boost >= (goal.min_boost as number)
+        )
+        if (hasMatch) {
+          matches.push({ id: item.id, name: item.name, enhancives })
+        }
+      } catch {}
+    }
+  }
+
+  return c.json({ goals, alerts, matchingItems: matches.slice(0, 5) })
+})
 
 app.get('/api/debug/migration', async (c) => {
   const discordId = c.req.query('discord_id')
@@ -4281,20 +4294,6 @@ app.get('/api/debug/sets', async (c) => {
     setsWithGoals: goals.map(r => r.goal_set_name),
     setsWithInventory: inventory.map(r => r.goal_set_name)
   })
-})
-
-        const enhancives = JSON.parse(item.enhancives_json as string)
-        const hasMatch = enhancives.some((enh: any) => 
-          enh.ability.toLowerCase().includes((goal.stat as string).toLowerCase()) && enh.boost >= (goal.min_boost as number)
-        )
-        if (hasMatch) {
-          matches.push({ id: item.id, name: item.name, enhancives })
-        }
-      } catch {}
-    }
-  }
-
-  return c.json({ goals, alerts, matchingItems: matches.slice(0, 5) })
 })
 
 app.post('/api/test-match', async (c) => {
