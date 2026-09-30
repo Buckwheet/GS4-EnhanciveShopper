@@ -10,6 +10,8 @@ Stack: Hono · D1 · R2 · Workers AI · Discord OAuth/Bot · TypeScript · Biom
 
 ```bash
 npm install
+cp .dev.vars.example .dev.vars   # fill in secrets (git-ignored)
+npx wrangler login                # needed for d1/tail/deploy from CLI
 npm run dev
 npm run typecheck && npm run lint
 ```
