@@ -21,7 +21,6 @@ export interface RecommendationResult {
   fill_pct: number
   slots_used: number
   alpha: number
-  debugLog: string[]
 }
 
 export interface Pick {
@@ -137,7 +136,6 @@ export function runRecommendation(
 
   // 3. Filter items: available, not excluded, has relevant groups
   const goalGroups = new Set(goals.map(g => g.group))
-  const debugLog: string[] = []
   const candidates = enrichedItems.filter(item =>
     item.cost !== null &&
     !EXCLUDED_SHOPS.has(item.shop) &&
@@ -257,10 +255,8 @@ export function runRecommendation(
   let picks: Pick[]
   if (cheapMeetsGoals && cheapCost < balancedCost) {
     picks = cheapPicks
-    debugLog.push(`Cheapest pass won: ${(cheapCost/1e6).toFixed(1)}M (${cheapPicks.length} items) vs balanced ${(balancedCost/1e6).toFixed(1)}M (${balancedPicks.length} items)`)
   } else {
     picks = balancedPicks
-    debugLog.push(`Balanced pass won: ${(balancedCost/1e6).toFixed(1)}M (${balancedPicks.length} items) vs cheapest ${(cheapCost/1e6).toFixed(1)}M (${cheapPicks.length} items, meets=${cheapMeetsGoals})`)
   }
   const usedIds = new Set(picks.map(p => p.item.id))
   const slotsAvail = { ...openSlots }
@@ -336,12 +332,6 @@ export function runRecommendation(
     const costed = alternatives.map(alt => ({ alt, cost: calcTrueCost(alt, currentSlot) }))
       .filter(x => x.cost < current.true_cost)
     costed.sort((a, b) => a.cost - b.cost)
-    // Debug: find the pendant specifically
-    const pendant = alternatives.find(a => a.name.includes('star sapphire pendant'))
-    if (pendant) {
-      debugLog.push(`  pendant found in alternatives: cost=${calcTrueCost(pendant, currentSlot)} is_nugget=${pendant.is_nugget} slot=${pendant.slot} perm=${pendant.is_permanent} true_costs=${JSON.stringify(pendant.true_costs)} swap_costs=${JSON.stringify(pendant.swap_costs)}`)
-    }
-    debugLog.push(`Downgrade ${current.item.name} (${current.true_cost}): ${costed.length} candidates, top5: ${costed.slice(0,5).map(x => x.alt.name + '=' + x.cost + ' slot=' + x.alt.slot).join(' | ')}`)
 
     for (const { alt, cost } of costed) {
       const testPick: Pick = { item: alt, value_score: 0, true_cost: cost, swap_cost: 0, contributions: {}, swap_details: [] }
@@ -448,7 +438,6 @@ export function runRecommendation(
     const replacementCost = replacements.reduce((s, p) => s + p.true_cost, 0)
     const replacementGap = Object.values(miniGaps).reduce((s, v) => s + v, 0)
     if (replacementGap <= 0 && replacementCost < expensive.true_cost) {
-      debugLog.push(`Split: ${expensive.item.name} (${expensive.true_cost}) → ${replacements.length} items (${replacementCost}): ${replacements.map(r => r.item.name + '=' + r.true_cost).join(', ')}`)
       picks.splice(i, 1, ...replacements)
       // Update pickedIds
       pickedIds.delete(expensive.item.id)
@@ -513,7 +502,6 @@ export function runRecommendation(
     fill_pct: fillPct,
     slots_used: picks.length,
     alpha,
-    debugLog,
   }
 }
 

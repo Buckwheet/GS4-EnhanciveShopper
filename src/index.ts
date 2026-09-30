@@ -4201,7 +4201,6 @@ app.get('/api/recommend/:setId', async (c) => {
         swap_details: p.swap_details,
       }
     }),
-    debugLog: result.debugLog,
   })
 })
 
