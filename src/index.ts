@@ -15,8 +15,10 @@ const ADMIN_DISCORD_ID = '411322973920821258'
 
 // Require a Bearer token (SCRAPE_ADMIN_TOKEN) for operations that trigger full
 // scrapes / bulk D1 writes. Kept alongside the auth-gated scrape endpoints.
+// Fails closed when the secret is unset, otherwise "Bearer undefined" would pass.
 const scrapeAuthorized = (c: any): boolean =>
-  c.req?.header('authorization') === `Bearer ${c.env?.SCRAPE_ADMIN_TOKEN}`
+  !!c.env?.SCRAPE_ADMIN_TOKEN &&
+  c.req?.header('authorization') === `Bearer ${c.env.SCRAPE_ADMIN_TOKEN}`
 
 
 const app = new Hono<{ Bindings: Env }>()
