@@ -1,0 +1,5 @@
+# Local secrets for `wrangler dev`. Copy to .dev.vars (git-ignored) and fill in.
+# Production values are Cloudflare Worker secrets (wrangler secret put <NAME>).
+DISCORD_CLIENT_SECRET=
+DISCORD_BOT_TOKEN=
+SCRAPE_ADMIN_TOKEN=
