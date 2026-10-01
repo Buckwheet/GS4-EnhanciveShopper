@@ -6,6 +6,13 @@ interface Query {
   args: unknown[]
 }
 
+interface MockStatement {
+  bind(...values: unknown[]): MockStatement
+  all(): Promise<{ results: unknown[] }>
+  first(): Promise<unknown | null>
+  run(): Promise<{ meta: { changes: number, last_row_id: number } }>
+}
+
 interface MockEnvOptions extends Partial<Env> {
   SESSION_SECRET?: string
   rows?: (sql: string, args: unknown[]) => unknown[]
@@ -22,29 +29,28 @@ export function mockEnv(opts: MockEnvOptions = {}): MockEnv {
   const { rows, items: seedItems, ...overrides } = opts
   const queries: Query[] = []
   const items = new Map(seedItems)
+  function makeStmt(sql: string, args: unknown[] = []): MockStatement {
+    const execute = () => {
+      queries.push({ sql, args: [...args] })
+      return rows?.(sql, args) ?? []
+    }
+    return {
+      bind(...values: unknown[]) {
+        if (values.some(value => value === undefined)) {
+          throw new Error("D1_TYPE_ERROR: Type 'undefined' not supported")
+        }
+        return makeStmt(sql, values)
+      },
+      async all() { return { results: execute() } },
+      async first() { return execute()[0] ?? null },
+      async run() {
+        execute()
+        return { meta: { changes: 0, last_row_id: 1 } }
+      },
+    }
+  }
   const db = {
-    prepare(sql: string) {
-      let args: unknown[] = []
-      const execute = () => {
-        queries.push({ sql, args: [...args] })
-        return rows?.(sql, args) ?? []
-      }
-      return {
-        bind(...values: unknown[]) {
-          if (values.some(value => value === undefined)) {
-            throw new Error("D1_TYPE_ERROR: Type 'undefined' not supported")
-          }
-          args = values
-          return this
-        },
-        async all() { return { results: execute() } },
-        async first() { return execute()[0] ?? null },
-        async run() {
-          execute()
-          return { meta: { changes: 0, last_row_id: 1 } }
-        },
-      }
-    },
+    prepare: makeStmt,
     async batch(stmts: { run(): Promise<unknown> }[]) {
       return Promise.all(stmts.map(stmt => stmt.run()))
     },

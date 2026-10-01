@@ -41,3 +41,12 @@ test('R2 stores objects and returns JSON, text, or null', async () => {
   expect(await object?.json()).toEqual([{ id: 1 }])
   expect(await object?.text()).toBe('[{"id":1}]')
 })
+
+test('one prepared statement bound twice keeps distinct args in a batch', async () => {
+  const env = mockEnv()
+  const stmt = env.DB.prepare('UPDATE shop_items SET cost = ? WHERE id = ?')
+  await env.DB.batch([stmt.bind(100, 'a'), stmt.bind(200, 'b')])
+  expect(env.__queries.map(query => query.args)).toEqual([[100, 'a'], [200, 'b']])
+  await stmt.run()
+  expect(env.__queries[2].args).toEqual([])
+})
